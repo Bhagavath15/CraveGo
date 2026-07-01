@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
     Animated,
     Image,
@@ -36,9 +36,10 @@ const onboardingData = [
     },
 ];
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 const OnBoardingScreen = () => {
     const [step, setStep] = useState(0);
-    type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
     const navigation = useNavigation<NavigationProp>();
 
@@ -87,7 +88,7 @@ const OnBoardingScreen = () => {
 
     const handleNext = () => {
         if (isLastStep) {
-            navigation.navigate("Login");
+            navigation.replace("Login");
             return;
         }
         animateStep(step + 1, "next");

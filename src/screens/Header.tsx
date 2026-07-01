@@ -1,18 +1,45 @@
-import { StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
-const Header = () => {
+type Props = {
+    back?: { title: string };
+    navigation?: { goBack: () => void };
+};
+
+const Header = ({ back, navigation }: Props) => {
     const insets = useSafeAreaInsets()
 
     return (
         <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: 12 }]}>
             <View style={styles.content}>
-                <Text style={styles.title}>Header</Text>
+                <View style={styles.left}>
+                    {back && (
+                        <TouchableOpacity
+                            onPress={() => navigation?.goBack()}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <MaterialCommunityIcons
+                                name="arrow-left"
+                                size={24}
+                                color="#de782a"
+                            />
+                        </TouchableOpacity>
+                    )}
+                    <View style={styles.locationContent}>
+                        <MaterialCommunityIcons
+                            name="map-pin"
+                            size={20}
+                            color="#de782a"
+                        />
+                        <Text>Location</Text>
+                    </View>
+                </View>
+
                 <MaterialCommunityIcons
                     name="bell-outline"
                     size={26}
-                    color="#222"
+                    color="#de782a"
                 />
             </View>
         </View>
@@ -33,9 +60,13 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingHorizontal: 16,
     },
-    title: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#111",
+    left: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    locationContent: {
+        flexDirection: 'row',
+        gap: 5,
     },
 });

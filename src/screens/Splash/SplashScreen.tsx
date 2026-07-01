@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 
 const SplashScreen = ({ navigation }: any) => {
     useEffect(() => {
         const timer = setTimeout(() => {
-            navigation.replace('Home');
+            navigation.replace('OnBoarding');
         }, 2000);
 
         return () => clearTimeout(timer);

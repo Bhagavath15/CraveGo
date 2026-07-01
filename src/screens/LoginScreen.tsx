@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Keyboard,
     KeyboardAvoidingView,
@@ -58,7 +58,7 @@ const LoginScreen = () => {
     const handleContinue = () => {
         if (isDisabled) return;
 
-        navigation.navigate("Home");
+        navigation.replace("Home");
     };
 
     const handleMobileChange = (text: string) => {
