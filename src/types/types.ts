@@ -7,6 +7,7 @@ export type RootStackParamList = {
   };
   CartCheckout: { restaurantId: string };
   OrderSuccess: { itemCount: number };
+  TrackMyOrder: undefined;
 };
 
 export interface CustomizationOption {

@@ -61,7 +61,7 @@ const RestaurantInfoCard = ({
 
                 <View style={styles.infoItem}>
                     <MaterialCommunityIcons
-                        name="map-pin"
+                        name="map-marker"
                         size={18}
                         color={PRIMARY}
                     />

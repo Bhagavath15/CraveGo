@@ -122,7 +122,7 @@ const RestaurantListScreen = () => {
               <View style={styles.restaurantFooter}>
                 <View style={styles.footerItem}>
                   <MaterialCommunityIcons
-                    name="map-pin"
+                    name="map-marker"
                     size={16}
                     color="#666"
                   />

@@ -47,8 +47,22 @@ const CheckoutScreen = () => {
         navigation.navigate("OrderSuccess", { itemCount: cart.itemCount });
     };
 
-    const handleRemove = (index: number) => {
-        cart.removeItem(index);
+    const groupedItems = cart.cartItems.reduce<{ item: typeof cart.cartItems[0]; quantity: number }[]>((acc, item) => {
+        const existing = acc.find((g) => g.item.id === item.id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            acc.push({ item, quantity: 1 });
+        }
+        return acc;
+    }, []);
+
+    const handleRemove = (itemId: string) => {
+        for (let i = cart.cartItems.length - 1; i >= 0; i--) {
+            if (cart.cartItems[i].id === itemId) {
+                cart.removeItem(i);
+            }
+        }
     };
 
     return (
@@ -90,9 +104,9 @@ const CheckoutScreen = () => {
                         </Text>
                     </View>
 
-                    {cart.cartItems.map((item, index) => (
+                    {groupedItems.map(({ item, quantity }) => (
                         <View
-                            key={`${item.id}-${index}`}
+                            key={item.id}
                             style={styles.cartItemCard}
                         >
                             <Image
@@ -108,11 +122,11 @@ const CheckoutScreen = () => {
                                         {item.name}
                                     </Text>
                                     <Text style={styles.cartItemPrice}>
-                                        ₹{item.price}
+                                        ₹{item.price * quantity}
                                     </Text>
                                 </View>
                                 <Text style={styles.cartItemQuantity}>
-                                    Quantity: 1
+                                    Quantity: {quantity}
                                 </Text>
                                 <View style={styles.cartItemActions}>
                                     <TouchableOpacity
@@ -129,7 +143,7 @@ const CheckoutScreen = () => {
                                         </Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        onPress={() => handleRemove(index)}
+                                        onPress={() => handleRemove(item.id)}
                                     >
                                         <Text style={styles.removeText}>
                                             Remove
@@ -145,7 +159,7 @@ const CheckoutScreen = () => {
                     <View style={styles.addressSectionHeader}>
                         <View style={styles.addressTitleRow}>
                             <MaterialCommunityIcons
-                                name="location-on"
+                                name="map-marker"
                                 size={20}
                                 color={PRIMARY}
                             />

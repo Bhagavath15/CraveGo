@@ -28,7 +28,7 @@ const Header = ({ back, navigation }: Props) => {
                     )}
                     <View style={styles.locationContent}>
                         <MaterialCommunityIcons
-                            name="map-pin"
+                            name="map-marker"
                             size={20}
                             color="#de782a"
                         />

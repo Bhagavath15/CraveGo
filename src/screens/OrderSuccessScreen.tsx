@@ -80,7 +80,9 @@ const OrderSuccessScreen = () => {
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.trackButton}>
+                <TouchableOpacity style={styles.trackButton}
+                    onPress={() => navigation.navigate('TrackMyOrder')}
+                >
                     <MaterialCommunityIcons
                         name="map"
                         size={20}

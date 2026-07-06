@@ -25,7 +25,7 @@ const HomeScreen = () => {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.locationContent}>
           <MaterialCommunityIcons
-            name="map-pin"
+            name="map-marker"
             size={20}
             color="#de782a"
           />

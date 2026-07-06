@@ -8,6 +8,7 @@ import RestaurantDetailScreen from "../screens/RestaurantDetailScreen";
 import CheckoutScreen from "../screens/CheckoutScreen";
 import OrderSuccessScreen from "../screens/OrderSuccessScreen";
 import BottomTabNavigationBar from "../components/BottomTabNavigationBar";
+import TrackMyOrder from "../screens/TrackMyOrderScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -44,6 +45,16 @@ const RootNavigator = () => {
                     name="OrderSuccess"
                     component={OrderSuccessScreen}
                     options={{ animation: "fade" }}
+                />
+                <Stack.Screen
+                    name='TrackMyOrder'
+                    component={TrackMyOrder}
+                    options={{
+                        animation: "slide_from_bottom",
+                        headerShown: true,
+                        title: 'Track My Order'
+                    }}
+
                 />
             </Stack.Navigator>
         </NavigationContainer>
