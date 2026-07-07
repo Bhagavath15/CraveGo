@@ -4,17 +4,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useNavigation } from "@react-navigation/native";
 
 import RestaurantListScreen from "./RestaurantListScreen";
 
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   return (
     <ScrollView
@@ -39,18 +40,17 @@ const HomeScreen = () => {
       </View>
 
       <View style={styles.contentPadding}>
-        <View style={styles.searchContainer}>
+      <TouchableOpacity
+        style={styles.searchContainer}
+        onPress={() => navigation.navigate("SearchTab" as never)}
+      >
           <MaterialCommunityIcons
             name="magnify"
             size={22}
             color="#E6732F"
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Restaurants, dishes or cuisines"
-            placeholderTextColor="#A5A5A5"
-          />
+          <Text style={styles.input}>Restaurants, dishes or cuisines</Text>
 
           <TouchableOpacity>
             <MaterialCommunityIcons
@@ -59,7 +59,7 @@ const HomeScreen = () => {
               color="#E6732F"
             />
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
 
       {/* Banner */}
       <ImageBackground

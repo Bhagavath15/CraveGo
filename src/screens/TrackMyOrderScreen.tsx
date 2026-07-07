@@ -5,10 +5,14 @@ import {
   StyleSheet,
   PermissionsAndroid,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../types/types";
 
 type Restaurant = {
   id: string;
@@ -43,6 +47,7 @@ const RESTAURANTS: Restaurant[] = [
 ];
 
 export default function TrackMyOrderScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const mapRef = useRef<MapView>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
 
@@ -181,6 +186,26 @@ export default function TrackMyOrderScreen() {
             </View>
             <Text style={styles.editBtn}>Edit</Text>
           </View>
+
+          <TouchableOpacity
+            style={styles.deliveredButton}
+            onPress={() =>
+              navigation.navigate("DeliveryCompleted", {
+                restaurantName: "Spice Garden",
+                items: "2x Special Chicken Biryani",
+                totalPrice: 850,
+                deliveredTime: "7:45 PM",
+                riderName: "Arjun K.",
+              })
+            }
+          >
+            <MaterialCommunityIcons
+              name="check-circle-outline"
+              size={20}
+              color="#FFF"
+            />
+            <Text style={styles.deliveredButtonText}>Order Delivered</Text>
+          </TouchableOpacity>
         </BottomSheetView>
       </BottomSheet>
     </View>
@@ -436,5 +461,23 @@ const styles = StyleSheet.create({
     color: '#ab3500',
     lineHeight: 20,
     letterSpacing: 0.1,
+  },
+
+  deliveredButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#006D37',
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 20,
+  },
+
+  deliveredButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+    lineHeight: 22,
   },
 });

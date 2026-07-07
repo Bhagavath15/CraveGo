@@ -136,6 +136,15 @@ const LoginScreen = () => {
                             </Text>
                         </TouchableOpacity>
 
+                        <TouchableOpacity
+                            style={styles.forgotRow}
+                            onPress={() => navigation.navigate("ForgotPassword")}
+                        >
+                            <Text style={styles.forgotText}>
+                                Forgot Password?
+                            </Text>
+                        </TouchableOpacity>
+
                         {/* Divider */}
                         <View style={styles.dividerContainer}>
                             <View style={styles.line} />
@@ -168,7 +177,9 @@ const LoginScreen = () => {
                                 Don't have an account?
                             </Text>
 
-                            <TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate("SignUp")}
+                            >
                                 <Text style={styles.link}>
                                     Sign Up
                                 </Text>
@@ -272,6 +283,18 @@ const styles = StyleSheet.create({
         color: "#FFF",
         fontWeight: "700",
         fontSize: 16,
+    },
+
+    forgotRow: {
+        alignItems: "center",
+        marginTop: 16,
+    },
+    forgotText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: PRIMARY,
+        lineHeight: 20,
+        letterSpacing: 0.1,
     },
 
     dividerContainer: {

@@ -2,29 +2,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import HomeScreen from "../screens/HomeScreen";
+import OrdersScreen from "../screens/OrdersScreen";
+import SearchScreen from "../screens/SearchScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 
 const PRIMARY = "#FF6B35";
 const ON_SURFACE_VARIANT = "#594139";
 
 const Tab = createBottomTabNavigator();
-
-const SearchScreen = () => (
-    <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>Search</Text>
-    </View>
-);
-
-const OrdersScreen = () => (
-    <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>Orders</Text>
-    </View>
-);
-
-const ProfileScreen = () => (
-    <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>Profile</Text>
-    </View>
-);
 
 const BottomTabNavigationBar = () => {
     return (
