@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 const SplashScreen = ({ navigation }: any) => {
     useEffect(() => {
@@ -9,17 +9,29 @@ const SplashScreen = ({ navigation }: any) => {
 
         return () => clearTimeout(timer);
     }, []);
+
     return (
-        <View
-            style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-            }}
-        >
-            <Text style={{ fontFamily: 'Italian' }}>Splash screen</Text>
+        <View style={styles.container}>
+            <Image
+                source={require('../../assets/images/splash_logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+            />
         </View>
-    )
-}
+    );
+};
 
 export default SplashScreen;
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+    },
+    logo: {
+        width: 200,
+        height: 200,
+    },
+});

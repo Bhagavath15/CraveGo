@@ -145,7 +145,7 @@ const RestaurantDetailScreen = () => {
                 )}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 120 }}
+                contentContainerStyle={{ paddingBottom: cart.itemCount ? 120 : 50 }}
             >
                 <View style={styles.heroContainer}>
                     <Image

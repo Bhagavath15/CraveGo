@@ -188,6 +188,11 @@ const DeliveryCompletedScreen = () => {
                     />
                 </View>
 
+                <TouchableOpacity style={styles.submitBtn} activeOpacity={0.92}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={20} color="#FFF" />
+                    <Text style={styles.submitBtnText}>Submit Review</Text>
+                </TouchableOpacity>
+
                 <View style={styles.actionsSection}>
                     <TouchableOpacity
                         style={styles.homeButton}
@@ -233,10 +238,10 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "600",
         color: ON_SURFACE,
-        lineHeight: 28,
+        lineHeight: 24,
     },
     scrollContent: {
         paddingHorizontal: 16,
@@ -274,10 +279,10 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     successTitle: {
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: "700",
         color: ON_SURFACE,
-        lineHeight: 36,
+        lineHeight: 32,
         textAlign: "center",
         marginBottom: 8,
     },
@@ -287,9 +292,9 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     deliveredText: {
-        fontSize: 16,
+        fontSize: 15,
         color: ON_SURFACE_VARIANT,
-        lineHeight: 24,
+        lineHeight: 22,
     },
     orderCard: {
         backgroundColor: SURFACE_LOWEST,
@@ -322,10 +327,10 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     restaurantName: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "600",
         color: ON_SURFACE,
-        lineHeight: 28,
+        lineHeight: 24,
         marginBottom: 2,
     },
     itemsText: {
@@ -346,15 +351,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     totalLabel: {
-        fontSize: 16,
+        fontSize: 15,
         color: ON_SURFACE_VARIANT,
-        lineHeight: 24,
+        lineHeight: 22,
     },
     totalValue: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: "700",
         color: ON_SURFACE,
-        lineHeight: 32,
+        lineHeight: 28,
     },
     ratingCard: {
         backgroundColor: SURFACE_LOWEST,
@@ -370,10 +375,10 @@ const styles = StyleSheet.create({
         borderColor: "rgba(255,255,255,0.8)",
     },
     ratingTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "600",
         color: ON_SURFACE,
-        lineHeight: 28,
+        lineHeight: 24,
         marginBottom: 12,
     },
     starRow: {
@@ -407,6 +412,28 @@ const styles = StyleSheet.create({
     },
     riderStars: {
         marginBottom: 12,
+    },
+    submitBtn: {
+        flexDirection: "row",
+        backgroundColor: PRIMARY_CONTAINER,
+        paddingVertical: 16,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        marginTop: 8,
+        marginBottom: 8,
+        shadowColor: PRIMARY_CONTAINER,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    submitBtnText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#FFF",
+        lineHeight: 24,
     },
     noteInput: {
         backgroundColor: SURFACE_CONTAINER_LOW,

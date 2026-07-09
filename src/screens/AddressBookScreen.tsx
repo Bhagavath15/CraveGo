@@ -42,7 +42,7 @@ const ADDRESSES: Address[] = [
     },
     {
         id: "3",
-        icon: "push-pin",
+        icon: "pin",
         type: "Other",
         label: "Mom & Dad's",
         address: "House No. 42, Green Avenue, Sector 15, Chandigarh - 160015",

@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+    Animated,
+    Dimensions,
     Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StatusBar,
     StyleSheet,
     Text,
     TextInput,
@@ -14,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import LinearGradient from "react-native-linear-gradient";
 import { RootStackParamList } from "../types/types";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -25,179 +29,165 @@ const ON_SURFACE = "#1B1C1C";
 const ON_SURFACE_VARIANT = "#594139";
 const OUTLINE_VARIANT = "#E1BFB5";
 const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_VARIANT = "#E5E2E1";
+const OUTLINE = "#8D7168";
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const SignUpScreen = () => {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<NavigationProp>();
     const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPass, setShowPass] = useState(false);
+    const [phone, setPhone] = useState("");
+
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 600,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 600,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
 
     const handleSignUp = () => {
         navigation.navigate("ProfileSetup", {
             fullName,
-            email,
-            phone: "+91 98765 43210",
+            email: "",
+            phone: phone ? `+91 ${phone}` : "",
         });
     };
 
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
+        <View style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+            <View style={[styles.header, { height: Dimensions.get("window").height * 0.4 }]}>
+                <Image
+                    source={require("../assets/images/allFood.png")}
+                    resizeMode="cover"
+                    style={styles.headerImage}
+                />
+                <LinearGradient
+                    colors={["rgba(0,0,0,0.3)", "rgba(252,249,248,0.4)", BG]}
+                    locations={[0, 0.5, 1]}
+                    style={styles.headerGradient}
+                />
+
                 <TouchableOpacity
-                    style={styles.backBtn}
+                    style={[styles.backBtn, { top: insets.top + 8 }]}
                     onPress={() => navigation.goBack()}
                 >
-                    <MaterialCommunityIcons
-                        name="arrow-left"
-                        size={24}
-                        color={PRIMARY}
-                    />
+                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Create Account</Text>
-                <View style={styles.headerSpacer} />
+
+                <View style={styles.headerText}>
+                    <Text style={styles.heroTitle}>Join the CraveGo family.</Text>
+                    <Text style={styles.heroDesc}>
+                        Unlock a world of delicious local flavors delivered directly to your doorstep.
+                    </Text>
+                </View>
             </View>
 
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+            <Animated.View
+                style={[
+                    styles.formWrapper,
+                    { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+                ]}
             >
-                <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
+                <KeyboardAvoidingView
+                    style={{ flex: 1 }}
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
                 >
-                    <View style={styles.heroSection}>
-                        <Text style={styles.heroTitle}>
-                            Join the CraveGo family.
-                        </Text>
-                        <Text style={styles.heroDesc}>
-                            Unlock a world of delicious local flavors delivered
-                            to your doorstep.
-                        </Text>
-                    </View>
-
-                    <Image
-                        source={require("../assets/images/southIndian.png")}
-                        style={styles.heroImage}
-                    />
-
-                    <View style={styles.form}>
-                        <View style={styles.inputGroup}>
-                            <View style={styles.inputRow}>
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.form}>
+                            <View style={styles.inputGroup}>
                                 <MaterialCommunityIcons
                                     name="account-outline"
                                     size={20}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={OUTLINE_VARIANT}
                                 />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Full Name"
-                                    placeholderTextColor={`${ON_SURFACE_VARIANT}99`}
+                                    placeholderTextColor={`${OUTLINE}99`}
                                     value={fullName}
                                     onChangeText={setFullName}
                                 />
                             </View>
-                        </View>
 
-                        <View style={styles.inputGroup}>
-                            <View style={styles.inputRow}>
+                            <View style={styles.inputGroup}>
                                 <MaterialCommunityIcons
-                                    name="email-outline"
+                                    name="phone"
                                     size={20}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={OUTLINE_VARIANT}
                                 />
+                                <View style={styles.countryCodeRow}>
+                                    <TouchableOpacity style={styles.countryCode}>
+                                        <Text style={styles.countryCodeText}>+91</Text>
+                                        <MaterialCommunityIcons
+                                            name="chevron-down"
+                                            size={16}
+                                            color={OUTLINE}
+                                        />
+                                    </TouchableOpacity>
+                                    <View style={styles.codeDivider} />
+                                </View>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Email Address"
-                                    placeholderTextColor={`${ON_SURFACE_VARIANT}99`}
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
+                                    placeholder="Phone Number"
+                                    placeholderTextColor={`${OUTLINE}99`}
+                                    value={phone}
+                                    onChangeText={setPhone}
+                                    keyboardType="phone-pad"
+                                    maxLength={10}
                                 />
                             </View>
+
+                            <TouchableOpacity style={styles.signUpBtn} activeOpacity={0.95} onPress={handleSignUp}>
+                                <Text style={styles.signUpText}>Sign Up</Text>
+                                <MaterialCommunityIcons name="arrow-right" size={20} color="#FFF" />
+                            </TouchableOpacity>
                         </View>
 
-                        <View style={styles.inputGroup}>
-                            <View style={styles.inputRow}>
-                                <MaterialCommunityIcons
-                                    name="lock-outline"
-                                    size={20}
-                                    color={ON_SURFACE_VARIANT}
-                                />
-                                <TextInput
-                                    style={[styles.input, { flex: 1 }]}
-                                    placeholder="Password"
-                                    placeholderTextColor={`${ON_SURFACE_VARIANT}99`}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={!showPass}
-                                    autoCapitalize="none"
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setShowPass(!showPass)}
-                                >
-                                    <MaterialCommunityIcons
-                                        name={
-                                            showPass
-                                                ? "eye-off-outline"
-                                                : "eye-outline"
-                                        }
-                                        size={20}
-                                        color={ON_SURFACE_VARIANT}
-                                    />
+                        <View style={styles.socialSection}>
+                            <View style={styles.dividerRow}>
+                                <View style={styles.divider} />
+                                <Text style={styles.dividerText}>Or sign up with</Text>
+                                <View style={styles.divider} />
+                            </View>
+
+                            <View style={styles.socialRow}>
+                                <TouchableOpacity style={styles.socialBtn}>
+                                    <MaterialCommunityIcons name="google" size={20} color="#4285F4" />
+                                    <Text style={styles.socialText}>Google</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.socialBtn}>
+                                    <MaterialCommunityIcons name="facebook" size={20} color="#1877F2" />
+                                    <Text style={styles.socialText}>Facebook</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
 
-                        <TouchableOpacity
-                            style={styles.signUpBtn}
-                            onPress={handleSignUp}
-                        >
-                            <Text style={styles.signUpText}>Sign Up</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.socialSection}>
-                        <View style={styles.dividerRow}>
-                            <View style={styles.divider} />
-                            <Text style={styles.dividerText}>
-                                Or sign up with
-                            </Text>
-                            <View style={styles.divider} />
-                        </View>
-                        <View style={styles.socialRow}>
-                            <TouchableOpacity style={styles.socialBtn}>
-                                <MaterialCommunityIcons
-                                    name="google"
-                                    size={20}
-                                    color={ON_SURFACE}
-                                />
-                                <Text style={styles.socialText}>Google</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.socialBtn}>
-                                <MaterialCommunityIcons
-                                    name="facebook"
-                                    size={20}
-                                    color="#1877F2"
-                                />
-                                <Text style={styles.socialText}>Facebook</Text>
+                        <View style={styles.footer}>
+                            <Text style={styles.footerText}>Already have an account?{" "}</Text>
+                            <TouchableOpacity onPress={() => navigation.goBack()}>
+                                <Text style={styles.footerLink}>Login</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
-
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>
-                            Already have an account?{" "}
-                        </Text>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Text style={styles.footerLink}>Login</Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </Animated.View>
         </View>
     );
 };
@@ -210,66 +200,69 @@ const styles = StyleSheet.create({
         backgroundColor: BG,
     },
     header: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        width: "100%",
+        overflow: "hidden",
+    },
+    headerImage: {
+        width: "100%",
+        height: "100%",
+        position: "absolute",
+    },
+    headerGradient: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        top: 0,
     },
     backBtn: {
+        position: "absolute",
+        left: 24,
         width: 40,
         height: 40,
         justifyContent: "center",
         alignItems: "center",
+        borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        zIndex: 10,
     },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-        flex: 1,
-        marginLeft: 4,
-    },
-    headerSpacer: {
-        width: 40,
-    },
-    scrollContent: {
-        padding: 16,
-        paddingBottom: 40,
-    },
-    heroSection: {
-        marginBottom: 16,
+    headerText: {
+        position: "absolute",
+        bottom: 24,
+        left: 24,
+        right: 24,
     },
     heroTitle: {
-        fontSize: 28,
-        fontWeight: "700",
+        fontSize: 30,
+        fontWeight: "800",
         color: ON_SURFACE,
-        lineHeight: 36,
+        lineHeight: 38,
     },
     heroDesc: {
-        fontSize: 14,
+        fontSize: 15,
         color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        lineHeight: 22,
         marginTop: 4,
+        maxWidth: "85%",
     },
-    heroImage: {
-        width: "100%",
-        height: 140,
-        borderRadius: 12,
-        marginBottom: 24,
+    formWrapper: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 16,
+        paddingBottom: 32,
     },
     form: {
         gap: 16,
     },
     inputGroup: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: OUTLINE_VARIANT,
-        overflow: "hidden",
-    },
-    inputRow: {
         flexDirection: "row",
         alignItems: "center",
+        backgroundColor: SURFACE_LOWEST,
+        borderWidth: 1,
+        borderColor: OUTLINE_VARIANT,
+        borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,
         gap: 12,
@@ -281,27 +274,55 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         padding: 0,
     },
+    countryCodeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    countryCode: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 2,
+        paddingRight: 12,
+    },
+    countryCodeText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: ON_SURFACE,
+    },
+    codeDivider: {
+        width: 1,
+        height: 20,
+        backgroundColor: OUTLINE_VARIANT,
+        marginRight: 12,
+    },
     signUpBtn: {
+        flexDirection: "row",
         backgroundColor: PRIMARY_CONTAINER,
         paddingVertical: 16,
-        borderRadius: 12,
+        borderRadius: 16,
         alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
         marginTop: 8,
+        shadowColor: PRIMARY_CONTAINER,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     signUpText: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: "600",
         color: "#FFF",
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        lineHeight: 24,
     },
     socialSection: {
-        marginTop: 24,
+        marginTop: 32,
     },
     dividerRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: 24,
     },
     divider: {
         flex: 1,
@@ -309,11 +330,11 @@ const styles = StyleSheet.create({
         backgroundColor: OUTLINE_VARIANT,
     },
     dividerText: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
+        color: OUTLINE,
         lineHeight: 16,
-        letterSpacing: 0.5,
+        letterSpacing: 1.5,
         textTransform: "uppercase",
         marginHorizontal: 16,
     },
@@ -326,35 +347,34 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
-        paddingVertical: 12,
+        gap: 10,
+        paddingVertical: 14,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: OUTLINE_VARIANT,
+        backgroundColor: SURFACE_LOWEST,
     },
     socialText: {
         fontSize: 14,
         fontWeight: "600",
         color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.1,
     },
     footer: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        marginTop: 24,
+        marginTop: 48,
+        marginBottom: 16,
     },
     footerText: {
-        fontSize: 14,
+        fontSize: 15,
         color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        lineHeight: 22,
     },
     footerLink: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: "600",
-        color: PRIMARY,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        color: PRIMARY_CONTAINER,
+        lineHeight: 22,
     },
 });
