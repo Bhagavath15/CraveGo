@@ -12,30 +12,37 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../types/types";
-import { foodFilters, restaurantList } from "../data/restaurantData";
+import { Restaurant, foodFilters, restaurantList } from "../data/restaurantData";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const RestaurantListScreen = () => {
+interface Props {
+  restaurants?: Restaurant[];
+}
+
+const RestaurantListScreen = ({ restaurants }: Props) => {
   const navigation = useNavigation<NavigationProp>();
+  console.log(`RestaurantListScreen.tsx 25 restaurants---->`,restaurants)
 
   const [selectedFilter, setSelectedFilter] = useState("All");
 
   const handleNavigate = (id: string) => {
+    console.log("RestaurantList - navigating with id:", JSON.stringify(id));
     navigation.navigate("RestaurantDetail", {
       restaurantId: id,
     });
   };
 
   const filteredRestaurants = useMemo(() => {
+    const source = restaurants || restaurantList;
     if (selectedFilter === "All") {
-      return restaurantList;
+      return source;
     }
 
-    return restaurantList.filter((restaurant) =>
+    return source.filter((restaurant) =>
       restaurant.category.includes(selectedFilter)
     );
-  }, [selectedFilter]);
+  }, [selectedFilter, restaurants]);
 
   return (
     <View style={styles.container}>

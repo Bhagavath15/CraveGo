@@ -17,6 +17,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
+import { signUp as signUpApi } from "../utils/api";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenRoute = RouteProp<RootStackParamList, "ProfileSetup">;
@@ -44,12 +45,29 @@ const ProfileSetupScreen = () => {
     const [phone] = useState(initialPhone);
     const [enableNotif, setEnableNotif] = useState(true);
     const [enableLocation, setEnableLocation] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: "Home" }],
-        });
+    const handleSave = async () => {
+        if (saving || !fullName.trim()) {
+            Alert.alert("Required", "Please enter your name.");
+            return;
+        }
+        setSaving(true);
+        try {
+            const data = await signUpApi(fullName.trim(), phone);
+            if (data.success) {
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: "Home" }],
+                });
+            } else {
+                Alert.alert("Error", data.message || "Registration failed");
+            }
+        } catch {
+            Alert.alert("Error", "Network error. Try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (

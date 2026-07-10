@@ -1,10 +1,13 @@
 export type RootStackParamList = {
   OnBoarding: undefined;
   Login: undefined;
+  SignUp: undefined;
+  EmailOTPVerification: { email: string };
+  ForgotPassword: undefined;
+  ForgotPasswordOTP: { email: string };
+  ResetPassword: { resetToken: string };
   Home: { screen?: string } | undefined;
-  RestaurantDetail: {
-    restaurantId: string;
-  };
+  RestaurantDetail: { restaurantId: string };
   CartCheckout: { restaurantId: string };
   OrderSuccess: { itemCount: number };
   TrackMyOrder: undefined;
@@ -22,13 +25,11 @@ export type RootStackParamList = {
     items: { id: string; name: string; quantity: number }[];
     totalPrice: number;
   };
-  SignUp: undefined;
   ProfileSetup: {
     fullName: string;
     email: string;
     phone: string;
   };
-  ForgotPassword: undefined;
   EditProfile: undefined;
   AddressBook: undefined;
   PaymentMethods: undefined;

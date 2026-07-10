@@ -1,5 +1,6 @@
-
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ImageBackground,
   ScrollView,
   StyleSheet,
@@ -12,10 +13,71 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from "@react-navigation/native";
 
 import RestaurantListScreen from "./RestaurantListScreen";
+import { getRestaurants } from "../utils/api";
+import { toImageUri } from "../utils/imageUtils";
+import { Restaurant } from "../data/restaurantData";
+import { getToken } from "../utils/authStore";
 
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        const token = await getToken();
+        console.log("HomeScreen - token exists:", !!token);
+
+        const res = await getRestaurants();
+        console.log("HomeScreen - API response:", JSON.stringify(res).slice(0, 300));
+        if (res.success && res.restaurants?.length > 0) {
+          console.log("HomeScreen - full first restaurant:", JSON.stringify(res.restaurants[0]));
+        }
+
+        if (res.success) {
+          console.log("HomeScreen - restaurants count:", res.restaurants?.length);
+          if (res.restaurants?.length > 0) {
+            console.log("HomeScreen - first restaurant image:", res.restaurants[0].image);
+            console.log("HomeScreen - first restaurantId:", res.restaurants[0].restaurantId);
+          }
+          const mapped: Restaurant[] = res.restaurants.map((r: any) => ({
+            id: r.restaurantId || r._id,
+            name: r.name,
+            image: toImageUri(r.image) || require("../assets/images/chickenBriyani.jpg"),
+            description: r.description,
+            category: r.category || [],
+            cuisines: Array.isArray(r.cuisines) ? r.cuisines.join(" • ") : r.cuisines || "",
+            address: r.address || "",
+            rating: r.rating || 0,
+            totalRatings: r.totalRatings?.toString() || "0",
+            distance: r.distance || "",
+            deliveryTime: r.deliveryTime || "",
+            priceForOne: r.priceForOne || "",
+            offer: r.offer,
+            offerDescription: r.offerDescription,
+            isVeg: r.isVeg ?? false,
+            isFavorite: r.isFavorite ?? false,
+            restaurantId: r.restaurantId || r._id,
+            menu: [],
+          }));
+          console.log("HomeScreen - mapped restaurants:", mapped.length);
+          setRestaurants(mapped);
+        } else {
+          setError(res.message || "Failed to load restaurants");
+          console.warn("HomeScreen - API error:", res.message);
+        }
+      } catch (err) {
+        console.warn("HomeScreen - fetch error:", err);
+        setError("Network error. Check server connection.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRestaurants();
+  }, []);
 
   return (
     <ScrollView
@@ -80,7 +142,18 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </ImageBackground>
 
-      <RestaurantListScreen />
+      {loading ? (
+        <ActivityIndicator size="large" color="#FF6B35" style={{ marginTop: 40 }} />
+      ) : error ? (
+        <View style={{ marginTop: 40, alignItems: "center" }}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={60} color="#CCC" />
+          <Text style={{ marginTop: 12, fontSize: 16, color: "#888", fontWeight: "600" }}>
+            {error}
+          </Text>
+        </View>
+      ) : (
+        <RestaurantListScreen restaurants={restaurants} />
+      )}
       </View>
     </ScrollView>
   );

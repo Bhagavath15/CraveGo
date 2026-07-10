@@ -1,37 +1,27 @@
-import { useEffect } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, View } from "react-native";
 
-const SplashScreen = ({ navigation }: any) => {
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            navigation.replace('OnBoarding');
-        }, 2000);
+const { width } = Dimensions.get("window");
 
-        return () => clearTimeout(timer);
-    }, []);
-
-    return (
-        <View style={styles.container}>
-            <Image
-                source={require('../../assets/images/splash_logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-            />
-        </View>
-    );
-};
+const SplashScreen = () => (
+    <View style={styles.container}>
+        <Image
+            source={require("../../assets/images/splash_logo.png")}
+            style={[styles.logo, { width: width * 0.6 }]}
+            resizeMode="contain"
+        />
+    </View>
+);
 
 export default SplashScreen;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#FFF',
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#FFF",
     },
     logo: {
-        width: 200,
-        height: 200,
+        aspectRatio: 487 / 1105,
     },
 });

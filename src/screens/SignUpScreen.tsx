@@ -1,380 +1,491 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Image,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    StatusBar,
-    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import LinearGradient from "react-native-linear-gradient";
 import { RootStackParamList } from "../types/types";
+import { registerUser } from "../utils/api";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+const C = {
+    primary: "#FF6B35",
+    primaryContainer: "#ff6b35",
+    onPrimary: "#ffffff",
+    surface: "#fcf9f8",
+    onSurface: "#1b1c1c",
+    onSurfaceVariant: "#594139",
+    surfaceContainerLowest: "#ffffff",
+    outlineVariant: "#e1bfb5",
+    outline: "#8d7168",
+};
 
-const PRIMARY = "#ab3500";
-const PRIMARY_CONTAINER = "#FF6B35";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_LOWEST = "#FFFFFF";
-const OUTLINE = "#8D7168";
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const SignUpScreen = () => {
-    const insets = useSafeAreaInsets();
-    const navigation = useNavigation<NavigationProp>();
-    const [fullName, setFullName] = useState("");
-    const [phone, setPhone] = useState("");
+    const navigation = useNavigation<Nav>();
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(30)).current;
-
-    useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 600,
-                useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 600,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, []);
-
-    const handleSignUp = () => {
-        navigation.navigate("ProfileSetup", {
-            fullName,
-            email: "",
-            phone: phone ? `+91 ${phone}` : "",
-        });
+    const handleSignUp = async () => {
+        if (!name.trim() || !email.trim() || !password) {
+            Alert.alert("Error", "All fields are required");
+            return;
+        }
+        setLoading(true);
+        try {
+            const data = await registerUser(name.trim(), email.trim(), password);
+            if (data.success) {
+                navigation.navigate("EmailOTPVerification", { email: email.trim() });
+            } else {
+                Alert.alert("Error", data.message || "Registration failed");
+            }
+        } catch (e: any) {
+            Alert.alert("Error", e?.message || "Network error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-            <View style={[styles.header, { height: Dimensions.get("window").height * 0.4 }]}>
-                <Image
-                    source={require("../assets/images/allFood.png")}
-                    resizeMode="cover"
-                    style={styles.headerImage}
-                />
-                <LinearGradient
-                    colors={["rgba(0,0,0,0.3)", "rgba(252,249,248,0.4)", BG]}
-                    locations={[0, 0.5, 1]}
-                    style={styles.headerGradient}
-                />
-
-                <TouchableOpacity
-                    style={[styles.backBtn, { top: insets.top + 8 }]}
-                    onPress={() => navigation.goBack()}
-                >
-                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFF" />
-                </TouchableOpacity>
-
-                <View style={styles.headerText}>
-                    <Text style={styles.heroTitle}>Join the CraveGo family.</Text>
-                    <Text style={styles.heroDesc}>
-                        Unlock a world of delicious local flavors delivered directly to your doorstep.
-                    </Text>
-                </View>
-            </View>
-
-            <Animated.View
-                style={[
-                    styles.formWrapper,
-                    { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-                ]}
+        <View style={{ flex: 1, backgroundColor: C.surface }}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
             >
-                <KeyboardAvoidingView
-                    style={{ flex: 1 }}
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                <ScrollView
+                    contentContainerStyle={{
+                        flexGrow: 1,
+                        justifyContent: "center",
+                        paddingHorizontal: 24,
+                        paddingVertical: 32,
+                    }}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
+                    {/* Brand Mark */}
+                    <View style={{ alignItems: "center", marginBottom: 24 }}>
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 40,
+                                lineHeight: 48,
+                                letterSpacing: -0.02,
+                                fontWeight: "800",
+                                color: C.primary,
+                            }}
+                        >
+                            CraveGo
+                        </Text>
+                        <View
+                            style={{
+                                width: 48,
+                                height: 4,
+                                backgroundColor: C.primary,
+                                borderRadius: 999,
+                                marginTop: 4,
+                            }}
+                        />
+                    </View>
+
+                    {/* Header */}
+                    <View style={{ alignItems: "center", marginBottom: 24 }}>
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 24,
+                                lineHeight: 32,
+                                fontWeight: "700",
+                                color: C.onSurface,
+                                letterSpacing: -0.3,
+                            }}
+                        >
+                            Join the Family
+                        </Text>
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 14,
+                                lineHeight: 20,
+                                color: C.onSurfaceVariant,
+                                textAlign: "center",
+                                maxWidth: 280,
+                                marginTop: 4,
+                            }}
+                        >
+                            Premium dining experiences curated just for you.
+                        </Text>
+                    </View>
+
+                    {/* Full Name */}
+                    <View style={{ marginBottom: 16 }}>
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 14,
+                                lineHeight: 20,
+                                letterSpacing: 0.1,
+                                fontWeight: "600",
+                                color: C.onSurfaceVariant,
+                                marginLeft: 4,
+                                marginBottom: 4,
+                            }}
+                        >
+                            Full Name
+                        </Text>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                backgroundColor: "rgba(255,255,255,0.9)",
+                                borderWidth: 1,
+                                borderColor: "rgba(225,191,181,0.4)",
+                                borderRadius: 12,
+                                height: 52,
+                                paddingLeft: 12,
+                                paddingRight: 16,
+                            }}
+                        >
+                            <MaterialCommunityIcons
+                                name="account-outline"
+                                size={20}
+                                color={C.outline + "99"}
+                            />
+                            <TextInput
+                                style={{
+                                    flex: 1,
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 14,
+                                    lineHeight: 20,
+                                    color: C.onSurface,
+                                    marginLeft: 8,
+                                    padding: 0,
+                                }}
+                                placeholder="Arjun Sharma"
+                                placeholderTextColor={C.outline + "66"}
+                                value={name}
+                                onChangeText={setName}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Email */}
+                    <View style={{ marginBottom: 16 }}>
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 14,
+                                lineHeight: 20,
+                                letterSpacing: 0.1,
+                                fontWeight: "600",
+                                color: C.onSurfaceVariant,
+                                marginLeft: 4,
+                                marginBottom: 4,
+                            }}
+                        >
+                            Email Address
+                        </Text>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                backgroundColor: "rgba(255,255,255,0.9)",
+                                borderWidth: 1,
+                                borderColor: "rgba(225,191,181,0.4)",
+                                borderRadius: 12,
+                                height: 52,
+                                paddingLeft: 12,
+                                paddingRight: 16,
+                            }}
+                        >
+                            <MaterialCommunityIcons
+                                name="email"
+                                size={20}
+                                color={C.outline + "99"}
+                            />
+                            <TextInput
+                                style={{
+                                    flex: 1,
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 14,
+                                    lineHeight: 20,
+                                    color: C.onSurface,
+                                    marginLeft: 12,
+                                    padding: 0,
+                                }}
+                                placeholder="arjun@example.com"
+                                placeholderTextColor={C.outline + "66"}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                value={email}
+                                onChangeText={setEmail}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Password */}
+                    <View style={{ marginBottom: 16 }}>
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 14,
+                                lineHeight: 20,
+                                letterSpacing: 0.1,
+                                fontWeight: "600",
+                                color: C.onSurfaceVariant,
+                                marginLeft: 4,
+                                marginBottom: 4,
+                            }}
+                        >
+                            Password
+                        </Text>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                backgroundColor: "rgba(255,255,255,0.9)",
+                                borderWidth: 1,
+                                borderColor: "rgba(225,191,181,0.4)",
+                                borderRadius: 12,
+                                height: 52,
+                                paddingLeft: 12,
+                                paddingRight: 12,
+                            }}
+                        >
+                            <MaterialCommunityIcons
+                                name="lock"
+                                size={20}
+                                color={C.outline + "99"}
+                            />
+                            <TextInput
+                                style={{
+                                    flex: 1,
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 14,
+                                    lineHeight: 20,
+                                    color: C.onSurface,
+                                    marginLeft: 12,
+                                    padding: 0,
+                                }}
+                                placeholder="••••••••"
+                                placeholderTextColor={C.outline + "66"}
+                                secureTextEntry={!showPassword}
+                                value={password}
+                                onChangeText={setPassword}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                            >
+                                <MaterialCommunityIcons
+                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                    size={20}
+                                    color={C.outline + "99"}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Sign Up Button */}
+                    <View style={{ paddingTop: 4 }}>
+                        <TouchableOpacity
+                            activeOpacity={0.98}
+                            disabled={loading}
+                            onPress={handleSignUp}
+                            style={[
+                                {
+                                    flexDirection: "row",
+                                    height: 52,
+                                    borderRadius: 12,
+                                    backgroundColor: C.primaryContainer,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    shadowColor: C.primaryContainer,
+                                    shadowOffset: { width: 0, height: 12 },
+                                    shadowOpacity: 0.25,
+                                    shadowRadius: 24,
+                                    elevation: 8,
+                                },
+                                loading && { opacity: 0.5 },
+                            ]}
+                        >
+                            <Text
+                                style={{
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 20,
+                                    lineHeight: 28,
+                                    fontWeight: "600",
+                                    color: C.onPrimary,
+                                }}
+                            >
+                                {loading ? "Creating account..." : "Sign Up"}
+                            </Text>
+                            <MaterialCommunityIcons
+                                name="arrow-right"
+                                size={20}
+                                color={C.onPrimary}
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Divider */}
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingVertical: 32,
+                        }}
                     >
-                        <View style={styles.form}>
-                            <View style={styles.inputGroup}>
-                                <MaterialCommunityIcons
-                                    name="account-outline"
-                                    size={20}
-                                    color={OUTLINE_VARIANT}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Full Name"
-                                    placeholderTextColor={`${OUTLINE}99`}
-                                    value={fullName}
-                                    onChangeText={setFullName}
-                                />
-                            </View>
+                        <View
+                            style={{
+                                flex: 1,
+                                borderTopWidth: 1,
+                                borderColor: C.outlineVariant,
+                                opacity: 0.3,
+                            }}
+                        />
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 11,
+                                lineHeight: 16,
+                                letterSpacing: 1.7,
+                                fontWeight: "600",
+                                color: C.outline,
+                                textTransform: "uppercase",
+                                marginHorizontal: 16,
+                                opacity: 0.6,
+                            }}
+                        >
+                            Or continue with
+                        </Text>
+                        <View
+                            style={{
+                                flex: 1,
+                                borderTopWidth: 1,
+                                borderColor: C.outlineVariant,
+                                opacity: 0.3,
+                            }}
+                        />
+                    </View>
 
-                            <View style={styles.inputGroup}>
-                                <MaterialCommunityIcons
-                                    name="phone"
-                                    size={20}
-                                    color={OUTLINE_VARIANT}
-                                />
-                                <View style={styles.countryCodeRow}>
-                                    <TouchableOpacity style={styles.countryCode}>
-                                        <Text style={styles.countryCodeText}>+91</Text>
-                                        <MaterialCommunityIcons
-                                            name="chevron-down"
-                                            size={16}
-                                            color={OUTLINE}
-                                        />
-                                    </TouchableOpacity>
-                                    <View style={styles.codeDivider} />
-                                </View>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Phone Number"
-                                    placeholderTextColor={`${OUTLINE}99`}
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                    keyboardType="phone-pad"
-                                    maxLength={10}
-                                />
-                            </View>
+                    {/* Social Buttons */}
+                    <View style={{ flexDirection: "row", gap: 16 }}>
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                flexDirection: "row",
+                                height: 52,
+                                borderWidth: 1,
+                                borderColor: C.outlineVariant,
+                                opacity: 0.3,
+                                borderRadius: 12,
+                                backgroundColor: "rgba(255,255,255,0.5)",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: 8,
+                            }}
+                        >
+                            <MaterialCommunityIcons
+                                name="google"
+                                size={20}
+                                color={C.onSurface}
+                            />
+                            <Text
+                                style={{
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 14,
+                                    lineHeight: 20,
+                                    letterSpacing: 0.1,
+                                    fontWeight: "600",
+                                    color: C.onSurface,
+                                }}
+                            >
+                                Google
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                flexDirection: "row",
+                                height: 52,
+                                borderWidth: 1,
+                                borderColor: C.outlineVariant,
+                                opacity: 0.3,
+                                borderRadius: 12,
+                                backgroundColor: "rgba(255,255,255,0.5)",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: 8,
+                            }}
+                        >
+                            <MaterialCommunityIcons
+                                name="facebook"
+                                size={20}
+                                color="#1877F2"
+                            />
+                            <Text
+                                style={{
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 14,
+                                    lineHeight: 20,
+                                    letterSpacing: 0.1,
+                                    fontWeight: "600",
+                                    color: C.onSurface,
+                                }}
+                            >
+                                Facebook
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
-                            <TouchableOpacity style={styles.signUpBtn} activeOpacity={0.95} onPress={handleSignUp}>
-                                <Text style={styles.signUpText}>Sign Up</Text>
-                                <MaterialCommunityIcons name="arrow-right" size={20} color="#FFF" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.socialSection}>
-                            <View style={styles.dividerRow}>
-                                <View style={styles.divider} />
-                                <Text style={styles.dividerText}>Or sign up with</Text>
-                                <View style={styles.divider} />
-                            </View>
-
-                            <View style={styles.socialRow}>
-                                <TouchableOpacity style={styles.socialBtn}>
-                                    <MaterialCommunityIcons name="google" size={20} color="#4285F4" />
-                                    <Text style={styles.socialText}>Google</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.socialBtn}>
-                                    <MaterialCommunityIcons name="facebook" size={20} color="#1877F2" />
-                                    <Text style={styles.socialText}>Facebook</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        <View style={styles.footer}>
-                            <Text style={styles.footerText}>Already have an account?{" "}</Text>
-                            <TouchableOpacity onPress={() => navigation.goBack()}>
-                                <Text style={styles.footerLink}>Login</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </ScrollView>
-                </KeyboardAvoidingView>
-            </Animated.View>
+                    {/* Footer */}
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            marginTop: 24,
+                        }}
+                    >
+                        <Text
+                            style={{
+                                fontFamily: "Plus Jakarta Sans",
+                                fontSize: 14,
+                                lineHeight: 20,
+                                color: C.onSurfaceVariant,
+                            }}
+                        >
+                            Already have an account?{" "}
+                        </Text>
+                        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                            <Text
+                                style={{
+                                    fontFamily: "Plus Jakarta Sans",
+                                    fontSize: 14,
+                                    lineHeight: 20,
+                                    fontWeight: "700",
+                                    color: C.primaryContainer,
+                                    textDecorationLine: "underline",
+                                    textDecorationColor: C.primaryContainer + "4D",
+                                }}
+                            >
+                                Login
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </View>
     );
 };
 
 export default SignUpScreen;
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: BG,
-    },
-    header: {
-        width: "100%",
-        overflow: "hidden",
-    },
-    headerImage: {
-        width: "100%",
-        height: "100%",
-        position: "absolute",
-    },
-    headerGradient: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        top: 0,
-    },
-    backBtn: {
-        position: "absolute",
-        left: 24,
-        width: 40,
-        height: 40,
-        justifyContent: "center",
-        alignItems: "center",
-        borderRadius: 20,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        zIndex: 10,
-    },
-    headerText: {
-        position: "absolute",
-        bottom: 24,
-        left: 24,
-        right: 24,
-    },
-    heroTitle: {
-        fontSize: 30,
-        fontWeight: "800",
-        color: ON_SURFACE,
-        lineHeight: 38,
-    },
-    heroDesc: {
-        fontSize: 15,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 22,
-        marginTop: 4,
-        maxWidth: "85%",
-    },
-    formWrapper: {
-        flex: 1,
-    },
-    scrollContent: {
-        paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: 32,
-    },
-    form: {
-        gap: 16,
-    },
-    inputGroup: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: SURFACE_LOWEST,
-        borderWidth: 1,
-        borderColor: OUTLINE_VARIANT,
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-        gap: 12,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: ON_SURFACE,
-        lineHeight: 24,
-        padding: 0,
-    },
-    countryCodeRow: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    countryCode: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 2,
-        paddingRight: 12,
-    },
-    countryCodeText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
-    },
-    codeDivider: {
-        width: 1,
-        height: 20,
-        backgroundColor: OUTLINE_VARIANT,
-        marginRight: 12,
-    },
-    signUpBtn: {
-        flexDirection: "row",
-        backgroundColor: PRIMARY_CONTAINER,
-        paddingVertical: 16,
-        borderRadius: 16,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        marginTop: 8,
-        shadowColor: PRIMARY_CONTAINER,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
-    },
-    signUpText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#FFF",
-        lineHeight: 24,
-    },
-    socialSection: {
-        marginTop: 32,
-    },
-    dividerRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 24,
-    },
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: OUTLINE_VARIANT,
-    },
-    dividerText: {
-        fontSize: 10,
-        fontWeight: "500",
-        color: OUTLINE,
-        lineHeight: 16,
-        letterSpacing: 1.5,
-        textTransform: "uppercase",
-        marginHorizontal: 16,
-    },
-    socialRow: {
-        flexDirection: "row",
-        gap: 16,
-    },
-    socialBtn: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        paddingVertical: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: OUTLINE_VARIANT,
-        backgroundColor: SURFACE_LOWEST,
-    },
-    socialText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-    },
-    footer: {
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        marginTop: 48,
-        marginBottom: 16,
-    },
-    footerText: {
-        fontSize: 15,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 22,
-    },
-    footerLink: {
-        fontSize: 15,
-        fontWeight: "600",
-        color: PRIMARY_CONTAINER,
-        lineHeight: 22,
-    },
-});

@@ -1,9 +1,13 @@
+import { useEffect, useState } from "react";
+import { View, Image, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import SplashScreen from "../screens/Splash/SplashScreen";
 import OnBoardingScreen from "../screens/OnBoardingScreen";
 import LoginScreen from "../screens/LoginScreen";
+import EmailOTPVerificationScreen from "../screens/EmailOTPVerificationScreen";
+import ForgotPasswordOTPScreen from "../screens/ForgotPasswordOTPScreen";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import RestaurantDetailScreen from "../screens/RestaurantDetailScreen";
 import CheckoutScreen from "../screens/CheckoutScreen";
 import OrderSuccessScreen from "../screens/OrderSuccessScreen";
@@ -20,143 +24,71 @@ import PaymentMethodsScreen from "../screens/PaymentMethodsScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import HelpSupportScreen from "../screens/HelpSupportScreen";
+import { getToken } from "../utils/authStore";
 
 const Stack = createNativeStackNavigator();
 
 const RootNavigator = () => {
+    const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        const loadToken = async () => {
+            const value = await getToken();
+            setToken(value);
+            setLoading(false);
+        };
+        loadToken();
+    }, []);
+
+    if (loading) {
+        return (
+            <View style={styles.splash}>
+                <Image source={require("../assets/images/splash_logo.png")} style={styles.logo} resizeMode="contain" />
+            </View>
+        );
+    }
+
     return (
         <NavigationContainer>
-            <Stack.Navigator
-                initialRouteName="OnBoarding"
-                screenOptions={{ headerShown: false }}
-            >
-                <Stack.Screen
-                    name="OnBoarding"
-                    component={OnBoardingScreen}
-                />
-                <Stack.Screen
-                    name="Login"
-                    component={LoginScreen}
-                />
-                <Stack.Screen
-                    name="Home"
-                    component={BottomTabNavigationBar}
-                />
-                <Stack.Screen
-                    name="RestaurantDetail"
-                    component={RestaurantDetailScreen}
-                    options={{ animation: "slide_from_right" }}
-                />
-                <Stack.Screen
-                    name="CartCheckout"
-                    component={CheckoutScreen}
-                    options={{ animation: "slide_from_bottom" }}
-                />
-                <Stack.Screen
-                    name="OrderSuccess"
-                    component={OrderSuccessScreen}
-                    options={{ animation: "fade" }}
-                />
-                <Stack.Screen
-                    name='TrackMyOrder'
-                    component={TrackMyOrder}
-                    options={{
-                        animation: "slide_from_bottom",
-                        headerShown: true,
-                        title: 'Track My Order'
-                    }}
-                />
-                <Stack.Screen
-                    name="DeliveryCompleted"
-                    component={DeliveryCompletedScreen}
-                    options={{
-                        animation: "slide_from_bottom",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="ReviewRating"
-                    component={ReviewRatingScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="SignUp"
-                    component={SignUpScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="ProfileSetup"
-                    component={ProfileSetupScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="ForgotPassword"
-                    component={ForgotPasswordScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="EditProfile"
-                    component={EditProfileScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="AddressBook"
-                    component={AddressBookScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="PaymentMethods"
-                    component={PaymentMethodsScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="Favorites"
-                    component={FavoritesScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="Notifications"
-                    component={NotificationsScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="HelpSupport"
-                    component={HelpSupportScreen}
-                    options={{
-                        animation: "slide_from_right",
-                        headerShown: false,
-                    }}
-                />
+            <Stack.Navigator initialRouteName={token ? "Home" : "OnBoarding"} screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="Home" component={BottomTabNavigationBar} />
+                <Stack.Screen name="OnBoarding" component={OnBoardingScreen} />
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="SignUp" component={SignUpScreen} />
+                <Stack.Screen name="EmailOTPVerification" component={EmailOTPVerificationScreen} options={{ animation: "slide_from_right" }} />
+                <Stack.Screen name="ForgotPasswordOTP" component={ForgotPasswordOTPScreen} options={{ animation: "slide_from_right" }} />
+                <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ animation: "slide_from_right" }} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                <Stack.Screen name="RestaurantDetail" component={RestaurantDetailScreen} options={{ animation: "slide_from_right" }} />
+                <Stack.Screen name="CartCheckout" component={CheckoutScreen} options={{ animation: "slide_from_bottom" }} />
+                <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ animation: "fade" }} />
+                <Stack.Screen name="TrackMyOrder" component={TrackMyOrder} options={{ animation: "slide_from_bottom", headerShown: true, title: "Track My Order" }} />
+                <Stack.Screen name="DeliveryCompleted" component={DeliveryCompletedScreen} options={{ animation: "slide_from_bottom", headerShown: false }} />
+                <Stack.Screen name="ReviewRating" component={ReviewRatingScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="AddressBook" component={AddressBookScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ animation: "slide_from_right", headerShown: false }} />
             </Stack.Navigator>
         </NavigationContainer>
-    )
-}
+    );
+};
 
-export default RootNavigator    
+export default RootNavigator;
+
+const styles = StyleSheet.create({
+    splash: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#FFF",
+    },
+    logo: {
+        width: "60%",
+        aspectRatio: 487 / 1105,
+    },
+});

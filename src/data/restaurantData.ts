@@ -41,6 +41,7 @@ export interface Restaurant {
     isVeg: boolean;
     isFavorite: boolean;
     menu: MenuCategory[];
+    restaurantId?: string;
 }
 
 export const foodFilters: FoodFilter[] = [
