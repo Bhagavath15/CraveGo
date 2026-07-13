@@ -7,7 +7,7 @@ export type RootStackParamList = {
   ForgotPasswordOTP: { email: string };
   ResetPassword: { resetToken: string };
   Home: { screen?: string } | undefined;
-  RestaurantDetail: { restaurantId: string };
+  RestaurantDetail: { restaurantId: string; editItemId?: string };
   CartCheckout: { restaurantId: string };
   OrderSuccess: { itemCount: number };
   TrackMyOrder: undefined;

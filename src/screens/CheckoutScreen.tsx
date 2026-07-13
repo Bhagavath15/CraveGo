@@ -17,7 +17,6 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { useCart } from "../context/CartContext";
-import { restaurantList } from "../data/restaurantData";
 
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
@@ -38,31 +37,17 @@ const CheckoutScreen = () => {
     const cart = useCart();
     const [selectedPayment, setSelectedPayment] = useState("online");
 
-    const restaurant = restaurantList.find((r) => r.id === restaurantId);
     const deliveryFee = 0;
     const taxesAndCharges = 0;
     const grandTotal = cart.totalAmount + deliveryFee + taxesAndCharges;
 
     const handlePlaceOrder = () => {
-        navigation.navigate("OrderSuccess", { itemCount: cart.itemCount });
+        const count = cart.cartItems.reduce((s, i) => s + i.quantity, 0);
+        navigation.navigate("OrderSuccess", { itemCount: count });
     };
 
-    const groupedItems = cart.cartItems.reduce<{ item: typeof cart.cartItems[0]; quantity: number }[]>((acc, item) => {
-        const existing = acc.find((g) => g.item.id === item.id);
-        if (existing) {
-            existing.quantity++;
-        } else {
-            acc.push({ item, quantity: 1 });
-        }
-        return acc;
-    }, []);
-
     const handleRemove = (itemId: string) => {
-        for (let i = cart.cartItems.length - 1; i >= 0; i--) {
-            if (cart.cartItems[i].id === itemId) {
-                cart.removeItem(i);
-            }
-        }
+        cart.removeItem(itemId);
     };
 
     return (
@@ -104,13 +89,13 @@ const CheckoutScreen = () => {
                         </Text>
                     </View>
 
-                    {groupedItems.map(({ item, quantity }) => (
+                    {cart.cartItems.map((item) => (
                         <View
                             key={item.id}
                             style={styles.cartItemCard}
                         >
                             <Image
-                                source={item.image}
+                                source={typeof item.image === "string" ? { uri: item.image } : item.image}
                                 style={styles.cartItemImage}
                             />
                             <View style={styles.cartItemContent}>
@@ -122,11 +107,11 @@ const CheckoutScreen = () => {
                                         {item.name}
                                     </Text>
                                     <Text style={styles.cartItemPrice}>
-                                        ₹{item.price * quantity}
+                                        ₹{item.price * item.quantity}
                                     </Text>
                                 </View>
                                 <Text style={styles.cartItemQuantity}>
-                                    Quantity: {quantity}
+                                    Quantity: {item.quantity}
                                 </Text>
                                 <View style={styles.cartItemActions}>
                                     <TouchableOpacity
@@ -134,7 +119,7 @@ const CheckoutScreen = () => {
                                         onPress={() => {
                                             navigation.navigate(
                                                 "RestaurantDetail",
-                                                { restaurantId }
+                                                { restaurantId: cart.restaurantId || restaurantId, editItemId: item.id }
                                             );
                                         }}
                                     >
@@ -174,7 +159,7 @@ const CheckoutScreen = () => {
                     <View style={styles.addressCard}>
                         <Text style={styles.addressLabel}>Home</Text>
                         <Text style={styles.addressText}>
-                            {restaurant?.address || "No address available"}
+                            {cart.restaurantName ? `${cart.restaurantName} - Default Address` : "No address available"}
                         </Text>
                     </View>
                 </View>

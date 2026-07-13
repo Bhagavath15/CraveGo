@@ -1,5 +1,5 @@
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Image,
     StyleSheet,
@@ -28,9 +28,12 @@ const isMultiSelect = (group: CustomizationGroup) =>
 const FoodCustomizationModal = ({ visible, selectedItem, customizationGroups, onAddToCart, onClose }: Props) => {
     const [selections, setSelections] = useState<Record<string, string[]>>({});
 
+    useEffect(() => {
+        setSelections({});
+    }, [selectedItem]);
+
     const handleSheetChanges = (index: number) => {
         if (index === -1) {
-            setSelections({});
             onClose();
         }
     };

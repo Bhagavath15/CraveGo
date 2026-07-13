@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     Animated,
     Dimensions,
     Image,
@@ -10,14 +11,15 @@ import {
 } from "react-native";
 import {
     RouteProp,
+    useFocusEffect,
     useNavigation,
     useRoute,
 } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList, CustomizationGroup } from "../types/types";
-import { MenuItem, MenuCategory, restaurantList, getItemCustomizations } from "../data/restaurantData";
-import { getRestaurants, getRestaurantMenu } from "../utils/api";
+import { MenuItem, MenuCategory } from "../data/restaurantData";
+import { getRestaurants, getRestaurantMenu } from "../api/restaurant";
 import { toImageUri } from "../utils/imageUtils";
 import { useCart } from "../context/CartContext";
 import {
@@ -58,7 +60,7 @@ const mapApiMenu = (apiMenu: any[]): MenuCategory[] => {
         id: cat.title || `cat-${index}`,
         title: cat.title || "",
         items: (cat.items || []).map((item: any) => ({
-            id: item._id || item.id || "",
+            id: item.itemId || item.id || item._id || "",
             name: item.name || "",
             description: item.description || "",
             price: item.price || 0,
@@ -66,6 +68,7 @@ const mapApiMenu = (apiMenu: any[]): MenuCategory[] => {
             isVeg: item.isVeg ?? false,
             isBestseller: item.isBestseller ?? false,
             customizable: item.customizable ?? false,
+            customizations: item.customizations || [],
         })),
     }));
 };
@@ -73,11 +76,10 @@ const mapApiMenu = (apiMenu: any[]): MenuCategory[] => {
 const RestaurantDetailScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
-    const { restaurantId } = route.params;
-    console.log("RestaurantDetail - route params restaurantId:", JSON.stringify(restaurantId));
+    const { restaurantId, editItemId } = route.params;
 
     const scrollY = useRef(new Animated.Value(0)).current;
-    const [selectedCategory, setSelectedCategory] = useState("Recommended");
+    const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
     const [customizationGroups, setCustomizationGroups] = useState<CustomizationGroup[]>([]);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -85,26 +87,30 @@ const RestaurantDetailScreen = () => {
     const [menu, setMenu] = useState<MenuCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState("");
+    const [menuY, setMenuY] = useState(0);
+    const [, forceUpdate] = useState(0);
+    const scrollRef = useRef<any>(null);
     const cart = useCart();
+
+    useFocusEffect(
+        useCallback(() => {
+            forceUpdate((n) => n + 1);
+        }, [])
+    );
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                console.log("RestaurantDetail - fetching for ID:", restaurantId);
-
                 const [restRes, menuRes] = await Promise.all([
                     getRestaurants(),
                     getRestaurantMenu(restaurantId),
                 ]);
-
-                console.log(`RestaurantDetailScreen.tsx 100 menuRes---->`,menuRes)
 
                 if (restRes.success) {
                     const matched = restRes.restaurants.find(
                         (x: any) => String(x.restaurantId) === String(restaurantId)
                     );
                     if (matched) {
-                        console.log("RestaurantDetail - matched:", matched.name);
                         setRestaurant({
                             id: matched.restaurantId,
                             name: matched.name,
@@ -126,19 +132,28 @@ const RestaurantDetailScreen = () => {
                 }
 
                 if (menuRes.success && menuRes.data?.menu) {
-                    console.log("RestaurantDetail - menu categories:", menuRes.data.menu.length);
-                    console.log("RestaurantDetail - menu first category:", JSON.stringify(menuRes.data.menu[0]).slice(0, 500));
-                    if (menuRes.data.menu[0]?.items?.length > 0) {
-                        console.log("RestaurantDetail - first item:", JSON.stringify(menuRes.data.menu[0].items[0]));
+                    const mapped = mapApiMenu(menuRes.data.menu);
+                    setMenu(mapped);
+                    if (mapped.length > 0) {
+                        if (editItemId) {
+                            const editItemName = cart.items.find((ci) => ci.id === editItemId)?.name;
+                            const found = mapped.find((c) =>
+                                c.items.some(
+                                    (i) => i.id === editItemId || (editItemName && i.name === editItemName)
+                                )
+                            );
+                            setSelectedCategory(found?.title || mapped[0].title);
+                        } else {
+                            setSelectedCategory(mapped[0].title);
+                        }
                     }
-                    setMenu(mapApiMenu(menuRes.data.menu));
                 } else if (!menuRes.success) {
-                    console.warn("RestaurantDetail - menu API failed:", JSON.stringify(menuRes));
+                    setFetchError("Failed to load menu");
                 } else {
-                    console.warn("RestaurantDetail - menu data missing:", JSON.stringify(menuRes).slice(0, 500));
+                    setFetchError("Menu data unavailable");
                 }
             } catch (err) {
-                console.warn("Failed to fetch restaurant data:", err);
+                setFetchError("Failed to load restaurant");
             } finally {
                 setLoading(false);
             }
@@ -147,26 +162,46 @@ const RestaurantDetailScreen = () => {
     }, [restaurantId]);
 
     useEffect(() => {
-        if (selectedItem?.customizable) {
-            const localRest = restaurantList.find(
-                r => r.name.toLowerCase() === restaurant?.name?.toLowerCase()
+        if (cart.items.length > 0 && cart.restaurantId && cart.restaurantId !== restaurantId) {
+            Alert.alert(
+                "Clear Cart?",
+                `Your cart has items from another restaurant. Start fresh with ${restaurant?.name || "this restaurant"}?`,
+                [
+                    { text: "Keep Cart", style: "cancel" },
+                    { text: "Clear Cart", onPress: () => cart.clearCart() },
+                ]
             );
-            if (localRest) {
-                const localItem = localRest.menu
-                    .flatMap(c => c.items)
-                    .find(i => i.name.toLowerCase() === selectedItem.name.toLowerCase());
-                if (localItem) {
-                    setCustomizationGroups(getItemCustomizations(localRest.id, localItem.id));
-                    return;
-                }
-            }
-            setCustomizationGroups(getItemCustomizations(restaurantId, selectedItem.id));
         }
-    }, [selectedItem, restaurantId, restaurant]);
+    }, [restaurantId, cart.restaurantId, cart.items.length]);
 
     useEffect(() => {
-        return () => cart.clearCart();
-    }, []);
+        if (selectedItem?.customizable) {
+            setCustomizationGroups(selectedItem.customizations ?? []);
+        }
+    }, [selectedItem]);
+
+    useEffect(() => {
+        if (editItemId && menu.length > 0) {
+            const editItemName = cart.items.find((ci) => ci.id === editItemId)?.name;
+            const found = menu.find((c) =>
+                c.items.some(
+                    (i) => i.id === editItemId || (editItemName && i.name === editItemName)
+                )
+            );
+            if (found) {
+                setSelectedCategory(found.title);
+            }
+        }
+    }, [editItemId, menu, cart.items]);
+
+    useEffect(() => {
+        if (!loading && editItemId && menuY > 0 && scrollRef.current) {
+            const timer = setTimeout(() => {
+                scrollRef.current?.scrollTo({ y: Math.max(0, menuY - 60), animated: true });
+            }, 400);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, editItemId, menuY]);
 
     const handleAdd = (item: MenuItem) => {
         if (item.customizable) {
@@ -195,11 +230,17 @@ const RestaurantDetailScreen = () => {
         selections: Record<string, string[]>,
         totalPrice: number
     ) => {
+        const customization = customizationGroups
+            .flatMap((g) => (selections[g.id] || []).map((oid) => {
+                const opt = g.options.find((o) => o.id === oid);
+                return opt ? { name: opt.name, price: opt.price } : null;
+            }))
+            .filter(Boolean) as { name: string; price: number }[];
         const customizedItem: MenuItem = {
             ...item,
             price: totalPrice,
         };
-        cart.addToCart(customizedItem, restaurantId, restaurant!.name);
+        cart.addToCart(customizedItem, restaurantId, restaurant!.name, customization);
         setSelectedItem(null);
         setCustomizationGroups([]);
         setIsSheetOpen(false);
@@ -212,7 +253,6 @@ const RestaurantDetailScreen = () => {
     }, []);
 
     if (loading) {
-        console.log("RestaurantDetail - RENDER: loading=true");
         return (
             <View style={[styles.container, styles.center]}>
                 <ActivityIndicator size="large" color="#FF6B35" />
@@ -221,17 +261,14 @@ const RestaurantDetailScreen = () => {
     }
 
     if (!restaurant) {
-        console.log("RestaurantDetail - RENDER: restaurant=null, fetchError:", fetchError);
         return (
             <View style={styles.center}>
-                <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 8 }}>Restaurant not found</Text>
-                {fetchError ? <Text style={{ color: "#888", textAlign: "center", paddingHorizontal: 40 }}>{fetchError}</Text> : null}
-                <Text style={{ color: "#aaa", marginTop: 16, fontSize: 12 }}>ID: {restaurantId?.slice(0, 12)}...</Text>
+                <Text style={styles.errorTitle}>Restaurant not found</Text>
+                {fetchError ? <Text style={styles.errorDesc}>{fetchError}</Text> : null}
+                <Text style={styles.errorId}>ID: {restaurantId?.slice(0, 12)}...</Text>
             </View>
         );
     }
-
-    console.log("RestaurantDetail - RENDER: showing details for", restaurant);
 
     const handleNavigateToCart = () => {
         navigation.navigate("CartCheckout", { restaurantId });
@@ -252,6 +289,7 @@ const RestaurantDetailScreen = () => {
             )}
 
             <Animated.ScrollView
+                ref={scrollRef}
                 onScroll={Animated.event(
                     [
                         {
@@ -292,7 +330,10 @@ const RestaurantDetailScreen = () => {
                     />
                 )}
 
-                <View style={styles.menuContainer}>
+                <View
+                    style={styles.menuContainer}
+                    onLayout={(e) => { if (editItemId) setMenuY(e.nativeEvent.layout.y); }}
+                >
                     {menu
                         .filter(
                             (cat) => cat.title === selectedCategory
@@ -308,7 +349,7 @@ const RestaurantDetailScreen = () => {
                                         <MenuItemCard
                                             key={item.id}
                                             item={item}
-                                            quantity={cart.getItemQuantity(item.id)}
+                                            quantity={cart.getItemQuantity(item.id, item.name)}
                                             onAdd={handleAdd}
                                             onIncrement={handleIncrement}
                                             onDecrement={handleDecrement}
@@ -320,11 +361,13 @@ const RestaurantDetailScreen = () => {
                 </View>
             </Animated.ScrollView>
 
-            <FloatingCart
-                itemCount={cart.itemCount}
-                restaurantName={restaurant.name}
-                onViewCart={handleNavigateToCart}
-            />
+            {(!cart.restaurantId || cart.restaurantId === restaurantId) && (
+                <FloatingCart
+                    itemCount={cart.itemCount}
+                    restaurantName={restaurant.name}
+                    onViewCart={handleNavigateToCart}
+                />
+            )}
             <FoodCustomizationModal
                 visible={isSheetOpen}
                 selectedItem={selectedItem}
@@ -348,6 +391,21 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+    },
+    errorTitle: {
+        fontSize: 16,
+        fontWeight: "600",
+        marginBottom: 8,
+    },
+    errorDesc: {
+        color: "#888",
+        textAlign: "center",
+        paddingHorizontal: 40,
+    },
+    errorId: {
+        color: "#aaa",
+        marginTop: 16,
+        fontSize: 12,
     },
     heroContainer: {
         height: HERO_HEIGHT,

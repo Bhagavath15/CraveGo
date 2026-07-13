@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     Alert,
-    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -16,17 +15,21 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
-import { resetPassword } from "../utils/api";
+import { resetPassword } from "../api/auth";
 
-const COLORS = {
+const C = {
     primary: "#FF6B35",
     primaryContainer: "#ff6b35",
-    primaryFixed: "#ffdbd0",
+    onPrimary: "#ffffff",
     surface: "#fcf9f8",
     onSurface: "#1b1c1c",
     onSurfaceVariant: "#594139",
     surfaceContainerLowest: "#ffffff",
+    outline: "#8d7168",
     outlineVariant: "#e1bfb5",
+    surfaceContainerLow: "#f6f3f2",
+    surfaceContainerHighest: "#e5e2e1",
+    tertiary: "#785900",
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -40,8 +43,11 @@ const ResetPasswordScreen = () => {
 
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const confirmRef = useRef<TextInput>(null);
 
     const handleReset = async () => {
         if (!newPassword || !confirmPassword) {
@@ -75,16 +81,26 @@ const ResetPasswordScreen = () => {
 
     return (
         <View style={styles.root}>
-            <ImageBackground
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuC_2CLb1FsgjC47qxV-BX8Nm6iVFOIj48BCEjSgD6diWPjvy0DqOX1SB5juW5GaqUwdXPf98hDNqiy67vzPoTBsJQQRIUkxzVqCqz5ZF7qiQ8clS1YYewnMCHlEBFPbAMW2sGqoXAh0bRR7PGu8TqYFQWh_lHzKvUfMljFmSJ8P-Bz7Ml-2vUBrVuYsqf-Y5ST9bGIDZORuAMMvPB90oLOfA5B49dIrldVvpO_q4rSNhgwKu_RxxQLzj-NI" }}
-                style={styles.headerBg}
-            >
-                <View style={styles.headerOverlay} />
-            </ImageBackground>
+            {/* Ambient blurs */}
+            <View style={styles.blobTop} />
+            <View style={styles.blobBottom} />
+
             <View style={[styles.safeWrap, { paddingTop: insets.top }]}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={COLORS.onSurface} />
-                </TouchableOpacity>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={styles.backBtn}
+                    >
+                        <MaterialCommunityIcons
+                            name="arrow-left"
+                            size={24}
+                            color={C.onSurfaceVariant}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.logo}>CraveGo</Text>
+                    <View style={{ width: 40 }} />
+                </View>
 
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -94,64 +110,98 @@ const ResetPasswordScreen = () => {
                         contentContainerStyle={styles.scrollContent}
                         keyboardShouldPersistTaps="handled"
                     >
-                        <View style={styles.glassPanel}>
-                            <View style={styles.iconCircle}>
-                                <MaterialCommunityIcons
-                                    name="lock-reset"
-                                    size={32}
-                                    color={COLORS.primary}
-                                />
-                            </View>
-
-                            <Text style={styles.title}>Reset Password</Text>
+                        {/* Title section */}
+                        <View style={styles.titleSection}>
+                            <Text style={styles.title}>Create New Password</Text>
                             <Text style={styles.subtitle}>
-                                Enter your new password
+                                Your new password must be different from previous ones.
                             </Text>
+                        </View>
 
+                        {/* New Password */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>New Password</Text>
                             <View style={styles.inputWrapper}>
+                                <MaterialCommunityIcons
+                                    name="lock"
+                                    size={20}
+                                    color={C.outline}
+                                />
                                 <TextInput
+                                    ref={(ref) => {
+                                        // first field ref not needed beyond focus
+                                    }}
                                     style={styles.input}
-                                    placeholder="New Password"
-                                    placeholderTextColor={COLORS.onSurfaceVariant}
-                                    secureTextEntry={!showPassword}
+                                    placeholder="••••••••"
+                                    placeholderTextColor={C.outline}
+                                    secureTextEntry={!showNew}
                                     value={newPassword}
                                     onChangeText={setNewPassword}
+                                    returnKeyType="next"
+                                    onSubmitEditing={() => confirmRef.current?.focus()}
                                 />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                <TouchableOpacity onPress={() => setShowNew(!showNew)}>
                                     <MaterialCommunityIcons
-                                        name={showPassword ? "visibility-off" : "visibility"}
-                                        size={22}
-                                        color={COLORS.onSurfaceVariant}
+                                        name={showNew ? "eye-off" : "eye"}
+                                        size={20}
+                                        color={C.outline}
                                     />
                                 </TouchableOpacity>
                             </View>
+                        </View>
 
+                        {/* Confirm Password */}
+                        <View style={styles.fieldGroup}>
+                            <Text style={styles.label}>Confirm New Password</Text>
                             <View style={styles.inputWrapper}>
+                                <MaterialCommunityIcons
+                                    name="lock-reset"
+                                    size={20}
+                                    color={C.outline}
+                                />
                                 <TextInput
+                                    ref={confirmRef}
                                     style={styles.input}
-                                    placeholder="Confirm Password"
-                                    placeholderTextColor={COLORS.onSurfaceVariant}
-                                    secureTextEntry={!showPassword}
+                                    placeholder="••••••••"
+                                    placeholderTextColor={C.outline}
+                                    secureTextEntry={!showConfirm}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
+                                    returnKeyType="done"
+                                    onSubmitEditing={handleReset}
                                 />
+                                <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
+                                    <MaterialCommunityIcons
+                                        name={showConfirm ? "eye-off" : "eye"}
+                                        size={20}
+                                        color={C.outline}
+                                    />
+                                </TouchableOpacity>
                             </View>
-
-                            <TouchableOpacity
-                                style={[styles.button, loading && styles.disabledButton]}
-                                onPress={handleReset}
-                                disabled={loading}
-                            >
-                                <Text style={styles.buttonText}>
-                                    {loading ? "Resetting..." : "Reset Password"}
-                                </Text>
-                                <MaterialCommunityIcons
-                                    name="arrow-right"
-                                    size={20}
-                                    color="#FFF"
-                                />
-                            </TouchableOpacity>
                         </View>
+
+                        {/* Info text */}
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoText}>
+                                You will be redirected to login after a successful reset.
+                            </Text>
+                        </View>
+
+                        {/* Button */}
+                        <TouchableOpacity
+                            style={[styles.button, loading && { opacity: 0.5 }]}
+                            onPress={handleReset}
+                            disabled={loading}
+                        >
+                            <Text style={styles.buttonText}>
+                                {loading ? "Resetting..." : "Reset Password"}
+                            </Text>
+                            <MaterialCommunityIcons
+                                name="arrow-right"
+                                size={20}
+                                color={C.onPrimary}
+                            />
+                        </TouchableOpacity>
                     </ScrollView>
                 </KeyboardAvoidingView>
             </View>
@@ -164,82 +214,105 @@ export default ResetPasswordScreen;
 const styles = StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: COLORS.surface,
+        backgroundColor: C.surface,
     },
-    headerBg: {
+    blobTop: {
         position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "30%",
+        top: -80,
+        left: -80,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        backgroundColor: C.primary,
+        opacity: 0.08,
     },
-    headerOverlay: {
-        ...StyleSheet.absoluteFill,
-        backgroundColor: COLORS.primary,
-        opacity: 0.15,
+    blobBottom: {
+        position: "absolute",
+        bottom: -60,
+        right: -60,
+        width: 250,
+        height: 250,
+        borderRadius: 125,
+        backgroundColor: C.tertiary,
+        opacity: 0.06,
     },
     safeWrap: {
         flex: 1,
     },
-    backBtn: {
+    header: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        zIndex: 10,
+        height: 64,
+        borderBottomWidth: 1,
+        borderBottomColor: C.surfaceContainerHighest,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 999,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    logo: {
+        fontFamily: "Plus Jakarta Sans",
+        fontSize: 22,
+        lineHeight: 28,
+        fontWeight: "800",
+        letterSpacing: -0.5,
+        color: C.primary,
     },
     scrollContent: {
         flexGrow: 1,
         paddingHorizontal: 16,
-        justifyContent: "flex-end",
         paddingBottom: 32,
     },
-    glassPanel: {
-        backgroundColor: "rgba(255,255,255,0.85)",
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.3)",
-        padding: 24,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
-        elevation: 8,
-    },
-    iconCircle: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: COLORS.primaryFixed,
-        justifyContent: "center",
+    titleSection: {
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: 24,
+        marginTop: 16,
     },
     title: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 28,
-        lineHeight: 36,
+        fontSize: 24,
+        lineHeight: 32,
         fontWeight: "700",
-        color: COLORS.onSurface,
-        marginBottom: 8,
+        color: C.onSurface,
+        marginBottom: 4,
     },
     subtitle: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: 14,
+        lineHeight: 20,
         fontWeight: "400",
-        color: COLORS.onSurfaceVariant,
+        color: C.onSurfaceVariant,
         textAlign: "center",
-        marginBottom: 24,
+        maxWidth: 280,
+    },
+    fieldGroup: {
+        marginBottom: 16,
+    },
+    label: {
+        fontFamily: "Plus Jakarta Sans",
+        fontSize: 14,
+        lineHeight: 20,
+        letterSpacing: 0.1,
+        fontWeight: "600",
+        color: C.onSurfaceVariant,
+        marginLeft: 4,
+        marginBottom: 4,
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: COLORS.surfaceContainerLowest,
-        borderWidth: 1.5,
-        borderColor: COLORS.outlineVariant,
+        backgroundColor: C.surfaceContainerLowest,
+        borderWidth: 1,
+        borderColor: C.outlineVariant,
         borderRadius: 12,
-        height: 56,
+        height: 52,
         paddingHorizontal: 16,
-        marginBottom: 16,
+        gap: 10,
     },
     input: {
         flex: 1,
@@ -247,32 +320,39 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 24,
         fontWeight: "400",
-        color: COLORS.onSurface,
+        color: C.onSurface,
+    },
+    infoSection: {
+        alignItems: "center",
+        marginVertical: 24,
+    },
+    infoText: {
+        fontFamily: "Plus Jakarta Sans",
+        fontSize: 14,
+        lineHeight: 20,
+        fontWeight: "400",
+        color: C.onSurfaceVariant,
+        textAlign: "center",
     },
     button: {
         flexDirection: "row",
         height: 56,
         borderRadius: 12,
-        backgroundColor: COLORS.primaryContainer,
+        backgroundColor: C.primaryContainer,
         justifyContent: "center",
         alignItems: "center",
         gap: 8,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
+        shadowColor: C.primary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.25,
+        shadowRadius: 24,
         elevation: 8,
-        marginTop: 8,
-    },
-    disabledButton: {
-        opacity: 0.5,
     },
     buttonText: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: 20,
+        lineHeight: 28,
         fontWeight: "600",
-        color: "#FFF",
+        color: C.onPrimary,
     },
 });

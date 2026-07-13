@@ -13,7 +13,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
-import { registerUser } from "../utils/api";
+import { register } from "../api/auth";
 
 const C = {
     primary: "#FF6B35",
@@ -44,7 +44,7 @@ const SignUpScreen = () => {
         }
         setLoading(true);
         try {
-            const data = await registerUser(name.trim(), email.trim(), password);
+            const data = await register(name.trim(), email.trim(), password);
             if (data.success) {
                 navigation.navigate("EmailOTPVerification", { email: email.trim() });
             } else {

@@ -13,10 +13,9 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from "@react-navigation/native";
 
 import RestaurantListScreen from "./RestaurantListScreen";
-import { getRestaurants } from "../utils/api";
+import { getRestaurants } from "../api/restaurant";
 import { toImageUri } from "../utils/imageUtils";
 import { Restaurant } from "../data/restaurantData";
-import { getToken } from "../utils/authStore";
 
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
@@ -28,25 +27,12 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
-        const token = await getToken();
-        console.log("HomeScreen - token exists:", !!token);
-
         const res = await getRestaurants();
-        console.log("HomeScreen - API response:", JSON.stringify(res).slice(0, 300));
-        if (res.success && res.restaurants?.length > 0) {
-          console.log("HomeScreen - full first restaurant:", JSON.stringify(res.restaurants[0]));
-        }
-
-        if (res.success) {
-          console.log("HomeScreen - restaurants count:", res.restaurants?.length);
-          if (res.restaurants?.length > 0) {
-            console.log("HomeScreen - first restaurant image:", res.restaurants[0].image);
-            console.log("HomeScreen - first restaurantId:", res.restaurants[0].restaurantId);
-          }
+        if (res.success && res.restaurants?.length) {
           const mapped: Restaurant[] = res.restaurants.map((r: any) => ({
             id: r.restaurantId || r._id,
             name: r.name,
-            image: toImageUri(r.image) || require("../assets/images/chickenBriyani.jpg"),
+            image: toImageUri(r.image),
             description: r.description,
             category: r.category || [],
             cuisines: Array.isArray(r.cuisines) ? r.cuisines.join(" • ") : r.cuisines || "",
@@ -63,14 +49,11 @@ const HomeScreen = () => {
             restaurantId: r.restaurantId || r._id,
             menu: [],
           }));
-          console.log("HomeScreen - mapped restaurants:", mapped.length);
           setRestaurants(mapped);
         } else {
           setError(res.message || "Failed to load restaurants");
-          console.warn("HomeScreen - API error:", res.message);
         }
       } catch (err) {
-        console.warn("HomeScreen - fetch error:", err);
         setError("Network error. Check server connection.");
       } finally {
         setLoading(false);

@@ -22,15 +22,11 @@ interface Props {
 
 const RestaurantListScreen = ({ restaurants }: Props) => {
   const navigation = useNavigation<NavigationProp>();
-  console.log(`RestaurantListScreen.tsx 25 restaurants---->`,restaurants)
 
   const [selectedFilter, setSelectedFilter] = useState("All");
 
   const handleNavigate = (id: string) => {
-    console.log("RestaurantList - navigating with id:", JSON.stringify(id));
-    navigation.navigate("RestaurantDetail", {
-      restaurantId: id,
-    });
+    navigation.navigate("RestaurantDetail", { restaurantId: id });
   };
 
   const filteredRestaurants = useMemo(() => {

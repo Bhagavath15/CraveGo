@@ -66,9 +66,7 @@ export default function TrackMyOrderScreen() {
       await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
       );
-    } catch (e) {
-      console.log(e);
-    }
+    } catch (_) {}
   };
 
   const selectRestaurant = (restaurant: Restaurant) => {
