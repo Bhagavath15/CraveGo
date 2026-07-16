@@ -14,8 +14,9 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { useCart } from "../context/CartContext";
+import { rateOrder } from "../api/order";
 
-const PRIMARY = "#ab3500";
+const PRIMARY = "#AB3500";
 const PRIMARY_CONTAINER = "#FF6B35";
 const SECONDARY = "#006D37";
 const BG = "#FCF9F8";
@@ -24,32 +25,11 @@ const ON_SURFACE_VARIANT = "#594139";
 const OUTLINE = "#8D7168";
 const OUTLINE_VARIANT = "#E1BFB5";
 const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER_LOW = "#F6F3F2";
-const SURFACE_VARIANT = "#E5E2E1";
-const PRIMARY_CONTAINER_10 = "rgba(255,107,53,0.1)";
-
+const SURFACE_CONTAINER_HIGH = "#EAE7E7";
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "DeliveryCompleted">;
 
-const StarRating = ({
-    rating,
-    onRate,
-}: {
-    rating: number;
-    onRate: (val: number) => void;
-}) => (
-    <View style={styles.starRow}>
-        {[1, 2, 3, 4, 5].map((star) => (
-            <TouchableOpacity key={star} onPress={() => onRate(star)} activeOpacity={0.7}>
-                <MaterialCommunityIcons
-                    name={star <= rating ? "star" : "star-outline"}
-                    size={32}
-                    color={star <= rating ? PRIMARY : OUTLINE_VARIANT}
-                />
-            </TouchableOpacity>
-        ))}
-    </View>
-);
+const CHIPS = ["Super fast", "Polite", "Followed instructions"];
 
 const DeliveryCompletedScreen = () => {
     const insets = useSafeAreaInsets();
@@ -57,15 +37,45 @@ const DeliveryCompletedScreen = () => {
     const route = useRoute<RouteProps>();
     const cart = useCart();
     const {
+        orderId,
         restaurantName = "Spice Garden",
         items = "2x Special Chicken Biryani",
         totalPrice = 850,
-        deliveredTime = "7:45 PM",
+        deliveredTime = "8:42 PM",
         riderName = "Arjun K.",
     } = route.params || {};
 
     const [foodRating, setFoodRating] = useState(0);
     const [riderRating, setRiderRating] = useState(0);
+    const [selectedChips, setSelectedChips] = useState<string[]>([]);
+    const [foodComment, setFoodComment] = useState("");
+    const [riderComment, setRiderComment] = useState("");
+
+    const toggleChip = (chip: string) => {
+        setSelectedChips(prev =>
+            prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]
+        );
+    };
+
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmitRating = async () => {
+        if (submitting || !orderId) return;
+        setSubmitting(true);
+        try {
+            await rateOrder(orderId, {
+                overallRating: foodRating,
+                foodRating,
+                riderRating,
+                riderFeedback: selectedChips,
+                reviewText: foodComment,
+            });
+            cart.clearCart();
+            navigation.navigate("Home");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const handleBackToHome = () => {
         cart.clearCart();
@@ -82,7 +92,7 @@ const DeliveryCompletedScreen = () => {
                     <MaterialCommunityIcons
                         name="arrow-left"
                         size={24}
-                        color={ON_SURFACE}
+                        color={PRIMARY}
                     />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Delivery Completed</Text>
@@ -90,7 +100,7 @@ const DeliveryCompletedScreen = () => {
                     <MaterialCommunityIcons
                         name="help-circle-outline"
                         size={24}
-                        color={ON_SURFACE}
+                        color={ON_SURFACE_VARIANT}
                     />
                 </TouchableOpacity>
             </View>
@@ -99,101 +109,144 @@ const DeliveryCompletedScreen = () => {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.heroSection}>
-                    <View style={styles.heroImageWrapper}>
-                        <Image
-                            source={require("../assets/images/delivery-hero.png")}
-                            style={styles.heroImage}
-                            resizeMode="contain"
-                        />
-                        <View style={styles.successBadge}>
-                            <MaterialCommunityIcons
-                                name="check-circle"
-                                size={24}
-                                color="#FFF"
-                            />
-                        </View>
-                    </View>
-                    <Text style={styles.successTitle}>
-                        Hope you enjoy your meal!
-                    </Text>
-                    <View style={styles.deliveredRow}>
-                        <MaterialCommunityIcons
-                            name="clipboard-check-outline"
-                            size={20}
-                            color={SECONDARY}
-                        />
-                        <Text style={styles.deliveredText}>
-                            Delivered at {deliveredTime}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.orderCard}>
-                    <View style={styles.orderCardBody}>
-                        <View style={styles.restaurantIcon}>
-                            <MaterialCommunityIcons
-                                name="silverware"
-                                size={24}
-                                color={PRIMARY}
-                            />
-                        </View>
-                        <View style={styles.restaurantInfo}>
-                            <Text style={styles.restaurantName}>
-                                {restaurantName}
-                            </Text>
-                            <Text style={styles.itemsText}>{items}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.divider} />
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Order Total</Text>
-                        <Text style={styles.totalValue}>₹{totalPrice}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.ratingCard}>
-                    <Text style={styles.ratingTitle}>Rate your Food</Text>
-                    <StarRating rating={foodRating} onRate={setFoodRating} />
-                </View>
-
-                <View style={styles.ratingCard}>
-                    <View style={styles.riderHeader}>
-                        <View style={styles.riderAvatar}>
-                            <Image
-                                source={require("../assets/images/rider-arjun.png")}
-                                style={styles.riderAvatarImage}
-                            />
-                        </View>
-                        <View>
-                            <Text style={styles.ratingTitle}>
-                                Rate your Rider
-                            </Text>
-                            <Text style={styles.riderName}>{riderName}</Text>
-                        </View>
-                    </View>
-                    <View style={styles.riderStars}>
-                        <StarRating
-                            rating={riderRating}
-                            onRate={setRiderRating}
-                        />
-                    </View>
-                    <TextInput
-                        style={styles.noteInput}
-                        placeholder="Add a note..."
-                        placeholderTextColor={OUTLINE}
-                        multiline
-                        numberOfLines={3}
-                        textAlignVertical="top"
+                <View style={styles.celebrationSection}>
+                    <Image
+                        source={{
+                            uri: "https://lh3.googleusercontent.com/aida/AP1WRLv2EaHmR7qj92AMC48bzlQ6Gf9pDtQIG8IdGIwz6iNlIlmDqYmGdndrnQDdlmtHG1xE6PBpUXotH1LlkHfZJgMo_-y6aK6qTIeOfsck2-ZI4n3KpzsCdAxIOOPn8YkYMEK5aFDMh0darEZUO-lY2y3FBu0RwPbFArfsSagxU7GdZvsgiZA02CyvEzSuvkpYUsEwfrddghXPdNuy7dutFSWi1jkUjsiPAdhVPQqWuhrKd1tVtcZ17SwuHDW2",
+                        }}
+                        style={styles.celebrationImage}
+                        resizeMode="contain"
                     />
                 </View>
 
-                <TouchableOpacity style={styles.submitBtn} activeOpacity={0.92}>
-                    <MaterialCommunityIcons name="check-circle-outline" size={20} color="#FFF" />
-                    <Text style={styles.submitBtnText}>Submit Review</Text>
+                <View style={styles.successSection}>
+                    <View style={styles.successRow}>
+                        <View style={styles.pulseDot} />
+                        <Text style={styles.successText}>
+                            Order Delivered Successfully
+                        </Text>
+                    </View>
+                    <Text style={styles.successSubtext}>
+                        Arrived at {deliveredTime} • Total Time: 28 mins
+                    </Text>
+                </View>
+
+                <View style={styles.orderCard}>
+                    <View style={styles.restaurantIcon}>
+                        <MaterialCommunityIcons
+                            name="silverware"
+                            size={32}
+                            color={PRIMARY_CONTAINER}
+                        />
+                    </View>
+                    <View style={styles.restaurantInfo}>
+                        <Text style={styles.restaurantName}>
+                            {restaurantName}
+                        </Text>
+                        <Text style={styles.itemsText}>{items}</Text>
+                        <Text style={styles.priceText}>₹{totalPrice}.00</Text>
+                    </View>
+                </View>
+
+                <View style={styles.ratingCard}>
+                    <View style={styles.ratingHeader}>
+                        <Text style={styles.ratingTitle}>Rate your Food</Text>
+                        <View style={styles.starRow}>
+                            {[0, 1, 2, 3, 4].map((i) => (
+                                <TouchableOpacity
+                                    key={i}
+                                    onPress={() => setFoodRating(i + 1)}
+                                    activeOpacity={0.7}
+                                >
+                                    <MaterialCommunityIcons
+                                        name={i < foodRating ? "star" : "star-outline"}
+                                        size={24}
+                                        color={
+                                            i < foodRating
+                                                ? "#fabd00"
+                                                : OUTLINE
+                                        }
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                    <TextInput
+                        style={styles.commentInput}
+                        placeholder={`Add a comment for ${restaurantName}...`}
+                        placeholderTextColor={ON_SURFACE_VARIANT + "99"}
+                        value={foodComment}
+                        onChangeText={setFoodComment}
+                    />
+                </View>
+
+                <View style={styles.riderCard}>
+                    <View style={styles.riderHeader}>
+                        <View style={styles.riderAvatar}>
+                            <Text style={styles.riderAvatarText}>
+                                {riderName.charAt(0)}
+                            </Text>
+                        </View>
+                        <View style={styles.riderInfo}>
+                            <View style={styles.riderNameRow}>
+                                <Text style={styles.riderName}>{riderName}</Text>
+                                <MaterialCommunityIcons name="check-decagram" size={14} color={PRIMARY_CONTAINER} />
+                            </View>
+                            <Text style={styles.riderRole}>
+                                Your Delivery Partner
+                            </Text>
+                        </View>
+                        <View style={styles.starRow}>
+                            {[0, 1, 2, 3, 4].map((i) => (
+                                <TouchableOpacity
+                                    key={i}
+                                    onPress={() => setRiderRating(i + 1)}
+                                    activeOpacity={0.7}
+                                >
+                                    <MaterialCommunityIcons
+                                        name={i < riderRating ? "star" : "star-outline"}
+                                        size={24}
+                                        color={
+                                            i < riderRating
+                                                ? "#fabd00"
+                                                : OUTLINE
+                                        }
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                    <View style={styles.chipRow}>
+                        {CHIPS.map((chip) => {
+                            const active = selectedChips.includes(chip);
+                            return (
+                                <TouchableOpacity
+                                    key={chip}
+                                    style={[styles.chip, active && styles.chipActive]}
+                                    onPress={() => toggleChip(chip)}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                                        {chip}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                    <TextInput
+                        style={styles.commentInput}
+                        placeholder={`Add a comment for ${riderName}...`}
+                        placeholderTextColor={ON_SURFACE_VARIANT + "99"}
+                        value={riderComment}
+                        onChangeText={setRiderComment}
+                    />
+                </View>
+
+                <TouchableOpacity style={styles.submitBtn} activeOpacity={0.92} onPress={handleSubmitRating} disabled={submitting}>
+                    <Text style={styles.submitBtnText}>{submitting ? "Submitting..." : "Submit Rating"}</Text>
                 </TouchableOpacity>
 
-                <View style={styles.actionsSection}>
+                <View style={styles.bottomRow}>
                     <TouchableOpacity
                         style={styles.homeButton}
                         onPress={handleBackToHome}
@@ -204,7 +257,7 @@ const DeliveryCompletedScreen = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.historyButton}
-                        onPress={() => navigation.navigate("Home", { screen: "OrdersTab" })}
+                        onPress={() => navigation.popToTop()}
                     >
                         <Text style={styles.historyButtonText}>
                             View Order History
@@ -228,98 +281,89 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
-        paddingTop: 12,
-        paddingBottom: 8,
+        height: 64,
+        backgroundColor: BG,
     },
     headerButton: {
         width: 40,
         height: 40,
+        borderRadius: 20,
         justifyContent: "center",
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontFamily: "Plus Jakarta Sans",
+        color: PRIMARY,
+        lineHeight: 28,
     },
     scrollContent: {
         paddingHorizontal: 16,
-        paddingBottom: 48,
-    },
-    heroSection: {
-        alignItems: "center",
-        paddingTop: 16,
         paddingBottom: 24,
+        alignItems: "center",
     },
-    heroImageWrapper: {
-        width: 280,
-        height: 280,
-        marginBottom: 16,
-        position: "relative",
+
+    celebrationSection: {
+        width: "100%",
+        height: 120,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingVertical: 8,
     },
-    heroImage: {
+    celebrationImage: {
         width: "100%",
         height: "100%",
     },
-    successBadge: {
-        position: "absolute",
-        top: -8,
-        right: -8,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: SECONDARY,
-        justifyContent: "center",
+
+    successSection: {
         alignItems: "center",
-        shadowColor: SECONDARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        marginBottom: 16,
     },
-    successTitle: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        lineHeight: 32,
-        textAlign: "center",
-        marginBottom: 8,
-    },
-    deliveredRow: {
+    successRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 4,
+        marginBottom: 4,
     },
-    deliveredText: {
-        fontSize: 15,
+    pulseDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: SECONDARY,
+    },
+    successText: {
+        fontSize: 14,
+        fontWeight: "600",
+        fontFamily: "Plus Jakarta Sans",
+        color: SECONDARY,
+        lineHeight: 20,
+        letterSpacing: 0.1,
+    },
+    successSubtext: {
+        fontSize: 14,
+        fontWeight: "400",
+        fontFamily: "Plus Jakarta Sans",
         color: ON_SURFACE_VARIANT,
-        lineHeight: 22,
+        lineHeight: 20,
+        textAlign: "center",
     },
+
     orderCard: {
+        width: "100%",
         backgroundColor: SURFACE_LOWEST,
         borderRadius: 24,
         padding: 16,
-        marginBottom: 24,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 20,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.8)",
-    },
-    orderCardBody: {
+        marginBottom: 16,
         flexDirection: "row",
         alignItems: "center",
         gap: 16,
-        paddingBottom: 16,
     },
     restaurantIcon: {
-        width: 48,
-        height: 48,
+        width: 64,
+        height: 64,
         borderRadius: 12,
-        backgroundColor: PRIMARY_CONTAINER_10,
+        backgroundColor: `${PRIMARY_CONTAINER}1A`,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -327,158 +371,208 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     restaurantName: {
-        fontSize: 18,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 24,
-        marginBottom: 2,
-    },
-    itemsText: {
         fontSize: 14,
         fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
+        fontFamily: "Plus Jakarta Sans",
+        color: ON_SURFACE,
         lineHeight: 20,
         letterSpacing: 0.1,
     },
-    divider: {
-        height: 1,
-        backgroundColor: SURFACE_VARIANT,
-        marginBottom: 16,
-    },
-    totalRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    totalLabel: {
-        fontSize: 15,
+    itemsText: {
+        fontSize: 14,
+        fontWeight: "400",
+        fontFamily: "Plus Jakarta Sans",
         color: ON_SURFACE_VARIANT,
-        lineHeight: 22,
+        lineHeight: 20,
     },
-    totalValue: {
-        fontSize: 22,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        lineHeight: 28,
+    priceText: {
+        fontSize: 14,
+        fontWeight: "600",
+        fontFamily: "Plus Jakarta Sans",
+        color: PRIMARY_CONTAINER,
+        lineHeight: 20,
+        letterSpacing: 0.1,
+        marginTop: 4,
     },
+
     ratingCard: {
+        width: "100%",
         backgroundColor: SURFACE_LOWEST,
         borderRadius: 24,
         padding: 16,
         marginBottom: 16,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 20,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.8)",
+    },
+    ratingHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
     },
     ratingTitle: {
-        fontSize: 18,
+        fontSize: 14,
         fontWeight: "600",
+        fontFamily: "Plus Jakarta Sans",
         color: ON_SURFACE,
-        lineHeight: 24,
-        marginBottom: 12,
+        lineHeight: 20,
+        letterSpacing: 0.1,
     },
     starRow: {
         flexDirection: "row",
-        gap: 8,
+        gap: 4,
+    },
+    commentInput: {
+        width: "100%",
+        marginTop: 8,
+        backgroundColor: `${PRIMARY_CONTAINER}0D`,
+        borderWidth: 1,
+        borderColor: `${OUTLINE_VARIANT}4D`,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        fontSize: 14,
+        fontWeight: "400",
+        fontFamily: "Plus Jakarta Sans",
+        color: ON_SURFACE,
+        lineHeight: 20,
+    },
+
+    riderCard: {
+        width: "100%",
+        backgroundColor: SURFACE_LOWEST,
+        borderRadius: 24,
+        padding: 16,
+        marginBottom: 16,
     },
     riderHeader: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
-        marginBottom: 12,
+        gap: 16,
+        marginBottom: 8,
     },
     riderAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        overflow: "hidden",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: SURFACE_CONTAINER_HIGH,
         borderWidth: 2,
         borderColor: `${PRIMARY_CONTAINER}33`,
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "hidden",
     },
-    riderAvatarImage: {
-        width: "100%",
-        height: "100%",
+    riderAvatarText: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: PRIMARY_CONTAINER,
+    },
+    riderInfo: {
+        flex: 1,
+    },
+    riderNameRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
     },
     riderName: {
         fontSize: 14,
         fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
+        fontFamily: "Plus Jakarta Sans",
+        color: ON_SURFACE,
         lineHeight: 20,
         letterSpacing: 0.1,
     },
-    riderStars: {
-        marginBottom: 12,
+    riderRole: {
+        fontSize: 12,
+        fontWeight: "400",
+        fontFamily: "Plus Jakarta Sans",
+        color: ON_SURFACE_VARIANT,
+        lineHeight: 16,
     },
-    submitBtn: {
+
+    chipRow: {
         flexDirection: "row",
+        gap: 4,
+    },
+    chip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: `${OUTLINE_VARIANT}80`,
+    },
+    chipActive: {
+        backgroundColor: `${PRIMARY_CONTAINER}1A`,
+        borderColor: PRIMARY_CONTAINER,
+    },
+    chipText: {
+        fontSize: 12,
+        fontWeight: "600",
+        fontFamily: "Plus Jakarta Sans",
+        color: ON_SURFACE_VARIANT,
+        lineHeight: 16,
+        letterSpacing: 0.1,
+    },
+    chipTextActive: {
+        color: PRIMARY_CONTAINER,
+    },
+
+    submitBtn: {
+        width: "100%",
         backgroundColor: PRIMARY_CONTAINER,
-        paddingVertical: 16,
-        borderRadius: 16,
+        paddingVertical: 14,
+        borderRadius: 24,
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
-        marginTop: 8,
-        marginBottom: 8,
+        marginBottom: 12,
         shadowColor: PRIMARY_CONTAINER,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 6,
     },
     submitBtnText: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#FFF",
-        lineHeight: 24,
+        fontFamily: "Plus Jakarta Sans",
+        color: "#fff",
+        lineHeight: 28,
     },
-    noteInput: {
-        backgroundColor: SURFACE_CONTAINER_LOW,
-        borderRadius: 16,
-        padding: 16,
-        fontSize: 14,
-        color: ON_SURFACE,
-        lineHeight: 20,
-        minHeight: 80,
-        borderWidth: 2,
-        borderColor: "transparent",
-    },
-    actionsSection: {
-        marginTop: 32,
+
+    bottomRow: {
+        width: "100%",
+        flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        justifyContent: "center",
+        gap: 16,
+        paddingBottom: 24,
     },
     homeButton: {
-        width: "100%",
-        backgroundColor: PRIMARY_CONTAINER,
+        flex: 1,
         paddingVertical: 16,
-        borderRadius: 16,
+        borderRadius: 24,
         alignItems: "center",
-        shadowColor: PRIMARY_CONTAINER,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 6,
+        justifyContent: "center",
+        borderWidth: 1.5,
+        borderColor: `${OUTLINE_VARIANT}`,
     },
     homeButtonText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#5F1900",
+        fontFamily: "Plus Jakarta Sans",
+        color: PRIMARY_CONTAINER,
         lineHeight: 20,
         letterSpacing: 0.1,
     },
     historyButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 24,
-        borderRadius: 999,
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
     },
     historyButtonText: {
         fontSize: 14,
         fontWeight: "600",
-        color: PRIMARY,
+        fontFamily: "Plus Jakarta Sans",
+        color: PRIMARY_CONTAINER,
         lineHeight: 20,
         letterSpacing: 0.1,
     },

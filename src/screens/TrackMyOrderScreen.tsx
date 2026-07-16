@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,108 +6,232 @@ import {
   PermissionsAndroid,
   Platform,
   TouchableOpacity,
+  LayoutChangeEvent,
 } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import MapView, { Marker } from "react-native-maps";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
+import { getOrderById, advanceOrderStatus, cancelOrder } from "../api/order";
+import { connectSocket, getSocket } from "../api/socket";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type Restaurant = {
-  id: string;
-  name: string;
-  rating: number;
-  time: string;
-  coords: [number, number];
-};
+const PRIMARY = "#ff6b35";
+const ON_PRIMARY = "#ffffff";
+const ON_SURFACE = "#1b1c1c";
+const ON_SURFACE_VARIANT = "#594139";
+const OUTLINE_VARIANT = "#e1bfb5";
+const SURFACE_LOWEST = "#ffffff";
+const ERROR = "#ba1a1a";
+const GREEN = "#006D37";
+const SURFACE_CONTAINER = "#f0eded";
+const SURFACE_CONTAINER_HIGH = "#eae7e7";
 
-const RESTAURANTS: Restaurant[] = [
-  {
-    id: "1",
-    name: "Biryani House",
-    rating: 4.5,
-    time: "30-40 min",
-    coords: [80.2707, 13.0827],
-  },
-  {
-    id: "2",
-    name: "Pizza Corner",
-    rating: 4.2,
-    time: "25-35 min",
-    coords: [80.2810, 13.0750],
-  },
-  {
-    id: "3",
-    name: "Burger Spot",
-    rating: 4.1,
-    time: "20-30 min",
-    coords: [80.2650, 13.0900],
-  },
+const PATH: { label: string; pct: { x: number; y: number }; icon: string; completedIcon: string; serverKey: number }[] = [
+  { label: "Placed", pct: { x: 10, y: 6 }, icon: "clipboard-list-outline", completedIcon: "check", serverKey: 0 },
+  { label: "Accepted", pct: { x: 50, y: 3 }, icon: "check", completedIcon: "check", serverKey: 1 },
+  { label: "Preparing", pct: { x: 82, y: 10 }, icon: "bell", completedIcon: "check", serverKey: 2 },
+  { label: "Ready", pct: { x: 85, y: 38 }, icon: "silverware", completedIcon: "check", serverKey: 3 },
+  { label: "Picked Up", pct: { x: 55, y: 52 }, icon: "motorbike", completedIcon: "check", serverKey: 4 },
+  { label: "Out for Del.", pct: { x: 28, y: 46 }, icon: "map-marker", completedIcon: "check", serverKey: 5 },
+  { label: "Arriving", pct: { x: 10, y: 68 }, icon: "map-marker", completedIcon: "check", serverKey: 5 },
+  { label: "Delivered", pct: { x: 80, y: 86 }, icon: "check", completedIcon: "check", serverKey: 6 },
 ];
 
+const stitchStep = (s: number) => {
+  let idx = 0;
+  for (let i = 0; i < PATH.length; i++) {
+    if (PATH[i].serverKey <= s) idx = i;
+  }
+  return idx;
+};
+
+const STATUS_LABELS: Record<number, string> = {
+  0: "Order Placed", 1: "Order Accepted", 2: "Preparing your meal", 3: "Ready for pickup",
+  4: "On the way", 5: "On the way", 6: "Delivered", 7: "Cancelled",
+};
+const STATUS_DESC: Record<number, string> = {
+  0: "Your order has been placed successfully", 1: "Restaurant has accepted your order",
+  2: "Your food is being prepared", 3: "Your order is ready",
+  4: "Rider is heading your way", 5: "2 mins away",
+  6: "Your order has been delivered", 7: "Order has been cancelled",
+};
+
+type Restaurant = { id: string; name: string; rating: number; time: string; coords: [number, number]; };
+const RESTAURANTS: Restaurant[] = [
+  { id: "1", name: "Biryani House", rating: 4.5, time: "30-40 min", coords: [80.2707, 13.0827] },
+  { id: "2", name: "Pizza Corner", rating: 4.2, time: "25-35 min", coords: [80.2810, 13.0750] },
+  { id: "3", name: "Burger Spot", rating: 4.1, time: "20-30 min", coords: [80.2650, 13.0900] },
+];
+
+type TrackMyOrderRouteProps = RouteProp<RootStackParamList, "TrackMyOrder">;
+
 export default function TrackMyOrderScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<TrackMyOrderRouteProps>();
+  const { orderId, orderNumber, restaurantName, totalPrice, items } = route.params;
+  const itemsDisplay = items.map(i => `${i.quantity}x ${i.name}`).join(", ");
   const mapRef = useRef<MapView>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
 
-  const snapPoints = useMemo(() => ["30%", "60%"], []);
+  const snapPoints = useMemo(() => ["30%", "65%", "80%"], []);
 
-  const [selected, setSelected] = useState<Restaurant | null>(null);
+  const [liveOrder, setLiveOrder] = useState<{
+    orderStatus: number; riderName: string; riderRating: number;
+    deliveryAddress: string; estimatedTime?: string; createdAt?: string;
+  } | null>(null);
+
+  const loadOrder = useCallback(() => {
+    if (!orderId) return;
+    getOrderById(orderId).then(res => {
+      if (res.success && res.order) {
+        setLiveOrder({
+          orderStatus: res.order.orderStatus,
+          riderName: res.order.riderName || "Arjun K.",
+          riderRating: res.order.riderRating ?? 4.8,
+          deliveryAddress: typeof res.order.deliveryAddress === "string" ? res.order.deliveryAddress : "",
+          estimatedTime: res.order.estimatedTime,
+          createdAt: res.order.createdAt,
+        });
+      }
+    }).catch(() => {});
+  }, [orderId]);
+
+  useEffect(() => { loadOrder(); }, [loadOrder]);
 
   useEffect(() => {
-    requestUserLocation();
-  }, []);
+    let mounted = true;
+    const socketCleanup = () => {
+      const s = getSocket();
+      if (s) s.off("order:update", socketHandler);
+    };
+    const socketHandler = () => { if (mounted) loadOrder(); };
+    const initSocket = async () => {
+      const socket = await connectSocket();
+      socket.off("order:update", socketHandler);
+      socket.on("order:update", socketHandler);
+    };
+    initSocket();
+
+    statusRef.current = liveOrder?.orderStatus ?? 0;
+
+    const advanceTimer = setInterval(async () => {
+      if (!mounted || cancellingRef.current) return;
+      const res = await advanceOrderStatus(orderId).catch(() => undefined);
+      if (res?.success && res.order) {
+        const newStatus = res.order.orderStatus;
+        if (newStatus > statusRef.current) {
+          statusRef.current = newStatus;
+          setLiveOrder(prev => prev ? { ...prev, orderStatus: newStatus } : prev);
+        }
+        if (newStatus >= 6) clearInterval(advanceTimer);
+      } else {
+        loadOrder();
+      }
+    }, 10000);
+    timerRef.current = advanceTimer;
+
+    return () => {
+      mounted = false;
+      socketCleanup();
+      clearInterval(advanceTimer);
+    };
+  }, [loadOrder, orderId]);
+
+  useEffect(() => { requestUserLocation(); }, []);
 
   const requestUserLocation = async () => {
     if (Platform.OS !== "android") return;
-
-    try {
-      await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      );
-    } catch (_) {}
+    try { await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION); } catch { }
   };
 
-  const selectRestaurant = (restaurant: Restaurant) => {
-    setSelected(restaurant);
+  const [isCancelled, setIsCancelled] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancellingRef = useRef(false);
+  const statusRef = useRef(0);
+  const deliveredRef = useRef(false);
 
-    mapRef.current?.animateToRegion(
-      {
-        latitude: restaurant.coords[1],
-        longitude: restaurant.coords[0],
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      },
-      800
-    );
+  const orderStatus = isCancelled ? 7 : liveOrder?.orderStatus ?? 0;
+  const riderName_ = liveOrder?.riderName ?? "Arjun K.";
+  const riderRating_ = liveOrder?.riderRating ?? 4.8;
+  const estimatedTime = liveOrder?.estimatedTime;
+  const activeIdx = stitchStep(orderStatus);
 
-    bottomSheetRef.current?.expand();
-  };
+  const handleDelivered = useCallback(() => {
+    const now = new Date();
+    const time = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    navigation.navigate("DeliveryCompleted", {
+      orderId, restaurantName, items: itemsDisplay, totalPrice, deliveredTime: time, riderName: riderName_,
+    });
+  }, [navigation, restaurantName, itemsDisplay, totalPrice, riderName_, orderId]);
+
+  useEffect(() => {
+    const rawStatus = liveOrder?.orderStatus;
+    if (!isCancelled && rawStatus === 6 && liveOrder && !deliveredRef.current) {
+      deliveredRef.current = true;
+      handleDelivered();
+    }
+  }, [liveOrder?.orderStatus, isCancelled, handleDelivered]);
+
+  const handleCancel = useCallback(() => {
+    if (cancelling || cancellingRef.current) return;
+    cancellingRef.current = true;
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setIsCancelled(true);
+    setCancelling(true);
+    cancelOrder(orderId).then(res => {
+      if (!res.success) {
+        setIsCancelled(false);
+        cancellingRef.current = false;
+      }
+    }).catch(() => { setIsCancelled(false); cancellingRef.current = false; }).finally(() => setCancelling(false));
+  }, [orderId, cancelling]);
+
+  const statusLabel = isCancelled ? "Cancelled" : STATUS_LABELS[orderStatus] || "Order Placed";
+  const statusDesc = isCancelled ? "Order has been cancelled" : STATUS_DESC[orderStatus] || STATUS_DESC[0];
+  const accentColor = isCancelled ? ERROR : orderStatus >= 6 ? GREEN : PRIMARY;
+
+  const [layout, setLayout] = useState({ w: 360, h: 400 });
+
+  const onPathLayout = useCallback((e: LayoutChangeEvent) => {
+    setLayout({ w: e.nativeEvent.layout.width || 360, h: e.nativeEvent.layout.height || 400 });
+  }, []);
+
+  const toPx = useCallback((pct: { x: number; y: number }) => ({
+    x: (pct.x / 100) * layout.w,
+    y: (pct.y / 100) * layout.h,
+  }), [layout]);
+
+  const segmentPath = useCallback((pts: { x: number; y: number }[], i: number) => {
+    if (i < 0 || i >= pts.length - 1) return "";
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(i + 2, pts.length - 1)];
+    const t = 0.3;
+    const cp1x = p1.x + (p2.x - p0.x) * t;
+    const cp1y = p1.y + (p2.y - p0.y) * t;
+    const cp2x = p2.x - (p3.x - p1.x) * t;
+    const cp2y = p2.y - (p3.y - p1.y) * t;
+    return `M ${p1.x} ${p1.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         showsUserLocation
         showsMyLocationButton
-        initialRegion={{
-          latitude: 13.0827,
-          longitude: 80.2707,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
+        initialRegion={{ latitude: 13.0827, longitude: 80.2707, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
       >
-        {RESTAURANTS.map((restaurant) => (
-          <Marker
-            key={restaurant.id}
-            coordinate={{
-              latitude: restaurant.coords[1],
-              longitude: restaurant.coords[0],
-            }}
-            onPress={() => selectRestaurant(restaurant)}
-          />
+        {RESTAURANTS.map(r => (
+          <Marker key={r.id} coordinate={{ latitude: r.coords[1], longitude: r.coords[0] }} />
         ))}
       </MapView>
 
@@ -115,367 +239,265 @@ export default function TrackMyOrderScreen() {
         ref={bottomSheetRef}
         index={0}
         snapPoints={snapPoints}
-        handleIndicatorStyle={styles.handleIndicator}
+        enablePanDownToClose={false}
+        handleIndicatorStyle={s.handleIndicator}
+        backgroundStyle={s.sheetBackground}
       >
-        <BottomSheetView style={styles.sheetContent}>
-          <View style={styles.statusRow}>
+        <BottomSheetView style={s.sheetContent}>
+          {isCancelled ? (
+            <View style={s.finalStateCard}>
+              <View style={[s.finalIcon, { backgroundColor: `${ERROR}1A` }]}>
+                <MaterialCommunityIcons name="cancel" size={40} color={ERROR} />
+              </View>
+              <Text style={[s.finalTitle, { color: ERROR }]}>Order Cancelled</Text>
+              <Text style={s.finalSubtext}>We've initiated a full refund to your original payment method.</Text>
+            </View>
+          ) : (
             <View>
-              <Text style={styles.eta}>12 mins away</Text>
-              <Text style={styles.statusText}>Arjun is picking up your order</Text>
-            </View>
-            <View style={styles.deliveryIcon}>
-              <MaterialCommunityIcons name="motorbike" size={24} color="#ab3500" />
-            </View>
-          </View>
+              <View style={s.headerSection}>
+                <View style={s.headerLeft}>
+                  <Text style={[s.headerTitle, { color: accentColor }]}>On its way!</Text>
+                  <Text style={s.headerSub}>Order #{orderNumber} • {statusDesc}</Text>
+                </View>
+                <View style={[s.headerIconBox, { backgroundColor: PRIMARY }]}>
+                  <MaterialCommunityIcons name="motorbike" size={32} color={ON_PRIMARY} />
+                </View>
+              </View>
 
-          <View style={styles.stepper}>
-            <View style={styles.stepLine} />
-            <View style={styles.step}>
-              <View style={styles.stepDotActive}>
-                <MaterialCommunityIcons name="check" size={16} color="#fff" />
-              </View>
-              <Text style={styles.stepLabel}>Confirmed</Text>
-            </View>
-            <View style={styles.step}>
-              <View style={styles.stepDotActive}>
-                <MaterialCommunityIcons name="check" size={16} color="#fff" />
-              </View>
-              <Text style={styles.stepLabel}>Preparing</Text>
-            </View>
-            <View style={styles.step}>
-              <View style={styles.stepDotCurrent}>
-                <View style={styles.stepPulse} />
-              </View>
-              <Text style={styles.stepLabelCurrent}>On the Way</Text>
-            </View>
-            <View style={styles.step}>
-              <View style={styles.stepDotInactive} />
-              <Text style={styles.stepLabelInactive}>Delivered</Text>
-            </View>
-          </View>
+              <View style={s.pathContainer} onLayout={onPathLayout}>
+                <Svg style={StyleSheet.absoluteFill}>
+                  {(() => {
+                    const pts = PATH.map(p => toPx(p.pct));
+                    return PATH.slice(0, -1).map((_, i) => {
+                      const d = segmentPath(pts, i);
+                      return (
+                        <Path
+                          key={`seg-${i}`}
+                          d={d}
+                          stroke={i < activeIdx ? PRIMARY : SURFACE_CONTAINER_HIGH}
+                          strokeWidth={7}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      );
+                    });
+                  })()}
+                </Svg>
 
-          <View style={styles.riderCard}>
-            <View style={styles.riderInfo}>
-              <View style={styles.riderAvatar}>
-                <MaterialCommunityIcons name="account-circle" size={32} color="#ab3500" />
-              </View>
-              <View>
-                <Text style={styles.riderName}>Arjun K.</Text>
-                <Text style={styles.riderRole}>Your delivery partner</Text>
-              </View>
-            </View>
-            <View style={styles.riderActions}>
-              <View style={styles.chatBtn}>
-                <MaterialCommunityIcons name="message-text" size={20} color="#ab3500" />
-              </View>
-              <View style={styles.callBtn}>
-                <MaterialCommunityIcons name="phone" size={20} color="#fff" />
-              </View>
-            </View>
-          </View>
+                {PATH.map((p, i) => {
+                  const pos = toPx(p.pct);
+                  const isActive = i === activeIdx;
+                  const isCompleted = i < activeIdx;
+                  const isFuture = i > activeIdx;
+                  const dotSize = isActive ? 44 : isCompleted ? 30 : 24;
+                  const icon = isCompleted ? p.completedIcon : p.icon;
+                  return (
+                    <View
+                      key={p.label}
+                      style={[
+                        s.stepDot,
+                        {
+                          left: pos.x - dotSize / 2,
+                          top: pos.y - dotSize / 2,
+                          width: dotSize,
+                          height: dotSize,
+                          borderRadius: dotSize / 2,
+                          backgroundColor: isActive ? PRIMARY : isCompleted ? PRIMARY : "transparent",
+                          borderColor: isActive ? PRIMARY : isCompleted ? PRIMARY : SURFACE_CONTAINER_HIGH,
+                          borderWidth: isFuture ? 3 : 0,
+                        },
+                        isActive && s.stepDotActive,
+                      ]}
+                    >
+                      {(isActive || isCompleted) && (
+                        <MaterialCommunityIcons
+                          name={icon as any}
+                          size={isActive ? 22 : 18}
+                          color={ON_PRIMARY}
+                        />
+                      )}
+                      {isFuture && (
+                        <MaterialCommunityIcons
+                          name={icon as any}
+                          size={20}
+                          color={ON_SURFACE_VARIANT}
+                        />
+                      )}
+                    </View>
+                  );
+                })}
 
-          <View style={styles.addressRow}>
-            <View style={styles.addressIcon}>
-              <MaterialCommunityIcons name="map-marker" size={16} color="#ab3500" />
-            </View>
-            <View style={styles.addressInfo}>
-              <Text style={styles.addressLabel}>Delivery Address</Text>
-              <Text style={styles.addressText}>Flat 402, Royal Residency, Indiranagar, Bangalore</Text>
-            </View>
-            <Text style={styles.editBtn}>Edit</Text>
-          </View>
+                {PATH.map((p, i) => {
+                  const pos = toPx(p.pct);
+                  const isActive = i === activeIdx;
+                  const isCompleted = i < activeIdx;
+                  const dotSize = isActive ? 44 : isCompleted ? 30 : 24;
+                  const dotRadius = dotSize / 2;
+                  const isLeftSide = p.pct.x <= 50;
+                  const isTopHalf = p.pct.y <= 35;
+                  const gap = 6;
+                  const labelW = 100;
+                  const labelAbove = isActive && p.pct.y >= 15 ? true : !isTopHalf;
+                  const lblLeft = isLeftSide
+                    ? pos.x + dotRadius + gap
+                    : pos.x - labelW - dotRadius - gap;
+                  const lblTop = labelAbove
+                    ? pos.y - dotRadius - gap - (isActive ? 28 : 20)
+                    : pos.y + dotRadius + gap;
+                  return (
+                    <View
+                      key={`lbl-${p.label}`}
+                      style={[
+                        s.stepLabelWrap,
+                        { left: lblLeft, top: lblTop, width: labelW },
+                        !isLeftSide && { alignItems: "flex-end" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.stepLabel,
+                          { color: isCompleted || isActive ? ON_SURFACE : ON_SURFACE_VARIANT },
+                          isActive && s.stepLabelActive,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {p.label}
+                      </Text>
+                    </View>
+                  );
+                })}
 
-          <TouchableOpacity
-            style={styles.deliveredButton}
-            onPress={() =>
-              navigation.navigate("DeliveryCompleted", {
-                restaurantName: "Spice Garden",
-                items: "2x Special Chicken Biryani",
-                totalPrice: 850,
-                deliveredTime: "7:45 PM",
-                riderName: "Arjun K.",
-              })
-            }
-          >
-            <MaterialCommunityIcons
-              name="check-circle-outline"
-              size={20}
-              color="#FFF"
-            />
-            <Text style={styles.deliveredButtonText}>Order Delivered</Text>
-          </TouchableOpacity>
+                {orderStatus >= 4 && (
+                  <View style={s.riderCard}>
+                    <View style={s.riderAvatarWrap}>
+                      <View style={s.riderAvatarSmall}>
+                        <MaterialCommunityIcons name="account-circle" size={24} color={PRIMARY} />
+                      </View>
+                      <View style={s.riderRatingBadge}>
+                        <MaterialCommunityIcons name="star" size={7} color="#FFD700" />
+                        <Text style={s.riderRatingMini}>{riderRating_}</Text>
+                      </View>
+                    </View>
+                    <View style={s.riderInfoCol}>
+                      <Text style={s.riderNameSmall}>{riderName_}</Text>
+                      <View style={s.riderActionRow}>
+                        <TouchableOpacity style={s.chatMini}>
+                          <MaterialCommunityIcons name="message-text" size={12} color={PRIMARY} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={s.callMini}>
+                          <MaterialCommunityIcons name="phone" size={12} color={ON_PRIMARY} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              <View style={s.actionRow}>
+                <TouchableOpacity style={s.helpBtn}>
+                  <MaterialCommunityIcons name="help-circle-outline" size={22} color={ON_SURFACE_VARIANT} />
+                  <Text style={s.helpBtnText}>Get Help</Text>
+                </TouchableOpacity>
+                {orderStatus < 4 && (
+                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel} disabled={cancelling}>
+                    <MaterialCommunityIcons name="close" size={22} color={ERROR} />
+                    <Text style={s.cancelBtnText}>{cancelling ? "Cancelling..." : "Cancel"}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
         </BottomSheetView>
       </BottomSheet>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+const s = StyleSheet.create({
+  container: { flex: 1 },
+  handleIndicator: { width: 48, height: 6, backgroundColor: "#e5e2e1", borderRadius: 3, opacity: 0.5 },
+  sheetBackground: { backgroundColor: "#fcf9f8", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  sheetContent: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 48 },
+  scrollInner: { paddingBottom: 24 },
+
+  headerSection: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    marginBottom: 12,
+  },
+  headerLeft: { flex: 1, marginRight: 12 },
+  headerTitle: { fontSize: 26, fontWeight: "800", lineHeight: 32, letterSpacing: -0.3 },
+  headerSub: { fontSize: 13, color: ON_SURFACE_VARIANT, lineHeight: 18, marginTop: 2 },
+  headerIconBox: {
+    width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center",
   },
 
-  handleIndicator: {
-    width: 48,
-    height: 6,
-    backgroundColor: '#e1bfb5',
-    borderRadius: 3,
-    opacity: 0.4,
+  pathContainer: {
+    position: "relative",
+    height: 500,
+    marginBottom: 12,
+    overflow: "visible",
+    zIndex: 2,
   },
 
-  sheetContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 48,
+  stepDot: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 4,
   },
-
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-
-  eta: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ff6b35',
-    lineHeight: 32,
-  },
-
-  statusText: {
-    fontSize: 14,
-    color: '#594139',
-    lineHeight: 20,
-    marginTop: 2,
-  },
-
-  deliveryIcon: {
-    backgroundColor: '#ff6b3510',
-    padding: 12,
-    borderRadius: 16,
-  },
-
-  stepper: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 8,
-    marginBottom: 40,
-    position: 'relative',
-  },
-
-  stepLine: {
-    position: 'absolute',
-    top: 15,
-    left: 16,
-    right: 16,
-    height: 4,
-    backgroundColor: '#e5e2e1',
-    borderRadius: 2,
-  },
-
-  step: {
-    alignItems: 'center',
-    gap: 8,
-    zIndex: 1,
-  },
-
   stepDotActive: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#ab3500',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: PRIMARY, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45, shadowRadius: 12, elevation: 8,
   },
 
-  stepDotCurrent: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#ab3500',
-    borderWidth: 4,
-    borderColor: '#ffb59d',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-
-  stepPulse: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#fff',
-  },
-
-  stepDotInactive: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#e5e2e1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  stepLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#594139',
-    letterSpacing: 0.5,
-    lineHeight: 16,
-  },
-
-  stepLabelCurrent: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#ab3500',
-    letterSpacing: 0.5,
-    lineHeight: 16,
-  },
-
-  stepLabelInactive: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#594139',
-    opacity: 0.5,
-    letterSpacing: 0.5,
-    lineHeight: 16,
-  },
+  stepLabelWrap: { position: "absolute", width: 100, zIndex: 5 },
+  stepLabel: { fontSize: 11, fontWeight: "600", lineHeight: 15 },
+  stepLabelActive: { fontSize: 13, fontWeight: "800", color: PRIMARY },
 
   riderCard: {
-    backgroundColor: '#f6f3f2',
-    borderRadius: 24,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#e1bfb515',
-  },
-
-  riderInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-
-  riderAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#ffdbd0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-
-  riderName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1b1c1c',
-    lineHeight: 20,
-    letterSpacing: 0.1,
-  },
-
-  riderRole: {
-    fontSize: 14,
-    color: '#594139',
-    lineHeight: 20,
-    marginTop: 2,
-  },
-
-  riderActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-
-  chatBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e1bfb510',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  callBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: '#ab3500',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 16,
-  },
-
-  addressIcon: {
-    backgroundColor: '#e5e2e1',
-    padding: 8,
-    borderRadius: 12,
-    marginTop: 2,
-  },
-
-  addressInfo: {
-    flex: 1,
-  },
-
-  addressLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1b1c1c',
-    lineHeight: 20,
-    letterSpacing: 0.1,
-  },
-
-  addressText: {
-    fontSize: 14,
-    color: '#594139',
-    lineHeight: 20,
-    marginTop: 2,
-  },
-
-  editBtn: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ab3500',
-    lineHeight: 20,
-    letterSpacing: 0.1,
-  },
-
-  deliveredButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#006D37',
-    paddingVertical: 14,
+    position: "absolute", left: 16, bottom: 16,
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: SURFACE_LOWEST,
     borderRadius: 14,
-    marginTop: 20,
+    paddingHorizontal: 12, paddingVertical: 10,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 4,
+    zIndex: 7,
   },
+  riderAvatarWrap: { position: "relative" },
+  riderAvatarSmall: {
+    width: 36, height: 36, borderRadius: 12,
+    backgroundColor: `${PRIMARY}15`, alignItems: "center", justifyContent: "center",
+  },
+  riderRatingBadge: {
+    position: "absolute", bottom: -3, right: -3,
+    backgroundColor: SURFACE_LOWEST, borderRadius: 6,
+    flexDirection: "row", alignItems: "center", gap: 1,
+    paddingHorizontal: 4, paddingVertical: 1,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+  },
+  riderRatingMini: { fontSize: 8, fontWeight: "800", color: ON_SURFACE, lineHeight: 10 },
+  riderInfoCol: { gap: 4 },
+  riderNameSmall: { fontSize: 12, fontWeight: "700", color: ON_SURFACE, lineHeight: 16 },
+  riderActionRow: { flexDirection: "row", gap: 6 },
+  chatMini: { width: 26, height: 26, borderRadius: 8, backgroundColor: PRIMARY + "12", alignItems: "center", justifyContent: "center" },
+  callMini: { width: 26, height: 26, borderRadius: 8, backgroundColor: PRIMARY, alignItems: "center", justifyContent: "center" },
 
-  deliveredButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFF',
-    lineHeight: 22,
+  actionRow: { flexDirection: "row", gap: 12, marginTop: 8 },
+  helpBtn: {
+    flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: `${OUTLINE_VARIANT}80`,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: SURFACE_LOWEST,
   },
+  helpBtnText: { fontSize: 15, fontWeight: "700", color: ON_SURFACE_VARIANT, lineHeight: 22 },
+  cancelBtn: {
+    flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: `${ERROR}33`,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: SURFACE_LOWEST,
+  },
+  cancelBtnText: { fontSize: 15, fontWeight: "700", color: ERROR, lineHeight: 22 },
+
+  finalStateCard: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  finalIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 20 },
+  finalTitle: { fontSize: 24, fontWeight: "800", lineHeight: 32, marginBottom: 8, textAlign: "center" },
+  finalSubtext: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20, textAlign: "center", marginBottom: 24 },
 });

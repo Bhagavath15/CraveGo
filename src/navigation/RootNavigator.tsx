@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Image, StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import OnBoardingScreen from "../screens/OnBoardingScreen";
@@ -24,13 +24,31 @@ import PaymentMethodsScreen from "../screens/PaymentMethodsScreen";
 import FavoritesScreen from "../screens/FavoritesScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import HelpSupportScreen from "../screens/HelpSupportScreen";
+import AddAddressScreen from "../screens/AddAddressScreen";
 import { getToken } from "../utils/authStore";
+import { setOnUnauthorized, clearAuthToken } from "../api/client";
+
+export const navigationRef = createNavigationContainerRef();
+
+export const resetToAuth = () => {
+    if (navigationRef.isReady()) {
+        navigationRef.reset({ index: 0, routes: [{ name: "OnBoarding" }] });
+    }
+};
 
 const Stack = createNativeStackNavigator();
 
 const RootNavigator = () => {
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        setOnUnauthorized(() => {
+            clearAuthToken();
+            setToken(null);
+            resetToAuth();
+        });
+    }, []);
 
     useEffect(() => {
         const loadToken = async () => {
@@ -68,6 +86,7 @@ const RootNavigator = () => {
                 <Stack.Screen name="ReviewRating" component={ReviewRatingScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="AddAddress" component={AddAddressScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="AddressBook" component={AddressBookScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "slide_from_right", headerShown: false }} />

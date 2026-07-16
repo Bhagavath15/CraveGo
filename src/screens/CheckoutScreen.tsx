@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
+    Alert,
     Image,
     ScrollView,
     StyleSheet,
@@ -17,6 +18,9 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { useCart } from "../context/CartContext";
+import { placeOrder } from "../api/order";
+import { getAddresses, Address } from "../api/address";
+import Skeleton from "../components/Skeleton";
 
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
@@ -35,15 +39,96 @@ const CheckoutScreen = () => {
     const route = useRoute<RouteProps>();
     const { restaurantId } = route.params;
     const cart = useCart();
-    const [selectedPayment, setSelectedPayment] = useState("online");
+    const [selectedPayment, setSelectedPayment] = useState("ONLINE");
+    const [placing, setPlacing] = useState(false);
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState("");
+    const [addressesLoading, setAddressesLoading] = useState(true);
 
-    const deliveryFee = 0;
-    const taxesAndCharges = 0;
-    const grandTotal = cart.totalAmount + deliveryFee + taxesAndCharges;
+    useEffect(() => {
+        const loadAddresses = async () => {
+            setAddressesLoading(true);
+            try {
+                const res = await getAddresses();
+                if (res.success && res.addresses?.length) {
+                    setAddresses(res.addresses);
+                    const def = res.addresses.find(a => a.isDefault) || res.addresses[0];
+                    setSelectedAddressId(def._id);
+                }
+            } catch { }
+            setAddressesLoading(false);
+        };
+        loadAddresses();
+    }, []);
 
-    const handlePlaceOrder = () => {
-        const count = cart.cartItems.reduce((s, i) => s + i.quantity, 0);
-        navigation.navigate("OrderSuccess", { itemCount: count });
+    const selectedAddr = addresses.length > 0
+        ? addresses.find(a => a._id === selectedAddressId) || addresses[0]
+        : null;
+
+    const deliveryFee = cart.deliveryFee ?? 0;
+    const taxesAndCharges = cart.taxes ?? 0;
+    const grandTotal = cart.grandTotal ?? (cart.totalAmount + deliveryFee + taxesAndCharges);
+
+    const handlePlaceOrder = async () => {
+        if (placing) return;
+        if (!selectedAddr) {
+            Alert.alert("Address Required", "Please add a delivery address before placing the order.");
+            return;
+        }
+        if (!selectedAddr.fullName?.trim()) {
+            Alert.alert("Invalid Address", "The selected address is missing a recipient name. Please update it.");
+            return;
+        }
+        if (!/^\d{6}$/.test(selectedAddr.pincode)) {
+            Alert.alert("Invalid Address", "The selected address has an invalid pincode. Please update it.");
+            return;
+        }
+        if (!/^\d{10}$/.test(selectedAddr.mobileNumber?.replace(/\D/g, ''))) {
+            Alert.alert("Invalid Address", "The selected address has an invalid mobile number. Please update it.");
+            return;
+        }
+        setPlacing(true);
+        try {
+            const items = cart.cartItems.map((i) => ({
+                menuItemId: i.id,
+                quantity: i.quantity,
+            }));
+            const orderPayload = {
+                restaurantId,
+                items,
+                addressId: selectedAddr._id,
+                paymentMethod: selectedPayment,
+            };
+            console.warn("placeOrder request:", JSON.stringify(orderPayload));
+            const res = await placeOrder(orderPayload);
+            console.warn("placeOrder response:", JSON.stringify(res));
+            if (res.success && res.order) {
+                const count = cart.cartItems.reduce((s, i) => s + i.quantity, 0);
+                cart.clearCart();
+                const snap = res.order.restaurantSnapshot || {};
+                navigation.navigate("OrderSuccess", {
+                    itemCount: count,
+                    orderId: res.order._id,
+                    orderNumber: res.order.orderNumber,
+                    restaurantName: snap.name || res.order.restaurantName || "Restaurant",
+                    totalPrice: res.order.grandTotal ?? res.order.totalPrice ?? 0,
+                    items: res.order.items.map(i => ({
+                        id: i.menuItemId,
+                        name: i.name,
+                        quantity: i.quantity,
+                        price: i.price,
+                    })),
+                });
+            } else {
+                const errMsg = res.message || JSON.stringify(res);
+                Alert.alert("Order Failed", errMsg);
+            }
+        } catch (err) {
+            Alert.alert("Error", `Something went wrong: ${err instanceof Error ? err.message : "Please try again"}`);
+            console.warn("placeOrder exception:", err);
+        } finally {
+            setPlacing(false);
+        }
     };
 
     const handleRemove = (itemId: string) => {
@@ -152,15 +237,29 @@ const CheckoutScreen = () => {
                                 Delivery Address
                             </Text>
                         </View>
-                        <TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate("AddressBook")}
+                        >
                             <Text style={styles.changeText}>Change</Text>
                         </TouchableOpacity>
                     </View>
                     <View style={styles.addressCard}>
-                        <Text style={styles.addressLabel}>Home</Text>
-                        <Text style={styles.addressText}>
-                            {cart.restaurantName ? `${cart.restaurantName} - Default Address` : "No address available"}
-                        </Text>
+                        {addressesLoading ? (
+                            <View style={{ gap: 8 }}>
+                                <Skeleton width="30%" height={14} borderRadius={6} />
+                                <Skeleton width="100%" height={14} borderRadius={6} />
+                                <Skeleton width="60%" height={14} borderRadius={6} />
+                            </View>
+                        ) : !selectedAddr ? (
+                            <Text style={styles.addressText}>No address available</Text>
+                        ) : (
+                            <>
+                                <Text style={styles.addressLabel}>{selectedAddr.addressType}</Text>
+                                <Text style={styles.addressText}>
+                                    {selectedAddr.houseNumber}{selectedAddr.apartment ? `, ${selectedAddr.apartment}` : ""}, {selectedAddr.area}, {selectedAddr.city} — {selectedAddr.pincode}
+                                </Text>
+                            </>
+                        )}
                     </View>
                 </View>
 
@@ -211,12 +310,12 @@ const CheckoutScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.paymentOption,
-                            selectedPayment === "online" && styles.paymentOptionSelected,
+                            selectedPayment === "ONLINE" && styles.paymentOptionSelected,
                         ]}
-                        onPress={() => setSelectedPayment("online")}
+                        onPress={() => setSelectedPayment("ONLINE")}
                     >
                         <View style={styles.radioOuter}>
-                            {selectedPayment === "online" && (
+                            {selectedPayment === "ONLINE" && (
                                 <View style={styles.radioInner} />
                             )}
                         </View>
@@ -237,12 +336,12 @@ const CheckoutScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.paymentOption,
-                            selectedPayment === "cod" && styles.paymentOptionSelected,
+                            selectedPayment === "COD" && styles.paymentOptionSelected,
                         ]}
-                        onPress={() => setSelectedPayment("cod")}
+                        onPress={() => setSelectedPayment("COD")}
                     >
                         <View style={styles.radioOuter}>
-                            {selectedPayment === "cod" && (
+                            {selectedPayment === "COD" && (
                                 <View style={styles.radioInner} />
                             )}
                         </View>
@@ -265,16 +364,21 @@ const CheckoutScreen = () => {
 
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={styles.placeOrderButton}
+                    style={[styles.placeOrderButton, placing && { opacity: 0.7 }]}
                     onPress={handlePlaceOrder}
+                    disabled={placing}
                     activeOpacity={0.9}
                 >
-                    <Text style={styles.placeOrderText}>Place Order</Text>
-                    <MaterialCommunityIcons
-                        name="chevron-right"
-                        size={24}
-                        color="#FFF"
-                    />
+                    <Text style={styles.placeOrderText}>
+                        {placing ? "Placing Order..." : "Place Order"}
+                    </Text>
+                    {!placing && (
+                        <MaterialCommunityIcons
+                            name="chevron-right"
+                            size={24}
+                            color="#FFF"
+                        />
+                    )}
                 </TouchableOpacity>
                 <Text style={styles.totalPayable}>
                     Total Payable • ₹{grandTotal}
@@ -302,7 +406,7 @@ const styles = StyleSheet.create({
         backgroundColor: `${BG}E6`,
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "700",
         color: ON_SURFACE,
     },
@@ -324,7 +428,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "600",
         color: ON_SURFACE,
     },
@@ -365,14 +469,14 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
     },
     cartItemName: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: "600",
         color: ON_SURFACE,
         flex: 1,
         marginRight: 8,
     },
     cartItemPrice: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: "600",
         color: PRIMARY,
     },
@@ -465,7 +569,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     billSectionTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "600",
         color: ON_SURFACE,
         paddingBottom: 12,
@@ -480,11 +584,11 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
     },
     billLabel: {
-        fontSize: 15,
+        fontSize: 14,
         color: ON_SURFACE_VARIANT,
     },
     billValue: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "600",
         color: ON_SURFACE,
     },
@@ -504,12 +608,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     grandTotalLabel: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: "700",
         color: ON_SURFACE,
     },
     grandTotalValue: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: "700",
         color: PRIMARY,
     },
@@ -530,7 +634,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     paymentSectionTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "600",
         color: ON_SURFACE,
     },
@@ -601,7 +705,7 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     placeOrderText: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "600",
         color: "#FFF",
     },

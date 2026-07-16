@@ -1,875 +1,455 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-    FlatList,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
+import { connectSocket } from "../api/socket";
+import { getOrders, reorder } from "../api/order";
 
-const PRIMARY = "#ab3500";
-const PRIMARY_CONTAINER = "#FF6B35";
-const SECONDARY = "#006D37";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
+const PRIMARY = "#FF6B35";
+const ON_PRIMARY = "#ffffff";
+const PRIMARY_TEXT = "#ab3500";
+const SECONDARY = "#006d37";
+const BG = "#fcf9f8";
+const ON_SURFACE = "#1b1c1c";
 const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER_HIGH = "#EAE7E7";
-const SURFACE_CONTAINER = "#F0EDED";
-const SURFACE_VARIANT = "#E5E2E1";
-const SURFACE_CONTAINER_LOW = "#F6F3F2";
-const SECONDARY_CONTAINER = "#6BFE9C";
+const OUTLINE_VARIANT = "#e1bfb5";
+const SURFACE_LOWEST = "#ffffff";
+const SURFACE_CONTAINER_LOW = "#f6f3f2";
+const SURFACE_CONTAINER = "#f0eded";
+const SURFACE_CONTAINER_HIGH = "#eae7e7";
+const SURFACE_VARIANT = "#e5e2e1";
+const ERROR = "#ba1a1a";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-interface OrderItem {
-    id: string;
-    name: string;
-    quantity: number;
+interface OrderItemData {
+  id: string;
+  name: string;
+  quantity: number;
 }
 
-interface ActiveOrder {
-    id: string;
-    orderNumber: string;
-    restaurantName: string;
-    status: "Preparing" | "On the Way" | "Delivered" | "Cancelled";
-    items: OrderItem[];
-    totalPrice: number;
-    estimatedArrival?: string;
-    date: string;
+interface ActiveOrderData {
+  id: string;
+  orderNumber: string;
+  restaurantName: string;
+  image?: string;
+  statusText: string;
+  statusIcon: string;
+  items: OrderItemData[];
+  totalPrice: number;
+  estimatedArrival?: string;
 }
 
-interface PastOrder {
-    id: string;
-    restaurantName: string;
-    dateTime: string;
-    status: "Delivered" | "Cancelled";
-    items: OrderItem[];
-    totalPrice: number;
-    rating?: number;
+interface PastOrderData {
+  id: string;
+  restaurantName: string;
+  image?: string;
+  dateTime: string;
+  status: "Delivered" | "Cancelled";
+  items: OrderItemData[];
+  totalPrice: number;
+  rating?: number;
 }
 
-const ACTIVE_ORDERS: ActiveOrder[] = [
-    {
-        id: "1",
-        orderNumber: "CG-88219",
-        restaurantName: "Spice Garden",
-        status: "Preparing",
-        items: [
-            { id: "101", name: "Special Chicken Biryani", quantity: 2 },
-            { id: "102", name: "Raita", quantity: 1 },
-        ],
-        totalPrice: 450,
-        estimatedArrival: "25 - 30 Mins",
-        date: "Oct 15, 2023",
-    },
-];
-
-const PAST_ORDERS: PastOrder[] = [
-    {
-        id: "2",
-        restaurantName: "Madras Meals",
-        dateTime: "24 Oct 2023 • 12:45 PM",
-        status: "Delivered",
-        items: [
-            { id: "201", name: "Ghee Podi Idli", quantity: 1 },
-            { id: "202", name: "Filter Coffee", quantity: 1 },
-            { id: "203", name: "Mini Tiffin Combo", quantity: 1 },
-        ],
-        totalPrice: 450,
-    },
-    {
-        id: "3",
-        restaurantName: "Biryani Blues",
-        dateTime: "21 Oct 2023 • 08:30 PM",
-        status: "Delivered",
-        items: [
-            { id: "301", name: "Chicken Dum Biryani", quantity: 2 },
-            { id: "302", name: "Mirchi ka Salan", quantity: 1 },
-            { id: "303", name: "Double ka Meetha", quantity: 1 },
-        ],
-        totalPrice: 890,
-        rating: 4,
-    },
-    {
-        id: "4",
-        restaurantName: "Burger King",
-        dateTime: "15 Oct 2023 • 01:15 PM",
-        status: "Delivered",
-        items: [
-            { id: "401", name: "Whopper Jr. Veg", quantity: 1 },
-            { id: "402", name: "Large Fries", quantity: 1 },
-            { id: "403", name: "Pepsi", quantity: 1 },
-        ],
-        totalPrice: 320,
-    },
-    {
-        id: "5",
-        restaurantName: "Punjabi Dhaba",
-        dateTime: "10 Oct 2023 • 07:00 PM",
-        status: "Cancelled",
-        items: [
-            { id: "501", name: "Paneer Butter Masala", quantity: 1 },
-            { id: "502", name: "Garlic Naan", quantity: 2 },
-        ],
-        totalPrice: 540,
-    },
-];
-
-const STATUS_COLORS: Record<string, string> = {
-    Preparing: PRIMARY_CONTAINER,
-    "On the Way": "#2196F3",
-    Delivered: SECONDARY,
-    Cancelled: "#BA1A1A",
+const ACTIVE_STATUS_CONFIG: Record<number, { text: string; icon: string }> = {
+  0: { text: "Waiting for confirmation", icon: "clipboard-list-outline" },
+  1: { text: "Order Accepted", icon: "check-circle" },
+  2: { text: "Preparing your meal", icon: "bell" },
+  3: { text: "Ready for pickup", icon: "silverware" },
+  4: { text: "Picked up", icon: "motorbike" },
+  5: { text: "On the way", icon: "map-marker" },
 };
 
-const OrderStatusBadge = ({ status }: { status: string }) => (
-    <View style={styles.statusRow}>
-        <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[status] }]} />
-        <Text style={[styles.statusBadgeText, { color: STATUS_COLORS[status] }]}>
-            {status}
-        </Text>
+const StatusBadge = ({ status }: { status: string }) => {
+  const isDelivered = status === "Delivered";
+  const isCancelled = status === "Cancelled";
+  const color = isCancelled ? ERROR : SECONDARY;
+  const icon = isCancelled ? "cancel" : "check-circle";
+  return (
+    <View style={[as.pill, { backgroundColor: isCancelled ? "#FFDAD6" : `${SECONDARY}15`, borderColor: isCancelled ? "#FFDAD699" : `${SECONDARY}30` }]}>
+      <MaterialCommunityIcons name={icon} size={14} color={color} />
+      <Text style={[as.pillText, { color }]}>{status}</Text>
     </View>
-);
-
-const ActiveOrderCard = ({ order }: { order: ActiveOrder }) => {
-    const navigation = useNavigation<NavigationProp>();
-    const itemsText = order.items
-        .map((item) => `${item.quantity}x ${item.name}`)
-        .join(", ");
-
-    return (
-        <View style={styles.orderCard}>
-            <View style={styles.orderBody}>
-                <View style={styles.activeImage}>
-                    <MaterialCommunityIcons
-                        name="silverware"
-                        size={32}
-                        color={ON_SURFACE_VARIANT}
-                    />
-                </View>
-                <View style={styles.orderInfo}>
-                    <View style={styles.orderHeaderRow}>
-                        <Text style={styles.restaurantName}>
-                            {order.restaurantName}
-                        </Text>
-                    </View>
-                    <OrderStatusBadge status={order.status} />
-                    <Text style={styles.itemsText} numberOfLines={1}>
-                        {itemsText}
-                    </Text>
-                </View>
-            </View>
-            <View style={styles.cardDivider} />
-            <View style={styles.etaRow}>
-                <View>
-                    <Text style={styles.etaLabel}>ESTIMATED ARRIVAL</Text>
-                    <Text style={styles.etaValue}>
-                        {order.estimatedArrival}
-                    </Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.trackButton}
-                    onPress={() => navigation.navigate("TrackMyOrder")}
-                >
-                    <Text style={styles.trackButtonText}>Track Order</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+  );
 };
 
-const PastOrderCard = ({ order }: { order: PastOrder }) => {
-    const navigation = useNavigation<NavigationProp>();
-    const itemsText = order.items
-        .map((item) => `${item.quantity}x ${item.name}`)
-        .join(", ");
-    const isCancelled = order.status === "Cancelled";
-
-    return (
-        <View style={[styles.orderCard, isCancelled && styles.cancelledCard]}>
-            <View style={styles.pastTopRow}>
-                <View style={styles.pastLeft}>
-                    <View style={[styles.pastImage, isCancelled && styles.cancelledImage]}>
-                        <MaterialCommunityIcons
-                            name="silverware"
-                            size={24}
-                            color={ON_SURFACE_VARIANT}
-                        />
-                    </View>
-                    <View>
-                        <Text style={styles.restaurantName}>
-                            {order.restaurantName}
-                        </Text>
-                        <Text style={styles.pastDate}>
-                            {order.dateTime}
-                        </Text>
-                    </View>
-                </View>
-                <View style={styles.pastRight}>
-                    <View
-                        style={[
-                            styles.statusBadgePill,
-                            {
-                                backgroundColor: isCancelled
-                                    ? "#FFDAD6"
-                                    : `${SECONDARY_CONTAINER}33`,
-                                borderColor: isCancelled
-                                    ? "#FFDAD699"
-                                    : `${SECONDARY_CONTAINER}66`,
-                            },
-                        ]}
-                    >
-                        <MaterialCommunityIcons
-                            name={
-                                isCancelled
-                                    ? "cancel"
-                                    : "check-circle"
-                            }
-                            size={14}
-                            color={
-                                isCancelled ? "#BA1A1A" : SECONDARY
-                            }
-                        />
-                        <Text
-                            style={[
-                                styles.statusPillText,
-                                {
-                                    color: isCancelled
-                                        ? "#BA1A1A"
-                                        : SECONDARY,
-                                },
-                            ]}
-                        >
-                            {order.status}
-                        </Text>
-                    </View>
-                    <Text style={styles.pastPrice}>₹{order.totalPrice}</Text>
-                </View>
+const ActiveOrderCard = ({ order }: { order: ActiveOrderData }) => {
+  const navigation = useNavigation<NavigationProp>();
+  const itemsText = order.items.map(i => `${i.quantity}x ${i.name}`).join(", ");
+  return (
+    <View style={as.card}>
+      <View style={as.cardTop}>
+        <View style={as.cardHeader}>
+          <View style={as.restaurantInfo}>
+            <View style={as.imageBox}>
+              {order.image ? (
+                <Image source={{ uri: order.image }} style={as.image} />
+              ) : (
+                <MaterialCommunityIcons name="silverware" size={22} color={ON_SURFACE_VARIANT} />
+              )}
             </View>
-
-            <View style={styles.pastDivider}>
-                <Text style={styles.itemsText}>{itemsText}</Text>
+            <View>
+              <Text style={as.restaurantName}>{order.restaurantName}</Text>
+              <Text style={as.orderNumber}>{order.orderNumber}</Text>
             </View>
-
-            <View style={styles.pastActions}>
-                {order.rating ? (
-                    <View style={styles.starsRow}>
-                        {[1, 2, 3, 4, 5].map((s) => (
-                            <MaterialCommunityIcons
-                                key={s}
-                                name={s <= order.rating! ? "star" : "star-outline"}
-                                size={16}
-                                color={
-                                    s <= order.rating!
-                                        ? PRIMARY_CONTAINER
-                                        : OUTLINE_VARIANT
-                                }
-                            />
-                        ))}
-                        <Text style={styles.ratedText}>
-                            Rated {order.rating}.0
-                        </Text>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={styles.rateButton}
-                        onPress={() =>
-                            !isCancelled &&
-                            navigation.navigate("ReviewRating", {
-                                restaurantName: order.restaurantName,
-                                orderNumber: order.id,
-                                deliveredTime: order.dateTime,
-                                items: order.items,
-                                totalPrice: order.totalPrice,
-                            })
-                        }
-                    >
-                        <MaterialCommunityIcons
-                            name="star"
-                            size={16}
-                            color={PRIMARY_CONTAINER}
-                        />
-                        <Text style={styles.rateButtonText}>
-                            {isCancelled ? "" : "Rate your experience"}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-                <TouchableOpacity style={styles.reorderBtn}>
-                    <MaterialCommunityIcons
-                        name="replay"
-                        size={18}
-                        color="#5F1900"
-                    />
-                    <Text style={styles.reorderBtnText}>
-                        {isCancelled ? "Retry" : "Reorder"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+          </View>
         </View>
-    );
+      </View>
+
+      <View style={as.statusRow}>
+        <View style={as.statusIconBox}>
+          <MaterialCommunityIcons name={order.statusIcon as any} size={18} color={PRIMARY} />
+        </View>
+        <Text style={as.statusText}>{order.statusText}</Text>
+      </View>
+
+      <Text style={as.itemsText} numberOfLines={1}>{itemsText}</Text>
+
+      <View style={as.metaRow}>
+        <View>
+          <Text style={as.metaLabel}>Estimated Arrival</Text>
+          <Text style={as.metaValue}>{order.estimatedArrival || "25 - 30 mins"}</Text>
+        </View>
+        <View style={as.priceCol}>
+          <Text style={as.metaLabel}>Total Price</Text>
+          <Text style={as.metaValue}>₹{order.totalPrice}</Text>
+        </View>
+      </View>
+
+      <View style={as.cardActions}>
+        <TouchableOpacity
+          style={as.trackBtn}
+          onPress={() => navigation.navigate("TrackMyOrder", {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            restaurantName: order.restaurantName,
+            totalPrice: order.totalPrice,
+            items: order.items,
+          })}
+        >
+          <MaterialCommunityIcons name="map-marker" size={16} color={PRIMARY_TEXT} />
+          <Text style={as.trackBtnText}>Track Order</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const PastOrderCard = ({ order }: { order: PastOrderData }) => {
+  const navigation = useNavigation<NavigationProp>();
+  const itemsText = order.items.map(i => `${i.quantity}x ${i.name}`).join(", ");
+  const isCancelled = order.status === "Cancelled";
+
+  const handleReorder = async () => {
+    const res = await reorder(order.id);
+    if (res.success) navigation.navigate("Home");
+  };
+
+  return (
+    <View style={as.card}>
+      <View style={as.pastTopRow}>
+        <View style={as.restaurantInfo}>
+          <View style={[as.imageBox, as.pastImageBox]}>
+            {order.image ? (
+              <Image source={{ uri: order.image }} style={as.image} />
+            ) : (
+              <MaterialCommunityIcons name="silverware" size={22} color={ON_SURFACE_VARIANT} />
+            )}
+          </View>
+          <Text style={as.restaurantName}>{order.restaurantName}</Text>
+        </View>
+        <Text style={as.pastPrice}>₹{order.totalPrice}</Text>
+      </View>
+
+      <View style={as.pastStatusRow}>
+        <StatusBadge status={order.status} />
+        <Text style={as.pastDate}> • {order.dateTime}</Text>
+      </View>
+
+      <Text style={as.itemsText}>{itemsText}</Text>
+
+      <View style={as.pastActions}>
+        <TouchableOpacity style={as.reorderBtn} onPress={handleReorder}>
+          <MaterialCommunityIcons name="replay" size={16} color={PRIMARY_TEXT} />
+          <Text style={as.reorderBtnText}>Reorder</Text>
+        </TouchableOpacity>
+        {isCancelled ? (
+          <TouchableOpacity style={as.detailBtn}>
+            <MaterialCommunityIcons name="information-outline" size={18} color={ON_SURFACE_VARIANT} />
+          </TouchableOpacity>
+        ) : order.rating ? (
+          <View style={as.ratedBadge}>
+            <MaterialCommunityIcons name="star" size={14} color={PRIMARY} />
+            <Text style={as.ratedText}>{order.rating}.0</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={as.rateMealBtn}
+            onPress={() => navigation.navigate("ReviewRating", {
+              restaurantName: order.restaurantName,
+              orderNumber: order.id,
+              deliveredTime: order.dateTime,
+              items: order.items.map(i => ({ id: i.id, name: i.name, quantity: i.quantity })),
+              totalPrice: order.totalPrice,
+            })}
+          >
+            <MaterialCommunityIcons name="star" size={16} color={PRIMARY} />
+            <Text style={as.rateMealText}>Rate Meal</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
 };
 
 const OrdersScreen = () => {
-    const insets = useSafeAreaInsets();
-    const navigation = useNavigation<NavigationProp>();
-    const [activeTab, setActiveTab] = useState<"Active" | "Past">("Active");
-    const [filter, setFilter] = useState<string>("All Orders");
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp>();
+  const [activeTab, setActiveTab] = useState<"Active" | "Past">("Active");
+  const [filter, setFilter] = useState<string>("All Orders");
+  const [apiActive, setApiActive] = useState<ActiveOrderData[]>([]);
+  const [apiPast, setApiPast] = useState<PastOrderData[]>([]);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-    const filters = ["All Orders", "Active", "Cancelled"];
+  const loadOrders = async () => {
+    try {
+      const res = await getOrders();
+      if (res.success && res.orders?.length) {
+        const fmtDate = (iso: string) => {
+          const d = new Date(iso);
+          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const day = d.getDate();
+          const month = months[d.getMonth()];
+          const hours = d.getHours();
+          const minutes = d.getMinutes().toString().padStart(2, "0");
+          const ampm = hours >= 12 ? "PM" : "AM";
+          const h12 = hours % 12 || 12;
+          return `${month} ${day}, ${h12}:${minutes} ${ampm}`;
+        };
+        const active: ActiveOrderData[] = [];
+        const past: PastOrderData[] = [];
+        for (const o of res.orders) {
+          const orderItems = (o.items || []).map(i => ({ id: i.menuItemId, name: i.name, quantity: i.quantity }));
+          const conf = ACTIVE_STATUS_CONFIG[o.orderStatus];
+          const snap = o.restaurantSnapshot || {};
+          const name = snap.name || o.restaurantName || "Restaurant";
+          const image = snap.image || o.restaurantImage || "";
+          const price = o.grandTotal ?? o.totalPrice ?? 0;
+          if (o.orderStatus >= 6) {
+            past.push({
+              id: o._id, restaurantName: name, image,
+              dateTime: fmtDate(o.createdAt),
+              status: o.orderStatus === 7 ? "Cancelled" : "Delivered",
+              items: orderItems, totalPrice: price, rating: o.isRated ? 5 : undefined,
+            });
+          } else {
+            active.push({
+              id: o._id, orderNumber: o.orderNumber, restaurantName: name, image,
+              statusText: conf?.text || "Preparing your meal", statusIcon: conf?.icon || "cook",
+              items: orderItems, totalPrice: price, estimatedArrival: o.estimatedTime || o.estimatedDeliveryTime ? `${o.estimatedDeliveryTime} mins` : undefined,
+            });
+          }
+        }
+        setApiActive(active);
+        setApiPast(past);
+      }
+    } catch {}
+  };
 
-    const filteredOrders =
-        filter === "All Orders"
-            ? PAST_ORDERS
-            : filter === "Cancelled"
-              ? PAST_ORDERS.filter((o) => o.status === "Cancelled")
-              : PAST_ORDERS.filter((o) => o.status === "Delivered");
+  useEffect(() => {
+    let mounted = true;
+    const handler = () => { if (mounted) loadOrders(); };
+    const init = async () => {
+      const socket = await connectSocket();
+      socket.off("order:update", handler);
+      socket.on("order:update", handler);
+    };
+    cleanupRef.current = () => {
+      connectSocket().then(s => s.off("order:update", handler));
+    };
+    loadOrders();
+    init();
+    return () => { mounted = false; cleanupRef.current?.(); };
+  }, []);
 
-    const renderActiveTab = () => (
-        <View style={styles.tabContent}>
-            {ACTIVE_ORDERS.length > 0 ? (
-                <>
-                    <View style={styles.sectionHeader}>
-                        <View style={styles.sectionTitleRow}>
-                            <Text style={styles.sectionTitle}>
-                                In Progress
-                            </Text>
-                            <View style={styles.orderCountBadge}>
-                                <Text style={styles.orderCountText}>
-                                    {ACTIVE_ORDERS.length} Order
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                    {ACTIVE_ORDERS.map((order) => (
-                        <ActiveOrderCard key={order.id} order={order} />
-                    ))}
-                </>
+  const filters = ["All Orders", "Active", "Cancelled"];
+  const filteredPast =
+    filter === "All Orders" ? apiPast
+      : filter === "Cancelled" ? apiPast.filter(o => o.status === "Cancelled")
+        : apiPast.filter(o => o.status === "Delivered");
+
+  return (
+    <View style={[s.wrapper, { paddingTop: insets.top }]}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBtn}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>My Orders</Text>
+        <TouchableOpacity style={s.headerBtn}>
+          <MaterialCommunityIcons name="magnify" size={24} color={ON_SURFACE} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={s.tabBar}>
+        {(["Active", "Past"] as const).map(tab => (
+          <TouchableOpacity key={tab} style={s.tabBtn} onPress={() => setActiveTab(tab)}>
+            <Text style={[s.tabText, activeTab === tab && s.tabTextActive]}>{tab === "Active" ? "Active" : "Past Orders"}</Text>
+            {activeTab === tab && <View style={s.tabIndicator} />}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView style={s.scroll} contentContainerStyle={s.scrollInner} showsVerticalScrollIndicator={false}>
+        {activeTab === "Active" ? (
+          <>
+            {apiActive.length > 0 ? (
+              <>
+                <View style={s.sectionHeader}>
+                  <Text style={s.sectionTitle}>In Progress</Text>
+                  <View style={s.countBadge}>
+                    <Text style={s.countText}>{apiActive.length} Order</Text>
+                  </View>
+                </View>
+                {apiActive.map(o => <ActiveOrderCard key={o.id} order={o} />)}
+              </>
             ) : (
-                <View style={styles.emptyState}>
-                    <MaterialCommunityIcons
-                        name="clipboard-list-outline"
-                        size={64}
-                        color={OUTLINE_VARIANT}
-                    />
-                    <Text style={styles.emptyTitle}>No Active Orders</Text>
-                    <Text style={styles.emptySubtitle}>
-                        Your active orders will appear here
-                    </Text>
-                </View>
+              <View style={s.emptyState}>
+                <MaterialCommunityIcons name="clipboard-list-outline" size={64} color={OUTLINE_VARIANT} />
+                <Text style={s.emptyTitle}>No Active Orders</Text>
+                <Text style={s.emptySub}>Your active orders will appear here</Text>
+              </View>
             )}
-
-            <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleRow}>
-                    <Text style={styles.sectionTitle}>Recent History</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.viewAllText}>View All</Text>
-                    </TouchableOpacity>
+            {apiPast.length > 0 && (
+              <>
+                <View style={s.sectionHeader}>
+                  <Text style={s.sectionTitle}>Recent History</Text>
+                  <TouchableOpacity onPress={() => setActiveTab("Past")}>
+                    <Text style={s.viewAll}>View All</Text>
+                  </TouchableOpacity>
                 </View>
-            </View>
-            {PAST_ORDERS.slice(0, 2).map((order) => (
-                <PastOrderCard key={order.id} order={order} />
-            ))}
-        </View>
-    );
-
-    const renderPastTab = () => (
-        <View style={styles.tabContent}>
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filterRow}
-                contentContainerStyle={styles.filterContent}
-            >
-                {filters.map((f) => (
-                    <TouchableOpacity
-                        key={f}
-                        style={[
-                            styles.filterChip,
-                            filter === f && styles.filterChipActive,
-                        ]}
-                        onPress={() => setFilter(f)}
-                    >
-                        <Text
-                            style={[
-                                styles.filterChipText,
-                                filter === f && styles.filterChipTextActive,
-                            ]}
-                        >
-                            {f}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+                {apiPast.slice(0, 2).map(o => <PastOrderCard key={o.id} order={o} />)}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={s.filterContent}>
+              {filters.map(f => (
+                <TouchableOpacity key={f} style={[s.filterChip, filter === f && s.filterChipActive]} onPress={() => setFilter(f)}>
+                  <Text style={[s.filterChipText, filter === f && s.filterChipTextActive]}>{f}</Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
-            {filteredOrders.map((order) => (
-                <PastOrderCard key={order.id} order={order} />
-            ))}
-        </View>
-    );
+            {filteredPast.length > 0 ? (
+              filteredPast.map(o => <PastOrderCard key={o.id} order={o} />)
+            ) : (
+              <View style={s.emptyState}>
+                <MaterialCommunityIcons name="clipboard-list-outline" size={64} color={OUTLINE_VARIANT} />
+                <Text style={s.emptyTitle}>No {filter === "All Orders" ? "" : filter.toLowerCase()} orders</Text>
+                <Text style={s.emptySub}>{filter === "All Orders" ? "You have no past orders yet" : filter === "Cancelled" ? "No cancelled orders found" : "No delivered orders found"}</Text>
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
 
-    return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <View style={styles.header}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.headerBtn}
-                >
-                    <MaterialCommunityIcons
-                        name="arrow-left"
-                        size={24}
-                        color={ON_SURFACE}
-                    />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Orders</Text>
-                <View style={styles.headerRow}>
-                    <TouchableOpacity style={styles.headerBtn}>
-                        <MaterialCommunityIcons
-                            name="magnify"
-                            size={24}
-                            color={ON_SURFACE}
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerBtn}>
-                        <MaterialCommunityIcons
-                            name="bell-outline"
-                            size={24}
-                            color={ON_SURFACE}
-                        />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <View style={styles.tabBar}>
-                <TouchableOpacity
-                    style={styles.tabButton}
-                    onPress={() => setActiveTab("Active")}
-                >
-                    <Text
-                        style={[
-                            styles.tabButtonText,
-                            activeTab === "Active" &&
-                                styles.tabButtonTextActive,
-                        ]}
-                    >
-                        Active
-                    </Text>
-                    {activeTab === "Active" && (
-                        <View style={styles.tabActiveIndicator} />
-                    )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.tabButton}
-                    onPress={() => setActiveTab("Past")}
-                >
-                    <Text
-                        style={[
-                            styles.tabButtonText,
-                            activeTab === "Past" &&
-                                styles.tabButtonTextActive,
-                        ]}
-                    >
-                        Past
-                    </Text>
-                    {activeTab === "Past" && (
-                        <View style={styles.tabActiveIndicator} />
-                    )}
-                </TouchableOpacity>
-            </View>
-
-            <FlatList
-                data={["content"]}
-                renderItem={() =>
-                    activeTab === "Active"
-                        ? renderActiveTab()
-                        : renderPastTab()
-                }
-                keyExtractor={() => "content"}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.listContent}
-            />
-        </View>
-    );
+    </View>
+  );
 };
 
-export default OrdersScreen;
+const as = StyleSheet.create({
+  card: {
+    backgroundColor: SURFACE_LOWEST, borderRadius: 12, padding: 16, marginBottom: 12,
+    borderWidth: 1, borderColor: SURFACE_VARIANT,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+  },
+  cardTop: {},
+  cardHeader: {},
+  restaurantInfo: { flexDirection: "row", alignItems: "center", gap: 12 },
+  imageBox: { width: 48, height: 48, borderRadius: 10, backgroundColor: SURFACE_CONTAINER, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  pastImageBox: { width: 40, height: 40, borderRadius: 8 },
+  image: { width: "100%", height: "100%" },
+  restaurantName: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  orderNumber: { fontSize: 12, fontWeight: "500", color: ON_SURFACE_VARIANT, lineHeight: 16, letterSpacing: 0.5 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 },
+  statusIconBox: { width: 26, height: 26, borderRadius: 13, backgroundColor: `${PRIMARY}15`, alignItems: "center", justifyContent: "center" },
+  statusText: { fontSize: 13, fontWeight: "600", color: PRIMARY, lineHeight: 18 },
+  itemsText: { fontSize: 13, color: ON_SURFACE_VARIANT, lineHeight: 18, marginTop: 6 },
+  metaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: SURFACE_VARIANT },
+  metaLabel: { fontSize: 10, fontWeight: "500", color: ON_SURFACE_VARIANT, lineHeight: 14, letterSpacing: 0.5, textTransform: "uppercase" },
+  metaValue: { fontSize: 14, fontWeight: "700", color: ON_SURFACE, lineHeight: 20, marginTop: 2 },
+  priceCol: { alignItems: "flex-end" },
+  cardActions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
+  trackBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: PRIMARY,
+    paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10,
+  },
+  trackBtnText: { fontSize: 13, fontWeight: "700", color: PRIMARY_TEXT, lineHeight: 18 },
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: BG,
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-    },
-    headerBtn: {
-        width: 40,
-        height: 40,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    headerRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-    },
-    tabBar: {
-        flexDirection: "row",
-        borderBottomWidth: 1,
-        borderBottomColor: SURFACE_VARIANT,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-    },
-    tabButton: {
-        flex: 1,
-        paddingVertical: 12,
-        alignItems: "center",
-        position: "relative",
-    },
-    tabButtonText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    tabButtonTextActive: {
-        color: PRIMARY,
-    },
-    tabActiveIndicator: {
-        position: "absolute",
-        bottom: -1,
-        left: "25%",
-        right: "25%",
-        height: 3,
-        backgroundColor: PRIMARY,
-        borderRadius: 999,
-    },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 32,
-    },
-    tabContent: {
-        gap: 0,
-    },
-    sectionHeader: {
-        marginTop: 24,
-        marginBottom: 12,
-    },
-    sectionTitleRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-    },
-    orderCountBadge: {
-        backgroundColor: SECONDARY_CONTAINER,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 999,
-    },
-    orderCountText: {
-        fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE,
-        letterSpacing: 0.5,
-        lineHeight: 16,
-    },
-    viewAllText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    orderCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: SURFACE_VARIANT,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    cancelledCard: {
-        opacity: 0.8,
-    },
-    orderBody: {
-        flexDirection: "row",
-        gap: 12,
-    },
-    activeImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 12,
-        backgroundColor: SURFACE_CONTAINER,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    orderInfo: {
-        flex: 1,
-    },
-    orderHeaderRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-    },
-    restaurantName: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-    },
-    statusRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        marginTop: 4,
-    },
-    statusDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-    },
-    statusBadgeText: {
-        fontSize: 14,
-        fontWeight: "600",
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    itemsText: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        marginTop: 4,
-    },
-    cardDivider: {
-        height: 1,
-        backgroundColor: SURFACE_VARIANT,
-        marginVertical: 12,
-    },
-    etaRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-    etaLabel: {
-        fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-    },
-    etaValue: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-    },
-    trackButton: {
-        backgroundColor: PRIMARY_CONTAINER,
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 12,
-        shadowColor: PRIMARY_CONTAINER,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    trackButtonText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#5F1900",
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    filterRow: {
-        marginBottom: 12,
-    },
-    filterContent: {
-        gap: 8,
-        flexDirection: "row",
-    },
-    filterChip: {
-        paddingHorizontal: 24,
-        paddingVertical: 8,
-        backgroundColor: SURFACE_CONTAINER_HIGH,
-        borderRadius: 999,
-    },
-    filterChipActive: {
-        backgroundColor: PRIMARY_CONTAINER,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    filterChipText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    filterChipTextActive: {
-        color: "#5F1900",
-    },
-    pastTopRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-    },
-    pastLeft: {
-        flexDirection: "row",
-        gap: 12,
-        flex: 1,
-    },
-    pastImage: {
-        width: 64,
-        height: 64,
-        borderRadius: 8,
-        backgroundColor: SURFACE_CONTAINER,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    cancelledImage: {
-        opacity: 0.5,
-    },
-    pastDate: {
-        fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        marginTop: 4,
-    },
-    pastRight: {
-        alignItems: "flex-end",
-        marginLeft: 12,
-    },
-    statusBadgePill: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        borderWidth: 1,
-    },
-    statusPillText: {
-        fontSize: 11,
-        fontWeight: "500",
-        lineHeight: 16,
-        letterSpacing: 0.5,
-    },
-    pastPrice: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        lineHeight: 28,
-        marginTop: 8,
-    },
-    pastDivider: {
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: SURFACE_VARIANT,
-        marginTop: 12,
-        paddingVertical: 12,
-        marginBottom: 12,
-    },
-    pastActions: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    starsRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 2,
-    },
-    ratedText: {
-        fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        marginLeft: 4,
-    },
-    rateButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-    },
-    rateButtonText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY_CONTAINER,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    reorderBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        backgroundColor: PRIMARY_CONTAINER,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        shadowColor: PRIMARY_CONTAINER,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-        elevation: 3,
-    },
-    reorderBtnText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#5F1900",
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    emptyState: {
-        alignItems: "center",
-        paddingVertical: 48,
-        gap: 8,
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-    },
+  pastTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  pastPrice: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  pastStatusRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  pastDate: { fontSize: 11, fontWeight: "500", color: ON_SURFACE_VARIANT, lineHeight: 16, letterSpacing: 0.5 },
+  pill: {
+    flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 8, borderWidth: 1,
+  },
+  pillText: { fontSize: 11, fontWeight: "600", lineHeight: 16 },
+  pastActions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
+  reorderBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: PRIMARY,
+    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10,
+  },
+  reorderBtnText: { fontSize: 12, fontWeight: "700", color: PRIMARY_TEXT, lineHeight: 16 },
+  rateMealBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
+  rateMealText: { fontSize: 12, fontWeight: "600", color: PRIMARY, lineHeight: 16, letterSpacing: 0.1 },
+  ratedBadge: { flexDirection: "row", alignItems: "center", gap: 2 },
+  ratedText: { fontSize: 12, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 16 },
+  detailBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: SURFACE_CONTAINER, alignItems: "center", justifyContent: "center" },
 });
+
+const s = StyleSheet.create({
+  wrapper: { flex: 1, backgroundColor: BG },
+  header: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16, paddingVertical: 12,
+  },
+  headerBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  tabBar: {
+    flexDirection: "row", borderBottomWidth: 1, borderBottomColor: SURFACE_VARIANT,
+    paddingHorizontal: 16,
+  },
+  tabBtn: { flex: 1, paddingVertical: 12, alignItems: "center", position: "relative" },
+  tabText: { fontSize: 14, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 20, letterSpacing: 0.1 },
+  tabTextActive: { color: PRIMARY },
+  tabIndicator: { position: "absolute", bottom: -1, left: "25%", right: "25%", height: 3, backgroundColor: PRIMARY, borderRadius: 999 },
+  scroll: { flex: 1 },
+  scrollInner: { paddingHorizontal: 16, paddingBottom: 32 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  countBadge: { backgroundColor: `${SECONDARY}20`, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  countText: { fontSize: 11, fontWeight: "600", color: SECONDARY, lineHeight: 16, letterSpacing: 0.5 },
+  viewAll: { fontSize: 12, fontWeight: "700", color: PRIMARY, lineHeight: 16, letterSpacing: 0.1 },
+  filterRow: { marginBottom: 12 },
+  filterContent: { gap: 8, flexDirection: "row", paddingVertical: 4 },
+  filterChip: { paddingHorizontal: 24, paddingVertical: 8, backgroundColor: SURFACE_CONTAINER_HIGH, borderRadius: 999 },
+  filterChipActive: { backgroundColor: PRIMARY, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 3 },
+  filterChipText: { fontSize: 13, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 18, letterSpacing: 0.1 },
+  filterChipTextActive: { color: PRIMARY_TEXT },
+  emptyState: { alignItems: "center", paddingVertical: 48, gap: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  emptySub: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20 },
+});
+
+export default OrdersScreen;

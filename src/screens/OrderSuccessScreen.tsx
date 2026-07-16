@@ -10,7 +10,6 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
-import { useCart } from "../context/CartContext";
 
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
@@ -22,12 +21,20 @@ type RouteProps = RouteProp<RootStackParamList, "OrderSuccess">;
 const OrderSuccessScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
-    const { itemCount } = route.params;
-    const cart = useCart();
+    const { itemCount, orderId, orderNumber, restaurantName, totalPrice, items } = route.params;
 
     const handleBackToHome = () => {
-        cart.clearCart();
         navigation.navigate("Home");
+    };
+
+    const handleTrackOrder = () => {
+        navigation.navigate("TrackMyOrder", {
+            orderId,
+            orderNumber,
+            restaurantName,
+            totalPrice,
+            items,
+        });
     };
 
     return (
@@ -51,7 +58,7 @@ const OrderSuccessScreen = () => {
                 <Text style={styles.subtitle}>
                     Your delicious meal is being prepared.
                 </Text>
-                <Text style={styles.orderNumber}>Order #CG-88219</Text>
+                <Text style={styles.orderNumber}>Order #{orderNumber}</Text>
 
                 <View style={styles.summaryCard}>
                     <View style={styles.summaryLeft}>
@@ -81,7 +88,7 @@ const OrderSuccessScreen = () => {
                 </View>
 
                 <TouchableOpacity style={styles.trackButton}
-                    onPress={() => navigation.navigate('TrackMyOrder')}
+                    onPress={handleTrackOrder}
                 >
                     <MaterialCommunityIcons
                         name="map"

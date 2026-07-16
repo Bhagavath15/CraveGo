@@ -17,6 +17,6 @@ export const updateCartItem = (menuItemId: string, quantity: number) =>
     api.patch("/cart/update", { menuItemId, quantity });
 
 export const removeCartItem = (menuItemId: string) =>
-    api.delete("/cart/delete", { menuItemId });
+    api.post("/cart/delete", { menuItemId });
 
-export const clearCart = () => api.delete("/cart/clear");
+export const clearCart = () => api.post("/cart/clear");

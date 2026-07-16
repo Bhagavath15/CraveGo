@@ -111,32 +111,35 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             if (data.success && data.cart) {
                 setCart(fromApi(data.cart, restName));
             } else if (data.message?.includes?.("another restaurant")) {
-                if (cart.items.length === 0) {
-                    await clearCartApi();
-                    const retry = await addToCartApi(restId, item.id, 1, customization, item.name);
-                    if (retry.success && retry.cart) {
-                        setCart(fromApi(retry.cart, restName));
-                    }
-                } else {
-                    Alert.alert("Different Restaurant", data.message, [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                            text: "Clear & Add",
-                            onPress: async () => {
-                                await clearCartApi();
-                                const retry = await addToCartApi(restId, item.id, 1, customization, item.name);
-                                if (retry.success && retry.cart) {
-                                    setCart(fromApi(retry.cart, restName));
-                                }
-                            },
-                        },
-                    ]);
+                const serverCart = await getCart();
+                if (serverCart.success && serverCart.cart) {
+                    setCart(fromApi(serverCart.cart));
                 }
+                Alert.alert("Different Restaurant", data.message, [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Clear & Add",
+                        onPress: async () => {
+                            const prevCart = serverCart.success ? serverCart.cart : null;
+                            const clearRes = await clearCartApi();
+                            if (!clearRes.success) {
+                                if (prevCart) setCart(fromApi(prevCart));
+                                return;
+                            }
+                            const retry = await addToCartApi(restId, item.id, 1, customization, item.name);
+                            if (retry.success && retry.cart) {
+                                setCart(fromApi(retry.cart, restName));
+                            } else if (prevCart) {
+                                setCart(fromApi(prevCart));
+                            }
+                        },
+                    },
+                ]);
             }
         } finally {
             addingRef.current = false;
         }
-    }, [cart.items.length]);
+    }, []);
 
     const decrementItem = useCallback(async (menuItemId: string) => {
         try {
@@ -149,19 +152,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 const data = await removeCartItem(menuItemId);
                 if (data.success && data.cart) setCart(fromApi(data.cart));
             }
-        } catch (_) {}
+        } catch (e) { console.warn("decrementItem failed:", e); }
     }, [cart.items]);
 
     const removeItem = useCallback(async (menuItemId: string) => {
         try {
             const data = await removeCartItem(menuItemId);
             if (data.success && data.cart) setCart(fromApi(data.cart));
-        } catch (_) {}
+        } catch (e) { console.warn("removeItem failed:", e); }
     }, []);
 
     const clearCart = useCallback(async () => {
-        setCart(emptyCart);
-        try { await clearCartApi(); } catch (_) {}
+        try {
+            const data = await clearCartApi();
+            if (data.success) {
+                setCart(emptyCart);
+            }
+        } catch (e) { console.warn("clearCart failed:", e); }
     }, []);
 
     const getItemQuantity = useCallback(

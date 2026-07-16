@@ -42,14 +42,25 @@ const EmailOTPVerificationScreen = () => {
 
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(30);
+    const [resendCooldown, setResendCooldown] = useState(30);
+    const [otpExpiry, setOtpExpiry] = useState(300);
+    const [otpExpired, setOtpExpired] = useState(false);
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
     useEffect(() => {
-        if (timeLeft <= 0) return;
-        const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+        if (resendCooldown <= 0) return;
+        const timer = setTimeout(() => setResendCooldown((t) => t - 1), 1000);
         return () => clearTimeout(timer);
-    }, [timeLeft]);
+    }, [resendCooldown]);
+
+    useEffect(() => {
+        if (otpExpiry <= 0) {
+            setOtpExpired(true);
+            return;
+        }
+        const timer = setTimeout(() => setOtpExpiry((t) => t - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [otpExpiry]);
 
     const handleOtpChange = (text: string, index: number) => {
         const digit = text.replace(/[^0-9]/g, "").slice(0, 1);
@@ -88,7 +99,9 @@ const EmailOTPVerificationScreen = () => {
     };
 
     const handleResend = async () => {
-        setTimeLeft(30);
+        setResendCooldown(30);
+        setOtpExpiry(300);
+        setOtpExpired(false);
         try {
             const data = await resendOtp(email, "signup");
             if (!data.success) {
@@ -181,12 +194,22 @@ const EmailOTPVerificationScreen = () => {
                     </View>
 
                     <View style={styles.resendSection}>
+                        {otpExpired ? (
+                            <Text style={styles.expiredText}>OTP has expired. Request a new one.</Text>
+                        ) : (
+                            <Text style={styles.resendTimer}>
+                                OTP expires in{" "}
+                                <Text style={{ fontVariant: ["tabular-nums"] }}>
+                                    {Math.floor(otpExpiry / 60)}:{otpExpiry % 60 < 10 ? `0${otpExpiry % 60}` : otpExpiry % 60}
+                                </Text>
+                            </Text>
+                        )}
                         <Text style={styles.resendLabel}>Didn't receive the code?</Text>
-                        {timeLeft > 0 ? (
+                        {resendCooldown > 0 ? (
                             <Text style={styles.resendTimer}>
                                 Resend available in{" "}
                                 <Text style={{ fontVariant: ["tabular-nums"] }}>
-                                    0:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
+                                    0:{resendCooldown < 10 ? `0${resendCooldown}` : resendCooldown}
                                 </Text>
                             </Text>
                         ) : (
@@ -437,6 +460,15 @@ const styles = StyleSheet.create({
         letterSpacing: 0.1,
         fontWeight: "600",
         color: C.primary,
+    },
+    expiredText: {
+        fontFamily: "Plus Jakarta Sans",
+        fontSize: 14,
+        lineHeight: 20,
+        letterSpacing: 0.1,
+        fontWeight: "600",
+        color: "#ba1a1a",
+        marginBottom: 8,
     },
     buttonWrap: {
         width: "100%",

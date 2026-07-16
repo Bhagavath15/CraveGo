@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types/types";
+import { rateOrder } from "../api/order";
 
 type ScreenRoute = RouteProp<RootStackParamList, "ReviewRating">;
 
@@ -46,6 +47,24 @@ const ReviewRatingScreen = () => {
     const [speedRating, setSpeedRating] = useState(0);
     const [pkgRating, setPkgRating] = useState(0);
     const [reviewText, setReviewText] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSubmit = async () => {
+        if (submitting) return;
+        setSubmitting(true);
+        try {
+            await rateOrder(orderNumber, {
+                overallRating,
+                foodRating,
+                speedRating,
+                packagingRating: pkgRating,
+                reviewText,
+            });
+            navigation.goBack();
+        } finally {
+            setSubmitting(false);
+        }
+    };
     const [photos, setPhotos] = useState<string[]>([
         "../assets/images/southIndian.png",
         "../assets/images/chickenBriyani.jpg",
@@ -199,8 +218,8 @@ const ReviewRatingScreen = () => {
                 </View>
 
                 <View style={styles.submitSection}>
-                    <TouchableOpacity style={styles.submitBtn}>
-                        <Text style={styles.submitText}>Submit Review</Text>
+                    <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
+                        <Text style={styles.submitText}>{submitting ? "Submitting..." : "Submit Review"}</Text>
                         <MaterialCommunityIcons name="send" size={24} color={ON_PRIMARY_CONTAINER} />
                     </TouchableOpacity>
                     <Text style={styles.policyText}>

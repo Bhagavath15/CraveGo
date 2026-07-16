@@ -9,9 +9,23 @@ export type RootStackParamList = {
   Home: { screen?: string } | undefined;
   RestaurantDetail: { restaurantId: string; editItemId?: string };
   CartCheckout: { restaurantId: string };
-  OrderSuccess: { itemCount: number };
-  TrackMyOrder: undefined;
+  OrderSuccess: {
+    itemCount: number;
+    orderId: string;
+    orderNumber: string;
+    restaurantName: string;
+    totalPrice: number;
+    items: { id: string; name: string; quantity: number; price?: number }[];
+  };
+  TrackMyOrder: {
+    orderId: string;
+    orderNumber: string;
+    restaurantName: string;
+    totalPrice: number;
+    items: { id: string; name: string; quantity: number; price?: number }[];
+  };
   DeliveryCompleted: {
+    orderId?: string;
     restaurantName?: string;
     items?: string;
     totalPrice?: number;
@@ -31,6 +45,7 @@ export type RootStackParamList = {
     phone: string;
   };
   EditProfile: undefined;
+  AddAddress: { addressId?: string } | undefined;
   AddressBook: undefined;
   PaymentMethods: undefined;
   Favorites: undefined;

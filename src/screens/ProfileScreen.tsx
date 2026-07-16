@@ -1,10 +1,13 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import LinearGradient from "react-native-linear-gradient";
 import { RootStackParamList } from "../types/types";
+import { clearToken } from "../utils/authStore";
+import { clearAuthToken } from "../api/client";
+import { disconnectSocket } from "../api/socket";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -49,6 +52,20 @@ const ProfileScreen = () => {
         } else if (item.route) {
             navigation.navigate(item.route as any);
         }
+    };
+
+    const handleLogout = () => {
+        Alert.alert("Logout", "Are you sure you want to logout?", [
+            { text: "Cancel", style: "cancel" },
+            {
+                text: "Logout", style: "destructive", onPress: async () => {
+                    disconnectSocket();
+                    clearAuthToken();
+                    await clearToken();
+                    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "OnBoarding" }] }));
+                },
+            },
+        ]);
     };
 
     return (
@@ -138,7 +155,7 @@ const ProfileScreen = () => {
                 </View>
 
                 <View style={styles.logoutSection}>
-                    <TouchableOpacity style={styles.logoutBtn}>
+                    <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
                         <MaterialCommunityIcons name="logout" size={20} color={ERROR} />
                         <Text style={styles.logoutText}>Logout</Text>
                     </TouchableOpacity>
