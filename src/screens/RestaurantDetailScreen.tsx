@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
     Alert,
     Animated,
     Dimensions,
@@ -12,6 +11,7 @@ import {
 import {
     RouteProp,
     useFocusEffect,
+    useIsFocused,
     useNavigation,
     useRoute,
 } from "@react-navigation/native";
@@ -30,6 +30,7 @@ import {
     FloatingCart,
 } from "../components/restaurant";
 import FoodCustomizationModal from "../components/restaurant/FoodCustomizationModal";
+import Skeleton from "../components/Skeleton";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const HERO_HEIGHT = 280;
@@ -91,6 +92,7 @@ const RestaurantDetailScreen = () => {
     const [, forceUpdate] = useState(0);
     const scrollRef = useRef<any>(null);
     const cart = useCart();
+    const isFocused = useIsFocused();
 
     useFocusEffect(
         useCallback(() => {
@@ -162,17 +164,19 @@ const RestaurantDetailScreen = () => {
     }, [restaurantId]);
 
     useEffect(() => {
-        if (cart.items.length > 0 && cart.restaurantId && cart.restaurantId !== restaurantId) {
+        if (!isFocused) return;
+        const shouldShow = cart.items.length > 0 && cart.restaurantId && cart.restaurantId !== restaurantId;
+        if (shouldShow) {
             Alert.alert(
                 "Clear Cart?",
                 `Your cart has items from another restaurant. Start fresh with ${restaurant?.name || "this restaurant"}?`,
                 [
                     { text: "Keep Cart", style: "cancel" },
-                    { text: "Clear Cart", onPress: () => cart.clearCart() },
+                    { text: "Clear Cart", onPress: () => { cart.clearCart(); } },
                 ]
             );
         }
-    }, [restaurantId, cart.restaurantId, cart.items.length]);
+    }, [restaurantId, cart.restaurantId, cart.items.length, isFocused]);
 
     useEffect(() => {
         if (selectedItem?.customizable) {
@@ -254,8 +258,34 @@ const RestaurantDetailScreen = () => {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.center]}>
-                <ActivityIndicator size="large" color="#FF6B35" />
+            <View style={styles.container}>
+                <Skeleton width="100%" height={HERO_HEIGHT} borderRadius={0} />
+                <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+                    <Skeleton width="60%" height={24} />
+                    <Skeleton width="80%" height={16} style={{ marginTop: 8 }} />
+                    <View style={{ flexDirection: "row", gap: 16, marginTop: 12 }}>
+                        <Skeleton width={80} height={14} />
+                        <Skeleton width={60} height={14} />
+                        <Skeleton width={70} height={14} />
+                    </View>
+                </View>
+                <View style={{ flexDirection: "row", paddingHorizontal: 16, marginTop: 24, gap: 12 }}>
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} width={90} height={32} borderRadius={16} />
+                    ))}
+                </View>
+                <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+                    <Skeleton width="40%" height={24} />
+                    <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+                        {Array.from({ length: 2 }).map((_, i) => (
+                            <View key={i} style={{ flex: 1 }}>
+                                <Skeleton width="100%" height={120} borderRadius={12} />
+                                <Skeleton width="70%" height={16} style={{ marginTop: 8 }} />
+                                <Skeleton width="50%" height={14} style={{ marginTop: 4 }} />
+                            </View>
+                        ))}
+                    </View>
+                </View>
             </View>
         );
     }

@@ -70,17 +70,22 @@ const DeliveryCompletedScreen = () => {
                 riderFeedback: selectedChips,
                 reviewText: foodComment,
             });
-            cart.clearCart();
+            await cart.clearCart();
             navigation.navigate("Home");
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleBackToHome = () => {
-        cart.clearCart();
+    const handleBackToHome = async () => {
+        await cart.clearCart();
         navigation.navigate("Home");
     };
+
+    const handleNavigateToOrderHistory = async () => {
+        await cart.clearCart();
+        navigation.navigate("Home", { screen: "OrdersTab" });
+    }
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -257,7 +262,7 @@ const DeliveryCompletedScreen = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.historyButton}
-                        onPress={() => navigation.popToTop()}
+                        onPress={() => handleNavigateToOrderHistory()}
                     >
                         <Text style={styles.historyButtonText}>
                             View Order History

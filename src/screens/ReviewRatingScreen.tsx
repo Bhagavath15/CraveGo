@@ -40,7 +40,7 @@ const ReviewRatingScreen = () => {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation();
     const route = useRoute<ScreenRoute>();
-    const { restaurantName, orderNumber, deliveredTime } = route.params;
+    const { restaurantName, orderId, deliveredTime } = route.params;
 
     const [overallRating, setOverallRating] = useState(0);
     const [foodRating, setFoodRating] = useState(0);
@@ -53,7 +53,7 @@ const ReviewRatingScreen = () => {
         if (submitting) return;
         setSubmitting(true);
         try {
-            await rateOrder(orderNumber, {
+            await rateOrder(orderId, {
                 overallRating,
                 foodRating,
                 speedRating,
@@ -122,7 +122,7 @@ const ReviewRatingScreen = () => {
                     <View style={styles.restaurantInfo}>
                         <Text style={styles.restaurantName}>{restaurantName}</Text>
                         <Text style={styles.orderInfo}>
-                            Order #{orderNumber} • Delivered {deliveredTime}
+                            Order #{orderId} • Delivered {deliveredTime}
                         </Text>
                     </View>
                 </View>

@@ -15,14 +15,14 @@ export type RootStackParamList = {
     orderNumber: string;
     restaurantName: string;
     totalPrice: number;
-    items: { id: string; name: string; quantity: number; price?: number }[];
+    items: { id: string; name: string; quantity: number; price?: number; totalPrice?: number }[];
   };
   TrackMyOrder: {
     orderId: string;
     orderNumber: string;
     restaurantName: string;
     totalPrice: number;
-    items: { id: string; name: string; quantity: number; price?: number }[];
+    items: { id: string; name: string; quantity: number; price?: number; totalPrice?: number }[];
   };
   DeliveryCompleted: {
     orderId?: string;
@@ -34,7 +34,7 @@ export type RootStackParamList = {
   };
   ReviewRating: {
     restaurantName: string;
-    orderNumber: string;
+    orderId: string;
     deliveredTime: string;
     items: { id: string; name: string; quantity: number }[];
     totalPrice: number;
@@ -51,6 +51,7 @@ export type RootStackParamList = {
   Favorites: undefined;
   Notifications: undefined;
   HelpSupport: undefined;
+  Receipt: { orderId: string };
 };
 
 export interface CustomizationOption {

@@ -43,6 +43,7 @@ export interface Restaurant {
     isFavorite: boolean;
     menu: MenuCategory[];
     restaurantId?: string;
+    menuItemNames?: string[];
 }
 
 export const foodFilters: FoodFilter[] = [
@@ -53,7 +54,7 @@ export const foodFilters: FoodFilter[] = [
     },
     {
         id: "2",
-        label: "Briyani",
+        label: "Biryani",
         image: require("../assets/images/briyani.png"),
     },
     {
@@ -79,7 +80,7 @@ export const restaurantList: Restaurant[] = [
         name: "Madurai Meals",
         image: require("../assets/images/chickenBriyani.jpg"),
         description: "Authentic South Indian & Biryani",
-        category: ["South Indian", "Briyani"],
+        category: ["South Indian", "Biryani"],
         cuisines: "South Indian, Biryani",
         address: "Anna Nagar, Madurai",
         rating: 4.7,

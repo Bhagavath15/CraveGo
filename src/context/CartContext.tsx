@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from "react";
-import { Alert } from "react-native";
 import { MenuItem } from "../data/restaurantData";
 import {
     addToCart as addToCartApi,
@@ -27,7 +26,7 @@ interface CartState {
     restaurantName: string | null;
     subtotal: number;
     deliveryFee: number;
-    taxes: number;
+    tax: number;
     discount: number;
     grandTotal: number;
 }
@@ -42,6 +41,7 @@ interface CartContextType extends CartState {
     decrementItem: (menuItemId: string) => void;
     clearCart: () => void;
     getItemQuantity: (menuItemId: string, itemName?: string) => number;
+    lastClearTime: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -52,7 +52,7 @@ const emptyCart: CartState = {
     restaurantName: null,
     subtotal: 0,
     deliveryFee: 0,
-    taxes: 0,
+    tax: 0,
     discount: 0,
     grandTotal: 0,
 };
@@ -68,21 +68,29 @@ const mapItem = (si: any): CartItem => ({
     totalPrice: si.totalPrice,
 });
 
-const fromApi = (cart: any, restName?: string): CartState => ({
-    items: (cart.items || []).map(mapItem),
-    restaurantId: cart.restaurantId || null,
-    restaurantName: restName || cart.restaurantName || null,
-    subtotal: cart.subtotal || 0,
-    deliveryFee: cart.deliveryFee || 0,
-    taxes: cart.taxes || 0,
-    discount: cart.discount || 0,
-    grandTotal: cart.grandTotal || 0,
-});
+const fromApi = (cart: any, restName?: string): CartState => {
+    const result = {
+        items: (cart.items || []).map(mapItem),
+        restaurantId: cart.restaurantId || null,
+        restaurantName: restName || cart.restaurantName || null,
+        subtotal: cart.subtotal || 0,
+        deliveryFee: cart.deliveryFee || 0,
+        tax: cart.tax || 0,
+        discount: cart.discount || 0,
+        grandTotal: cart.grandTotal || 0,
+    };
+    return result;
+};
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const [cart, setCart] = useState<CartState>(emptyCart);
     const [loading, setLoading] = useState(true);
+    const [lastClearTime, setLastClearTime] = useState(0);
     const addingRef = useRef(false);
+
+    const setCartWithLog = useCallback((next: CartState) => {
+        setCart(next);
+    }, []);
 
     useEffect(() => {
         const load = async () => {
@@ -94,7 +102,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 }
                 const data = await getCart();
                 if (data.success && data.cart) {
-                    setCart(fromApi(data.cart));
+                    const mapped = fromApi(data.cart);
+                    setCartWithLog(mapped);
                 }
             } finally {
                 setLoading(false);
@@ -103,43 +112,38 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         load();
     }, []);
 
+    const clearCart = useCallback(async () => {
+        setCartWithLog(emptyCart);
+        setLastClearTime(Date.now());
+        try {
+            await clearCartApi();
+        } catch (e) {
+        }
+    }, [cart]);
+
     const addToCart = useCallback(async (item: MenuItem, restId: string, restName: string, customization?: { name: string; price: number }[]) => {
         if (addingRef.current) return;
         addingRef.current = true;
         try {
             const data = await addToCartApi(restId, item.id, 1, customization, item.name);
             if (data.success && data.cart) {
-                setCart(fromApi(data.cart, restName));
+                const mapped = fromApi(data.cart, restName);
+                setCartWithLog(mapped);
             } else if (data.message?.includes?.("another restaurant")) {
-                const serverCart = await getCart();
-                if (serverCart.success && serverCart.cart) {
-                    setCart(fromApi(serverCart.cart));
+                setCartWithLog(emptyCart);
+                try {
+                    await clearCart();
+                } catch (e) {
                 }
-                Alert.alert("Different Restaurant", data.message, [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                        text: "Clear & Add",
-                        onPress: async () => {
-                            const prevCart = serverCart.success ? serverCart.cart : null;
-                            const clearRes = await clearCartApi();
-                            if (!clearRes.success) {
-                                if (prevCart) setCart(fromApi(prevCart));
-                                return;
-                            }
-                            const retry = await addToCartApi(restId, item.id, 1, customization, item.name);
-                            if (retry.success && retry.cart) {
-                                setCart(fromApi(retry.cart, restName));
-                            } else if (prevCart) {
-                                setCart(fromApi(prevCart));
-                            }
-                        },
-                    },
-                ]);
+                const retry = await addToCartApi(restId, item.id, 1, customization, item.name);
+                if (retry.success && retry.cart) {
+                    setCartWithLog(fromApi(retry.cart, restName));
+                }
             }
         } finally {
             addingRef.current = false;
         }
-    }, []);
+    }, [cart, clearCart, setCartWithLog]);
 
     const decrementItem = useCallback(async (menuItemId: string) => {
         try {
@@ -147,28 +151,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             if (!existing) return;
             if (existing.quantity > 1) {
                 const data = await updateCartItem(menuItemId, existing.quantity - 1);
-                if (data.success && data.cart) setCart(fromApi(data.cart));
+                if (data.success && data.cart) setCartWithLog(fromApi(data.cart));
             } else {
                 const data = await removeCartItem(menuItemId);
-                if (data.success && data.cart) setCart(fromApi(data.cart));
+                if (data.success && data.cart) setCartWithLog(fromApi(data.cart));
             }
-        } catch (e) { console.warn("decrementItem failed:", e); }
+        } catch (e) { }
     }, [cart.items]);
 
     const removeItem = useCallback(async (menuItemId: string) => {
         try {
             const data = await removeCartItem(menuItemId);
-            if (data.success && data.cart) setCart(fromApi(data.cart));
-        } catch (e) { console.warn("removeItem failed:", e); }
-    }, []);
-
-    const clearCart = useCallback(async () => {
-        try {
-            const data = await clearCartApi();
-            if (data.success) {
-                setCart(emptyCart);
-            }
-        } catch (e) { console.warn("clearCart failed:", e); }
+            if (data.success && data.cart) setCartWithLog(fromApi(data.cart));
+        } catch (e) { }
     }, []);
 
     const getItemQuantity = useCallback(
@@ -188,7 +183,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const totalAmount = useMemo(
-        () => cart.items.reduce((sum, ci) => sum + ci.price * ci.quantity, 0),
+        () => cart.items.reduce((sum, ci) => sum + (ci.totalPrice || ci.price * ci.quantity), 0),
         [cart.items]
     );
 
@@ -199,13 +194,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             itemCount,
             totalAmount,
             loading,
+            lastClearTime,
             addToCart,
             removeItem,
             decrementItem,
             clearCart,
             getItemQuantity,
         }),
-        [cart, itemCount, totalAmount, loading, addToCart, removeItem, decrementItem, clearCart, getItemQuantity]
+        [cart, itemCount, totalAmount, loading, lastClearTime, addToCart, removeItem, decrementItem, clearCart, getItemQuantity]
     );
 
     return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

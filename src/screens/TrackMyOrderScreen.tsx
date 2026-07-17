@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ const ERROR = "#ba1a1a";
 const GREEN = "#006D37";
 const SURFACE_CONTAINER = "#f0eded";
 const SURFACE_CONTAINER_HIGH = "#eae7e7";
+const GREY = "#9E9E9E";
 
 const PATH: { label: string; pct: { x: number; y: number }; icon: string; completedIcon: string; serverKey: number }[] = [
   { label: "Placed", pct: { x: 10, y: 6 }, icon: "clipboard-list-outline", completedIcon: "check", serverKey: 0 },
@@ -36,9 +37,9 @@ const PATH: { label: string; pct: { x: number; y: number }; icon: string; comple
   { label: "Preparing", pct: { x: 82, y: 10 }, icon: "bell", completedIcon: "check", serverKey: 2 },
   { label: "Ready", pct: { x: 85, y: 38 }, icon: "silverware", completedIcon: "check", serverKey: 3 },
   { label: "Picked Up", pct: { x: 55, y: 52 }, icon: "motorbike", completedIcon: "check", serverKey: 4 },
-  { label: "Out for Del.", pct: { x: 28, y: 46 }, icon: "map-marker", completedIcon: "check", serverKey: 5 },
-  { label: "Arriving", pct: { x: 10, y: 68 }, icon: "map-marker", completedIcon: "check", serverKey: 5 },
-  { label: "Delivered", pct: { x: 80, y: 86 }, icon: "check", completedIcon: "check", serverKey: 6 },
+  { label: "Out for Del.", pct: { x: 22, y: 46 }, icon: "map-marker", completedIcon: "check", serverKey: 5 },
+  { label: "Arriving", pct: { x: 10, y: 68 }, icon: "map-marker", completedIcon: "check", serverKey: 6 },
+  { label: "Delivered", pct: { x: 80, y: 86 }, icon: "check", completedIcon: "check", serverKey: 7 },
 ];
 
 const stitchStep = (s: number) => {
@@ -51,13 +52,14 @@ const stitchStep = (s: number) => {
 
 const STATUS_LABELS: Record<number, string> = {
   0: "Order Placed", 1: "Order Accepted", 2: "Preparing your meal", 3: "Ready for pickup",
-  4: "On the way", 5: "On the way", 6: "Delivered", 7: "Cancelled",
+  4: "On the way", 5: "Out for delivery", 6: "Arriving soon", 7: "Delivered", 8: "Cancelled",
 };
 const STATUS_DESC: Record<number, string> = {
   0: "Your order has been placed successfully", 1: "Restaurant has accepted your order",
   2: "Your food is being prepared", 3: "Your order is ready",
-  4: "Rider is heading your way", 5: "2 mins away",
-  6: "Your order has been delivered", 7: "Order has been cancelled",
+  4: "Rider is heading your way", 5: "Rider has picked up your order",
+  6: "Rider is arriving soon",
+  7: "Your order has been delivered", 8: "Order has been cancelled",
 };
 
 type Restaurant = { id: string; name: string; rating: number; time: string; coords: [number, number]; };
@@ -128,7 +130,7 @@ export default function TrackMyOrderScreen() {
           statusRef.current = newStatus;
           setLiveOrder(prev => prev ? { ...prev, orderStatus: newStatus } : prev);
         }
-        if (newStatus >= 6) clearInterval(advanceTimer);
+        if (newStatus >= 7) clearInterval(advanceTimer);
       } else {
         loadOrder();
       }
@@ -150,17 +152,18 @@ export default function TrackMyOrderScreen() {
   };
 
   const [isCancelled, setIsCancelled] = useState(false);
+  const [cancelledFromStatus, setCancelledFromStatus] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cancellingRef = useRef(false);
   const statusRef = useRef(0);
   const deliveredRef = useRef(false);
 
-  const orderStatus = isCancelled ? 7 : liveOrder?.orderStatus ?? 0;
+  const orderStatus = liveOrder?.orderStatus ?? 0;
   const riderName_ = liveOrder?.riderName ?? "Arjun K.";
   const riderRating_ = liveOrder?.riderRating ?? 4.8;
   const estimatedTime = liveOrder?.estimatedTime;
-  const activeIdx = stitchStep(orderStatus);
+  const activeIdx = stitchStep(isCancelled ? (cancelledFromStatus ?? orderStatus) : orderStatus);
 
   const handleDelivered = useCallback(() => {
     const now = new Date();
@@ -172,7 +175,7 @@ export default function TrackMyOrderScreen() {
 
   useEffect(() => {
     const rawStatus = liveOrder?.orderStatus;
-    if (!isCancelled && rawStatus === 6 && liveOrder && !deliveredRef.current) {
+    if (!isCancelled && rawStatus === 7 && liveOrder && !deliveredRef.current) {
       deliveredRef.current = true;
       handleDelivered();
     }
@@ -180,6 +183,8 @@ export default function TrackMyOrderScreen() {
 
   const handleCancel = useCallback(() => {
     if (cancelling || cancellingRef.current) return;
+    const statusAtCancel = liveOrder?.orderStatus ?? 0;
+    setCancelledFromStatus(statusAtCancel);
     cancellingRef.current = true;
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     setIsCancelled(true);
@@ -187,14 +192,18 @@ export default function TrackMyOrderScreen() {
     cancelOrder(orderId).then(res => {
       if (!res.success) {
         setIsCancelled(false);
+        setCancelledFromStatus(null);
         cancellingRef.current = false;
       }
-    }).catch(() => { setIsCancelled(false); cancellingRef.current = false; }).finally(() => setCancelling(false));
-  }, [orderId, cancelling]);
+    }).catch(err => {
+      setIsCancelled(false);
+      setCancelledFromStatus(null);
+      cancellingRef.current = false;
+    }).finally(() => setCancelling(false));
+  }, [orderId, cancelling, liveOrder]);
 
-  const statusLabel = isCancelled ? "Cancelled" : STATUS_LABELS[orderStatus] || "Order Placed";
   const statusDesc = isCancelled ? "Order has been cancelled" : STATUS_DESC[orderStatus] || STATUS_DESC[0];
-  const accentColor = isCancelled ? ERROR : orderStatus >= 6 ? GREEN : PRIMARY;
+  const accentColor = isCancelled ? ERROR : orderStatus >= 7 ? GREEN : PRIMARY;
 
   const [layout, setLayout] = useState({ w: 360, h: 400 });
 
@@ -244,170 +253,152 @@ export default function TrackMyOrderScreen() {
         backgroundStyle={s.sheetBackground}
       >
         <BottomSheetView style={s.sheetContent}>
-          {isCancelled ? (
-            <View style={s.finalStateCard}>
-              <View style={[s.finalIcon, { backgroundColor: `${ERROR}1A` }]}>
-                <MaterialCommunityIcons name="cancel" size={40} color={ERROR} />
-              </View>
-              <Text style={[s.finalTitle, { color: ERROR }]}>Order Cancelled</Text>
-              <Text style={s.finalSubtext}>We've initiated a full refund to your original payment method.</Text>
+          <View style={s.headerSection}>
+            <View style={s.headerLeft}>
+              <Text style={[s.headerTitle, { color: isCancelled ? ERROR : accentColor }]}>
+                {isCancelled ? "Order Cancelled" : "On its way!"}
+              </Text>
+              <Text style={s.headerSub}>Order #{orderNumber} • {statusDesc}</Text>
             </View>
-          ) : (
-            <View>
-              <View style={s.headerSection}>
-                <View style={s.headerLeft}>
-                  <Text style={[s.headerTitle, { color: accentColor }]}>On its way!</Text>
-                  <Text style={s.headerSub}>Order #{orderNumber} • {statusDesc}</Text>
-                </View>
-                <View style={[s.headerIconBox, { backgroundColor: PRIMARY }]}>
-                  <MaterialCommunityIcons name="motorbike" size={32} color={ON_PRIMARY} />
-                </View>
-              </View>
+            <View style={[s.headerIconBox, { backgroundColor: PRIMARY }]}>              
+              <MaterialCommunityIcons
+                name={isCancelled ? "cancel" : "motorbike"}
+                size={32}
+                color={ON_PRIMARY}
+              />
+            </View>
+          </View>
 
-              <View style={s.pathContainer} onLayout={onPathLayout}>
-                <Svg style={StyleSheet.absoluteFill}>
-                  {(() => {
-                    const pts = PATH.map(p => toPx(p.pct));
-                    return PATH.slice(0, -1).map((_, i) => {
-                      const d = segmentPath(pts, i);
-                      return (
-                        <Path
-                          key={`seg-${i}`}
-                          d={d}
-                          stroke={i < activeIdx ? PRIMARY : SURFACE_CONTAINER_HIGH}
-                          strokeWidth={7}
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      );
-                    });
-                  })()}
-                </Svg>
-
-                {PATH.map((p, i) => {
-                  const pos = toPx(p.pct);
-                  const isActive = i === activeIdx;
-                  const isCompleted = i < activeIdx;
-                  const isFuture = i > activeIdx;
-                  const dotSize = isActive ? 44 : isCompleted ? 30 : 24;
-                  const icon = isCompleted ? p.completedIcon : p.icon;
+          <View style={s.pathContainer} onLayout={onPathLayout}>
+            <Svg style={StyleSheet.absoluteFill}>
+              {(() => {
+                const pts = PATH.map(p => toPx(p.pct));
+                return PATH.slice(0, -1).map((_, i) => {
+                  const d = segmentPath(pts, i);
                   return (
-                    <View
-                      key={p.label}
-                      style={[
-                        s.stepDot,
-                        {
-                          left: pos.x - dotSize / 2,
-                          top: pos.y - dotSize / 2,
-                          width: dotSize,
-                          height: dotSize,
-                          borderRadius: dotSize / 2,
-                          backgroundColor: isActive ? PRIMARY : isCompleted ? PRIMARY : "transparent",
-                          borderColor: isActive ? PRIMARY : isCompleted ? PRIMARY : SURFACE_CONTAINER_HIGH,
-                          borderWidth: isFuture ? 3 : 0,
-                        },
-                        isActive && s.stepDotActive,
-                      ]}
-                    >
-                      {(isActive || isCompleted) && (
-                        <MaterialCommunityIcons
-                          name={icon as any}
-                          size={isActive ? 22 : 18}
-                          color={ON_PRIMARY}
-                        />
-                      )}
-                      {isFuture && (
-                        <MaterialCommunityIcons
-                          name={icon as any}
-                          size={20}
-                          color={ON_SURFACE_VARIANT}
-                        />
-                      )}
-                    </View>
+                    <Path
+                      key={`seg-${i}`}
+                      d={d}
+                      stroke={i < activeIdx ? PRIMARY : SURFACE_CONTAINER_HIGH}
+                      strokeWidth={7}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   );
-                })}
+                });
+              })()}
+            </Svg>
 
-                {PATH.map((p, i) => {
-                  const pos = toPx(p.pct);
-                  const isActive = i === activeIdx;
-                  const isCompleted = i < activeIdx;
-                  const dotSize = isActive ? 44 : isCompleted ? 30 : 24;
-                  const dotRadius = dotSize / 2;
-                  const isLeftSide = p.pct.x <= 50;
-                  const isTopHalf = p.pct.y <= 35;
-                  const gap = 6;
-                  const labelW = 100;
-                  const labelAbove = isActive && p.pct.y >= 15 ? true : !isTopHalf;
-                  const lblLeft = isLeftSide
-                    ? pos.x + dotRadius + gap
-                    : pos.x - labelW - dotRadius - gap;
-                  const lblTop = labelAbove
-                    ? pos.y - dotRadius - gap - (isActive ? 28 : 20)
-                    : pos.y + dotRadius + gap;
-                  return (
-                    <View
-                      key={`lbl-${p.label}`}
-                      style={[
-                        s.stepLabelWrap,
-                        { left: lblLeft, top: lblTop, width: labelW },
-                        !isLeftSide && { alignItems: "flex-end" },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          s.stepLabel,
-                          { color: isCompleted || isActive ? ON_SURFACE : ON_SURFACE_VARIANT },
-                          isActive && s.stepLabelActive,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {p.label}
-                      </Text>
-                    </View>
-                  );
-                })}
-
-                {orderStatus >= 4 && (
-                  <View style={s.riderCard}>
-                    <View style={s.riderAvatarWrap}>
-                      <View style={s.riderAvatarSmall}>
-                        <MaterialCommunityIcons name="account-circle" size={24} color={PRIMARY} />
-                      </View>
-                      <View style={s.riderRatingBadge}>
-                        <MaterialCommunityIcons name="star" size={7} color="#FFD700" />
-                        <Text style={s.riderRatingMini}>{riderRating_}</Text>
-                      </View>
-                    </View>
-                    <View style={s.riderInfoCol}>
-                      <Text style={s.riderNameSmall}>{riderName_}</Text>
-                      <View style={s.riderActionRow}>
-                        <TouchableOpacity style={s.chatMini}>
-                          <MaterialCommunityIcons name="message-text" size={12} color={PRIMARY} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={s.callMini}>
-                          <MaterialCommunityIcons name="phone" size={12} color={ON_PRIMARY} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
+            {PATH.map((p, i) => {
+              const pos = toPx(p.pct);
+              const isCompleted = i <= activeIdx;
+              const isFuture = i > activeIdx;
+              const dotSize = isCompleted ? 34 : 28;
+              const icon = isCompleted ? p.completedIcon : p.icon;
+              const dotRadius = dotSize / 2;
+              const isLeftSide = p.pct.x <= 50;
+              const isTopHalf = p.pct.y <= 35;
+              const isActive = i === activeIdx;
+              const labelAbove = isActive && p.pct.y >= 15 ? true : !isTopHalf;
+              const gap = 6;
+              const labelW = 100;
+              const lblLeft = isLeftSide
+                ? pos.x + dotRadius + gap
+                : pos.x - labelW - dotRadius - gap;
+              const lblTop = labelAbove ? pos.y - dotRadius - gap - 20 : pos.y + dotRadius + gap;
+              return (
+                <React.Fragment key={p.label}>
+                  <View
+                    style={[
+                      s.stepDot,
+                      {
+                        left: pos.x - dotSize / 2,
+                        top: pos.y - dotSize / 2,
+                        width: dotSize,
+                        height: dotSize,
+                        borderRadius: dotSize / 2,
+                        backgroundColor: isCompleted ? PRIMARY : SURFACE_CONTAINER_HIGH,
+                        borderColor: isCompleted ? PRIMARY : SURFACE_CONTAINER_HIGH,
+                        borderWidth: 0,
+                      },
+                    ]}
+                  >
+                    {isCompleted && (
+                      <MaterialCommunityIcons name={icon as any} size={22} color={ON_PRIMARY} />
+                    )}
+                    {isFuture && (
+                      <MaterialCommunityIcons name={icon as any} size={22} color={GREY} />
+                    )}
                   </View>
-                )}
-              </View>
+                  <View
+                    style={[
+                      s.stepLabelWrap,
+                      { left: lblLeft, top: lblTop, width: labelW },
+                      !isLeftSide && { alignItems: "flex-end" },
+                    ]}
+                  >
+                    <Text style={[s.stepLabel, { color: isCompleted ? ON_SURFACE : GREY }]} numberOfLines={1}>
+                      {p.label}
+                    </Text>
+                  </View>
+                </React.Fragment>
+              );
+            })}
 
-              <View style={s.actionRow}>
-                <TouchableOpacity style={s.helpBtn}>
-                  <MaterialCommunityIcons name="help-circle-outline" size={22} color={ON_SURFACE_VARIANT} />
-                  <Text style={s.helpBtnText}>Get Help</Text>
-                </TouchableOpacity>
-                {orderStatus < 4 && (
-                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel} disabled={cancelling}>
-                    <MaterialCommunityIcons name="close" size={22} color={ERROR} />
-                    <Text style={s.cancelBtnText}>{cancelling ? "Cancelling..." : "Cancel"}</Text>
-                  </TouchableOpacity>
-                )}
+            {orderStatus >= 4 && !isCancelled && (
+              <View style={s.riderCard}>
+                <View style={s.riderAvatarWrap}>
+                  <View style={s.riderAvatarSmall}>
+                    <MaterialCommunityIcons name="account-circle" size={24} color={PRIMARY} />
+                  </View>
+                  <View style={s.riderRatingBadge}>
+                    <MaterialCommunityIcons name="star" size={7} color="#FFD700" />
+                    <Text style={s.riderRatingMini}>{riderRating_}</Text>
+                  </View>
+                </View>
+                <View style={s.riderInfoCol}>
+                  <Text style={s.riderNameSmall}>{riderName_}</Text>
+                  <View style={s.riderActionRow}>
+                    <TouchableOpacity style={s.chatMini}>
+                      <MaterialCommunityIcons name="message-text" size={12} color={PRIMARY} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={s.callMini}>
+                      <MaterialCommunityIcons name="phone" size={12} color={ON_PRIMARY} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </View>
+
+          <View style={s.actionRow}>
+            {!isCancelled && (
+              <TouchableOpacity style={s.helpBtn}>
+                <MaterialCommunityIcons name="help-circle-outline" size={22} color={ON_SURFACE_VARIANT} />
+                <Text style={s.helpBtnText}>Get Help</Text>
+              </TouchableOpacity>
+            )}
+            {isCancelled ? (
+              <>
+                <TouchableOpacity style={s.postCancelBtn} onPress={() => navigation.navigate("Home")}>
+                  <MaterialCommunityIcons name="home-outline" size={22} color={PRIMARY} />
+                  <Text style={[s.postCancelBtnText, { color: PRIMARY }]}>Home</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.postCancelBtn} onPress={() => navigation.navigate("Home", { screen: "Orders" })}>
+                  <MaterialCommunityIcons name="clipboard-list-outline" size={22} color={PRIMARY} />
+                  <Text style={[s.postCancelBtnText, { color: PRIMARY }]}>Order History</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              orderStatus < 4 && (
+                <TouchableOpacity style={s.cancelBtn} onPress={handleCancel} disabled={cancelling}>
+                  <MaterialCommunityIcons name="close" size={22} color={ERROR} />
+                  <Text style={s.cancelBtnText}>{cancelling ? "Cancelling..." : "Cancel"}</Text>
+                </TouchableOpacity>
+              )
+            )}
+          </View>
         </BottomSheetView>
       </BottomSheet>
     </View>
@@ -446,14 +437,9 @@ const s = StyleSheet.create({
     justifyContent: "center",
     zIndex: 4,
   },
-  stepDotActive: {
-    shadowColor: PRIMARY, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45, shadowRadius: 12, elevation: 8,
-  },
 
   stepLabelWrap: { position: "absolute", width: 100, zIndex: 5 },
   stepLabel: { fontSize: 11, fontWeight: "600", lineHeight: 15 },
-  stepLabelActive: { fontSize: 13, fontWeight: "800", color: PRIMARY },
 
   riderCard: {
     position: "absolute", left: 16, bottom: 16,
@@ -496,8 +482,15 @@ const s = StyleSheet.create({
   },
   cancelBtnText: { fontSize: 15, fontWeight: "700", color: ERROR, lineHeight: 22 },
 
-  finalStateCard: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
   finalIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 20 },
   finalTitle: { fontSize: 24, fontWeight: "800", lineHeight: 32, marginBottom: 8, textAlign: "center" },
   finalSubtext: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20, textAlign: "center", marginBottom: 24 },
+
+  cancelledContainer: { flex: 1, justifyContent: "flex-end", paddingHorizontal: 24 },
+  postCancelRow: { flexDirection: "row", gap: 12, paddingBottom: 24 },
+  postCancelBtn: {
+    flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: `${OUTLINE_VARIANT}80`,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: SURFACE_LOWEST,
+  },
+  postCancelBtnText: { fontSize: 15, fontWeight: "700", color: PRIMARY, lineHeight: 22 },
 });

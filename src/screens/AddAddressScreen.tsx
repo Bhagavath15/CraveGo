@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import Skeleton from "../components/Skeleton";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { addAddress, updateAddress, getAddressById } from "../api/address";
@@ -133,10 +134,34 @@ export default function AddAddressScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.loader}>
-          <MaterialCommunityIcons name="map-marker" size={40} color={OUTLINE_VARIANT} />
-          <Text style={styles.loaderText}>Loading address...</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroSection}>
+            <Skeleton width={56} height={56} borderRadius={28} />
+            <Skeleton width="50%" height={22} style={{ marginTop: 12 }} />
+            <Skeleton width="70%" height={14} style={{ marginTop: 6 }} />
+          </View>
+          <View style={styles.card}>
+            <Skeleton width="40%" height={18} />
+            <View style={{ gap: 12, marginTop: 16 }}>
+              <Skeleton width="100%" height={48} borderRadius={12} />
+              <Skeleton width="100%" height={48} borderRadius={12} />
+            </View>
+          </View>
+          <View style={styles.card}>
+            <Skeleton width="40%" height={18} />
+            <View style={{ gap: 12, marginTop: 16 }}>
+              <Skeleton width="100%" height={48} borderRadius={12} />
+              <Skeleton width="100%" height={48} borderRadius={12} />
+              <Skeleton width="100%" height={48} borderRadius={12} />
+              <Skeleton width="100%" height={48} borderRadius={12} />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <Skeleton width="48%" height={48} borderRadius={12} />
+                <Skeleton width="48%" height={48} borderRadius={12} />
+              </View>
+            </View>
+          </View>
+          <Skeleton width="100%" height={52} borderRadius={14} style={{ marginTop: 24 }} />
+        </ScrollView>
       ) : (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

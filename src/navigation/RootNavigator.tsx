@@ -25,6 +25,7 @@ import FavoritesScreen from "../screens/FavoritesScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import HelpSupportScreen from "../screens/HelpSupportScreen";
 import AddAddressScreen from "../screens/AddAddressScreen";
+import ReceiptScreen from "../screens/ReceiptScreen";
 import { getToken } from "../utils/authStore";
 import { setOnUnauthorized, clearAuthToken } from "../api/client";
 
@@ -92,6 +93,7 @@ const RootNavigator = () => {
                 <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: "slide_from_right", headerShown: false }} />
                 <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ animation: "slide_from_right", headerShown: false }} />
+                <Stack.Screen name="Receipt" component={ReceiptScreen} options={{ animation: "slide_from_right" }} />
             </Stack.Navigator>
         </NavigationContainer>
     );

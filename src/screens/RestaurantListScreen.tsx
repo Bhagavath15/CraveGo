@@ -12,15 +12,17 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../types/types";
-import { Restaurant, foodFilters, restaurantList } from "../data/restaurantData";
+import { Restaurant, foodFilters } from "../data/restaurantData";
+import Skeleton from "../components/Skeleton";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface Props {
   restaurants?: Restaurant[];
+  loading?: boolean;
 }
 
-const RestaurantListScreen = ({ restaurants }: Props) => {
+const RestaurantListScreen = ({ restaurants, loading }: Props) => {
   const navigation = useNavigation<NavigationProp>();
 
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -30,15 +32,56 @@ const RestaurantListScreen = ({ restaurants }: Props) => {
   };
 
   const filteredRestaurants = useMemo(() => {
-    const source = restaurants || restaurantList;
-    if (selectedFilter === "All") {
-      return source;
+    if (!restaurants || selectedFilter === "All") {
+      return restaurants || [];
     }
 
-    return source.filter((restaurant) =>
-      restaurant.category.includes(selectedFilter)
+    const q = selectedFilter.toLowerCase();
+    const result = restaurants.filter((restaurant) =>
+      restaurant.category.some((c) => c.toLowerCase().includes(q)) ||
+      restaurant.cuisines.toLowerCase().includes(q) ||
+      restaurant.name.toLowerCase().includes(q) ||
+      (restaurant.description || "").toLowerCase().includes(q) ||
+      restaurant.menuItemNames?.some((n) => n.toLowerCase().includes(q))
     );
+    return result;
   }, [selectedFilter, restaurants]);
+
+  const renderSkeleton = () => (
+    <View style={styles.container}>
+      <Text style={styles.heading}>What's on your mind?</Text>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <View key={i} style={styles.itemContainer}>
+            <Skeleton width={72} height={72} borderRadius={36} />
+            <Skeleton width={50} height={14} style={{ marginTop: 8 }} />
+          </View>
+        ))}
+      </ScrollView>
+
+      <View style={styles.restaurantHeader}>
+        <Skeleton width="40%" height={22} />
+        <Skeleton width={50} height={16} />
+      </View>
+
+      {Array.from({ length: 3 }).map((_, i) => (
+        <View key={i} style={styles.restaurantCard}>
+          <Skeleton width="100%" height={180} borderRadius={14} />
+          <View style={styles.restaurantContent}>
+            <Skeleton width="60%" height={20} />
+            <Skeleton width="90%" height={14} style={{ marginTop: 8 }} />
+            <View style={styles.restaurantFooter}>
+              <Skeleton width="30%" height={14} />
+              <Skeleton width="25%" height={14} />
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
+  if (loading) return renderSkeleton();
 
   return (
     <View style={styles.container}>

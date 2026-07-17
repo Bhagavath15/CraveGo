@@ -5,6 +5,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  totalPrice?: number;
   image?: string;
 }
 
@@ -29,12 +30,14 @@ export interface Order {
   totalPrice?: number;
   deliveryFee?: number;
   tax?: number;
+  discount?: number;
   subtotal?: number;
   estimatedDeliveryTime?: number;
   estimatedTime?: string;
   items: OrderItem[];
   paymentMethod: "COD" | "UPI" | "CARD";
-  paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "Pending" | "Paid" | "Failed";
+  paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "Pending" | "Authorized" | "Paid" | "Failed" | "Refunded";
+  paymentIntentId?: string;
   orderStatus: number;
   createdAt: string;
   deliveryAddress?: DeliveryAddress | string;

@@ -107,9 +107,6 @@ const OrderSuccessScreen = () => {
                     <Text style={styles.homeButtonText}>Back to Home</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.receiptButton}>
-                    <Text style={styles.receiptButtonText}>View Receipt</Text>
-                </TouchableOpacity>
             </ScrollView>
 
             <Text style={styles.brandFooter}>CraveGo</Text>
@@ -252,17 +249,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "600",
         color: "#1B1C1C",
-        lineHeight: 20,
-        letterSpacing: 0.1,
-    },
-    receiptButton: {
-        alignItems: "center",
-        paddingVertical: 8,
-    },
-    receiptButtonText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY,
         lineHeight: 20,
         letterSpacing: 0.1,
     },

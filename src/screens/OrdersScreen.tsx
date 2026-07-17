@@ -14,6 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { connectSocket } from "../api/socket";
 import { getOrders, reorder } from "../api/order";
+import Skeleton from "../components/Skeleton";
 
 const PRIMARY = "#FF6B35";
 const ON_PRIMARY = "#ffffff";
@@ -48,6 +49,8 @@ interface ActiveOrderData {
   items: OrderItemData[];
   totalPrice: number;
   estimatedArrival?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
 }
 
 interface PastOrderData {
@@ -59,6 +62,8 @@ interface PastOrderData {
   items: OrderItemData[];
   totalPrice: number;
   rating?: number;
+  paymentMethod?: string;
+  paymentStatus?: string;
 }
 
 const ACTIVE_STATUS_CONFIG: Record<number, { text: string; icon: string }> = {
@@ -68,6 +73,24 @@ const ACTIVE_STATUS_CONFIG: Record<number, { text: string; icon: string }> = {
   3: { text: "Ready for pickup", icon: "silverware" },
   4: { text: "Picked up", icon: "motorbike" },
   5: { text: "On the way", icon: "map-marker" },
+  6: { text: "Arriving", icon: "map-marker" },
+};
+
+const PaymentBadge = ({ method, status }: { method?: string; status?: string }) => {
+  if (!method || method === "COD") return null;
+  const label = status === "Paid" ? "Paid" : status === "Authorized" ? "Authorized" : status === "Refunded" ? "Refunded" : "Pending";
+  const isPaid = status === "Paid";
+  const isRefunded = status === "Refunded";
+  const bg = isPaid ? `${SECONDARY}15` : isRefunded ? `${ERROR}15` : "#FFF3E0";
+  const border = isPaid ? `${SECONDARY}30` : isRefunded ? `${ERROR}30` : "#FFE0B2";
+  const color = isPaid ? SECONDARY : isRefunded ? ERROR : "#E65100";
+  const icon = isPaid ? "shield-check" : isRefunded ? "refresh" : "clock-outline";
+  return (
+    <View style={[as.pill, { backgroundColor: bg, borderColor: border }]}>
+      <MaterialCommunityIcons name={icon} size={14} color={color} />
+      <Text style={[as.pillText, { color }]}>{label}</Text>
+    </View>
+  );
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -123,6 +146,7 @@ const ActiveOrderCard = ({ order }: { order: ActiveOrderData }) => {
         <View style={as.priceCol}>
           <Text style={as.metaLabel}>Total Price</Text>
           <Text style={as.metaValue}>₹{order.totalPrice}</Text>
+          <PaymentBadge method={order.paymentMethod} status={order.paymentStatus} />
         </View>
       </View>
 
@@ -137,7 +161,7 @@ const ActiveOrderCard = ({ order }: { order: ActiveOrderData }) => {
             items: order.items,
           })}
         >
-          <MaterialCommunityIcons name="map-marker" size={16} color={PRIMARY_TEXT} />
+          <MaterialCommunityIcons name="map-marker" size={16} color={ON_PRIMARY} />
           <Text style={as.trackBtnText}>Track Order</Text>
         </TouchableOpacity>
       </View>
@@ -153,6 +177,10 @@ const PastOrderCard = ({ order }: { order: PastOrderData }) => {
   const handleReorder = async () => {
     const res = await reorder(order.id);
     if (res.success) navigation.navigate("Home");
+  };
+
+  const handleViewReceipt = () => {
+    navigation.navigate("Receipt", { orderId: order.id });
   };
 
   return (
@@ -173,6 +201,7 @@ const PastOrderCard = ({ order }: { order: PastOrderData }) => {
 
       <View style={as.pastStatusRow}>
         <StatusBadge status={order.status} />
+        <PaymentBadge method={order.paymentMethod} status={order.paymentStatus} />
         <Text style={as.pastDate}> • {order.dateTime}</Text>
       </View>
 
@@ -180,8 +209,12 @@ const PastOrderCard = ({ order }: { order: PastOrderData }) => {
 
       <View style={as.pastActions}>
         <TouchableOpacity style={as.reorderBtn} onPress={handleReorder}>
-          <MaterialCommunityIcons name="replay" size={16} color={PRIMARY_TEXT} />
+          <MaterialCommunityIcons name="replay" size={16} color={ON_PRIMARY} />
           <Text style={as.reorderBtnText}>Reorder</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={as.receiptBtn} onPress={handleViewReceipt}>
+          <MaterialCommunityIcons name="receipt" size={16} color={PRIMARY_TEXT} />
+          <Text style={as.receiptBtnText}>Receipt</Text>
         </TouchableOpacity>
         {isCancelled ? (
           <TouchableOpacity style={as.detailBtn}>
@@ -197,7 +230,7 @@ const PastOrderCard = ({ order }: { order: PastOrderData }) => {
             style={as.rateMealBtn}
             onPress={() => navigation.navigate("ReviewRating", {
               restaurantName: order.restaurantName,
-              orderNumber: order.id,
+              orderId: order.id,
               deliveredTime: order.dateTime,
               items: order.items.map(i => ({ id: i.id, name: i.name, quantity: i.quantity })),
               totalPrice: order.totalPrice,
@@ -219,10 +252,12 @@ const OrdersScreen = () => {
   const [filter, setFilter] = useState<string>("All Orders");
   const [apiActive, setApiActive] = useState<ActiveOrderData[]>([]);
   const [apiPast, setApiPast] = useState<PastOrderData[]>([]);
+  const [loading, setLoading] = useState(true);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   const loadOrders = async () => {
     try {
+      setLoading(true);
       const res = await getOrders();
       if (res.success && res.orders?.length) {
         const fmtDate = (iso: string) => {
@@ -244,26 +279,30 @@ const OrdersScreen = () => {
           const snap = o.restaurantSnapshot || {};
           const name = snap.name || o.restaurantName || "Restaurant";
           const image = snap.image || o.restaurantImage || "";
-          const price = o.grandTotal ?? o.totalPrice ?? 0;
-          if (o.orderStatus >= 6) {
+          const price = o.grandTotal ?? 0;
+          if (o.orderStatus >= 7) {
             past.push({
               id: o._id, restaurantName: name, image,
               dateTime: fmtDate(o.createdAt),
-              status: o.orderStatus === 7 ? "Cancelled" : "Delivered",
+              status: o.orderStatus === 8 ? "Cancelled" : "Delivered",
               items: orderItems, totalPrice: price, rating: o.isRated ? 5 : undefined,
+              paymentMethod: o.paymentMethod, paymentStatus: o.paymentStatus,
             });
           } else {
             active.push({
               id: o._id, orderNumber: o.orderNumber, restaurantName: name, image,
               statusText: conf?.text || "Preparing your meal", statusIcon: conf?.icon || "cook",
               items: orderItems, totalPrice: price, estimatedArrival: o.estimatedTime || o.estimatedDeliveryTime ? `${o.estimatedDeliveryTime} mins` : undefined,
+              paymentMethod: o.paymentMethod, paymentStatus: o.paymentStatus,
             });
           }
         }
         setApiActive(active);
         setApiPast(past);
       }
-    } catch {}
+      } catch {} finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -310,7 +349,55 @@ const OrdersScreen = () => {
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollInner} showsVerticalScrollIndicator={false}>
-        {activeTab === "Active" ? (
+        {loading ? (
+          activeTab === "Active" ? (
+            <>
+              <View style={s.sectionHeader}>
+                <Skeleton width="30%" height={18} />
+                <Skeleton width={60} height={22} borderRadius={11} />
+              </View>
+              {Array.from({ length: 2 }).map((_, i) => (
+                <View key={i} style={as.card}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <Skeleton width={48} height={48} borderRadius={10} />
+                    <View style={{ flex: 1 }}>
+                      <Skeleton width="50%" height={16} />
+                      <Skeleton width="35%" height={12} style={{ marginTop: 4 }} />
+                    </View>
+                  </View>
+                  <Skeleton width="90%" height={14} style={{ marginTop: 12 }} />
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 12 }}>
+                    <Skeleton width="30%" height={12} />
+                    <Skeleton width="20%" height={12} />
+                  </View>
+                  <Skeleton width="40%" height={36} borderRadius={10} style={{ marginTop: 12 }} />
+                </View>
+              ))}
+            </>
+          ) : (
+            <>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={s.filterContent}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} width={100} height={34} borderRadius={17} />
+                ))}
+              </ScrollView>
+              {Array.from({ length: 2 }).map((_, i) => (
+                <View key={i} style={as.card}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                      <Skeleton width={40} height={40} borderRadius={8} />
+                      <Skeleton width="40%" height={16} />
+                    </View>
+                    <Skeleton width={50} height={16} />
+                  </View>
+                  <Skeleton width={70} height={14} style={{ marginTop: 8 }} />
+                  <Skeleton width="85%" height={14} style={{ marginTop: 4 }} />
+                  <Skeleton width="30%" height={34} borderRadius={10} style={{ marginTop: 12 }} />
+                </View>
+              ))}
+            </>
+          )
+        ) : activeTab === "Active" ? (
           <>
             {apiActive.length > 0 ? (
               <>
@@ -394,7 +481,7 @@ const as = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: PRIMARY,
     paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10,
   },
-  trackBtnText: { fontSize: 13, fontWeight: "700", color: PRIMARY_TEXT, lineHeight: 18 },
+  trackBtnText: { fontSize: 13, fontWeight: "700", color: ON_PRIMARY, lineHeight: 18 },
 
   pastTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   pastPrice: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
@@ -410,7 +497,12 @@ const as = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: PRIMARY,
     paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10,
   },
-  reorderBtnText: { fontSize: 12, fontWeight: "700", color: PRIMARY_TEXT, lineHeight: 16 },
+  receiptBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${PRIMARY}15`,
+    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: `${PRIMARY}30`,
+  },
+  reorderBtnText: { fontSize: 12, fontWeight: "700", color: ON_PRIMARY, lineHeight: 16 },
+  receiptBtnText: { fontSize: 12, fontWeight: "700", color: PRIMARY_TEXT, lineHeight: 16 },
   rateMealBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   rateMealText: { fontSize: 12, fontWeight: "600", color: PRIMARY, lineHeight: 16, letterSpacing: 0.1 },
   ratedBadge: { flexDirection: "row", alignItems: "center", gap: 2 },
@@ -441,12 +533,12 @@ const s = StyleSheet.create({
   countBadge: { backgroundColor: `${SECONDARY}20`, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   countText: { fontSize: 11, fontWeight: "600", color: SECONDARY, lineHeight: 16, letterSpacing: 0.5 },
   viewAll: { fontSize: 12, fontWeight: "700", color: PRIMARY, lineHeight: 16, letterSpacing: 0.1 },
-  filterRow: { marginBottom: 12 },
+  filterRow: { marginBottom: 12,marginTop:12 },
   filterContent: { gap: 8, flexDirection: "row", paddingVertical: 4 },
   filterChip: { paddingHorizontal: 24, paddingVertical: 8, backgroundColor: SURFACE_CONTAINER_HIGH, borderRadius: 999 },
   filterChipActive: { backgroundColor: PRIMARY, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 3 },
   filterChipText: { fontSize: 13, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 18, letterSpacing: 0.1 },
-  filterChipTextActive: { color: PRIMARY_TEXT },
+  filterChipTextActive: { color: ON_PRIMARY },
   emptyState: { alignItems: "center", paddingVertical: 48, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
   emptySub: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20 },

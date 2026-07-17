@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   ImageBackground,
   ScrollView,
   StyleSheet,
@@ -48,6 +47,7 @@ const HomeScreen = () => {
             isFavorite: r.isFavorite ?? false,
             restaurantId: r.restaurantId || r._id,
             menu: [],
+            menuItemNames: r.menuItemNames || [],
           }));
           setRestaurants(mapped);
         } else {
@@ -125,9 +125,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </ImageBackground>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#FF6B35" style={{ marginTop: 40 }} />
-      ) : error ? (
+      {error ? (
         <View style={{ marginTop: 40, alignItems: "center" }}>
           <MaterialCommunityIcons name="cloud-off-outline" size={60} color="#CCC" />
           <Text style={{ marginTop: 12, fontSize: 16, color: "#888", fontWeight: "600" }}>
@@ -135,7 +133,7 @@ const HomeScreen = () => {
           </Text>
         </View>
       ) : (
-        <RestaurantListScreen restaurants={restaurants} />
+        <RestaurantListScreen restaurants={restaurants} loading={loading} />
       )}
       </View>
     </ScrollView>

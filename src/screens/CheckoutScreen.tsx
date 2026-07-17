@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Alert,
     Image,
@@ -16,11 +16,14 @@ import {
     useRoute,
 } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useStripe } from "@stripe/stripe-react-native";
+
 import { RootStackParamList } from "../types/types";
 import { useCart } from "../context/CartContext";
 import { placeOrder } from "../api/order";
 import { getAddresses, Address } from "../api/address";
 import Skeleton from "../components/Skeleton";
+import { createPaymentIntent } from "../api/payment";
 
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
@@ -37,10 +40,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const CheckoutScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
+
+    const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
     const { restaurantId } = route.params;
     const cart = useCart();
     const [selectedPayment, setSelectedPayment] = useState("ONLINE");
     const [placing, setPlacing] = useState(false);
+    const placingRef = useRef(false);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState("");
     const [addressesLoading, setAddressesLoading] = useState(true);
@@ -66,11 +73,55 @@ const CheckoutScreen = () => {
         : null;
 
     const deliveryFee = cart.deliveryFee ?? 0;
-    const taxesAndCharges = cart.taxes ?? 0;
-    const grandTotal = cart.grandTotal ?? (cart.totalAmount + deliveryFee + taxesAndCharges);
+    const tax = cart.tax ?? 0;
+    const grandTotal = cart.grandTotal ?? 0;
+
+    const pendingPaymentRef = useRef<{ paymentIntentId: string | undefined; clientSecret: string | undefined } | null>(null);
+
+    const presentSheet = async (secret: string) => {
+        const { error: initError } = await initPaymentSheet({
+            merchantDisplayName: "CraveGo",
+            paymentIntentClientSecret: secret,
+            defaultBillingDetails: { address: { country: "IN" } },
+        });
+        if (initError) return initError;
+        return (await presentPaymentSheet()).error;
+    };
+
+    const handleOnlinePayment = async () => {
+        const cached = pendingPaymentRef.current;
+        if (cached?.clientSecret && cached?.paymentIntentId) {
+            const error = await presentSheet(cached.clientSecret);
+            if (!error) return cached.paymentIntentId;
+        }
+
+        const response = await createPaymentIntent();
+        if (!response.success) {
+            Alert.alert("Payment Error", response.message || "Unable to start payment");
+            return null;
+        }
+
+        const { clientSecret, paymentIntentId } = response;
+        if (!clientSecret) {
+            Alert.alert("Payment Error", "Missing payment details from server.");
+            return null;
+        }
+
+        pendingPaymentRef.current = { paymentIntentId, clientSecret };
+
+        const error = await presentSheet(clientSecret);
+        if (error) {
+            pendingPaymentRef.current = null;
+            Alert.alert("Payment Error", error.message);
+            return null;
+        }
+
+        pendingPaymentRef.current = null;
+        return paymentIntentId;
+    };
 
     const handlePlaceOrder = async () => {
-        if (placing) return;
+        if (placing || placingRef.current) return;
         if (!selectedAddr) {
             Alert.alert("Address Required", "Please add a delivery address before placing the order.");
             return;
@@ -87,47 +138,67 @@ const CheckoutScreen = () => {
             Alert.alert("Invalid Address", "The selected address has an invalid mobile number. Please update it.");
             return;
         }
+        placingRef.current = true;
         setPlacing(true);
+        let paymentIntentId: string | null | undefined;
         try {
+            if (selectedPayment === "ONLINE") {
+                paymentIntentId = await handleOnlinePayment();
+                if (!paymentIntentId) {
+                    return;
+                }
+            }
+
             const items = cart.cartItems.map((i) => ({
                 menuItemId: i.id,
                 quantity: i.quantity,
             }));
-            const orderPayload = {
+            const orderPayload: any = {
                 restaurantId,
                 items,
                 addressId: selectedAddr._id,
                 paymentMethod: selectedPayment,
             };
-            console.warn("placeOrder request:", JSON.stringify(orderPayload));
+            if (paymentIntentId) {
+                orderPayload.paymentIntentId = paymentIntentId;
+            }
             const res = await placeOrder(orderPayload);
-            console.warn("placeOrder response:", JSON.stringify(res));
             if (res.success && res.order) {
                 const count = cart.cartItems.reduce((s, i) => s + i.quantity, 0);
-                cart.clearCart();
                 const snap = res.order.restaurantSnapshot || {};
+                const orderItems = (res.order.items || []).map(i => ({
+                    id: i.menuItemId,
+                    name: i.name,
+                    quantity: i.quantity,
+                    price: i.price,
+                    totalPrice: i.totalPrice,
+                }));
+                const totalPrice = res.order.grandTotal ?? 0;
+                try {
+                    await cart.clearCart();
+                } catch (e) {
+                }
                 navigation.navigate("OrderSuccess", {
                     itemCount: count,
                     orderId: res.order._id,
                     orderNumber: res.order.orderNumber,
                     restaurantName: snap.name || res.order.restaurantName || "Restaurant",
-                    totalPrice: res.order.grandTotal ?? res.order.totalPrice ?? 0,
-                    items: res.order.items.map(i => ({
-                        id: i.menuItemId,
-                        name: i.name,
-                        quantity: i.quantity,
-                        price: i.price,
-                    })),
+                    totalPrice,
+                    items: orderItems,
                 });
             } else {
                 const errMsg = res.message || JSON.stringify(res);
                 Alert.alert("Order Failed", errMsg);
             }
         } catch (err) {
-            Alert.alert("Error", `Something went wrong: ${err instanceof Error ? err.message : "Please try again"}`);
-            console.warn("placeOrder exception:", err);
+            if (selectedPayment === "ONLINE") {
+                Alert.alert("Payment Failed", "Unable to process your payment.");
+            } else {
+                Alert.alert("Error", `Something went wrong: ${err instanceof Error ? err.message : "Please try again"}`);
+            }
         } finally {
             setPlacing(false);
+            placingRef.current = false;
         }
     };
 
@@ -152,11 +223,11 @@ const CheckoutScreen = () => {
                 <TouchableOpacity
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                        <MaterialCommunityIcons
-                            name="bell-outline"
-                            size={24}
-                            color={PRIMARY}
-                        />
+                    <MaterialCommunityIcons
+                        name="bell-outline"
+                        size={24}
+                        color={PRIMARY}
+                    />
                 </TouchableOpacity>
             </View>
 
@@ -273,16 +344,16 @@ const CheckoutScreen = () => {
                     </View>
                     <View style={styles.billRow}>
                         <Text style={styles.billLabel}>Delivery Fee</Text>
-                        <Text style={[styles.billValue, styles.freeText]}>
-                            FREE
+                        <Text style={[styles.billValue, deliveryFee === 0 && styles.freeText]}>
+                            {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
                         </Text>
                     </View>
                     <View style={styles.billRow}>
                         <Text style={styles.billLabel}>
-                            Taxes & Charges
+                            Tax
                         </Text>
                         <Text style={styles.billValue}>
-                            ₹{taxesAndCharges}
+                            ₹{tax}
                         </Text>
                     </View>
                     <View style={styles.billDivider} />

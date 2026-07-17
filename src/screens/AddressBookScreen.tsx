@@ -6,6 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { getAddresses, deleteAddress, setDefaultAddress, Address } from "../api/address";
+import Skeleton from "../components/Skeleton";
 
 const PRIMARY = "#FF6B35";
 const PRIMARY_SOFT = "#FFDBD0";
@@ -60,7 +61,6 @@ const AddressBookScreen = () => {
         setAddresses(res.addresses || []);
       }
     } catch (err) {
-      console.log("Failed to load addresses:", err);
     } finally {
       setLoading(false);
     }
@@ -135,10 +135,22 @@ const AddressBookScreen = () => {
         </View>
 
         {loading ? (
-          <View style={styles.centerState}>
-            <MaterialCommunityIcons name="map-marker" size={40} color={OUTLINE_VARIANT} />
-            <Text style={styles.loaderText}>Loading addresses...</Text>
-          </View>
+          Array.from({ length: 2 }).map((_, i) => (
+            <View key={i} style={styles.card}>
+              <View style={styles.cardTop}>
+                <Skeleton width={44} height={44} borderRadius={22} />
+                <View style={styles.cardInfo}>
+                  <Skeleton width={80} height={16} />
+                  <Skeleton width="60%" height={14} style={{ marginTop: 6 }} />
+                  <Skeleton width="90%" height={14} style={{ marginTop: 4 }} />
+                </View>
+              </View>
+              <View style={styles.cardActions}>
+                <Skeleton width={60} height={14} />
+                <Skeleton width={60} height={14} />
+              </View>
+            </View>
+          ))
         ) : addresses.length === 0 ? (
           <View style={styles.centerState}>
             <MaterialCommunityIcons name="map-marker-off" size={48} color={OUTLINE_VARIANT} />
