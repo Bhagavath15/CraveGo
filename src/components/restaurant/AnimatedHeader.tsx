@@ -8,6 +8,8 @@ interface AnimatedHeaderProps {
     onBack: () => void;
     onSearch?: () => void;
     onShare?: () => void;
+    onFavourite?: () => void;
+    isFavourite?: boolean;
 }
 
 const AnimatedHeader = ({
@@ -16,6 +18,8 @@ const AnimatedHeader = ({
     onBack,
     onSearch,
     onShare,
+    onFavourite,
+    isFavourite,
 }: AnimatedHeaderProps) => {
     const insets = useSafeAreaInsets();
 
@@ -60,6 +64,19 @@ const AnimatedHeader = ({
             </Animated.Text>
 
             <View style={{ flexDirection: "row", gap: 8 }}>
+                {onFavourite && (
+                    <TouchableOpacity
+                        style={styles.btn}
+                        onPress={onFavourite}
+                        activeOpacity={0.8}
+                    >
+                        <MaterialCommunityIcons
+                            name={isFavourite ? "heart" : "heart-outline"}
+                            size={22}
+                            color={isFavourite ? "#FF6B35" : "#1B1C1C"}
+                        />
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity
                     style={styles.btn}
                     onPress={onSearch}

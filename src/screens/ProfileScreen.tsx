@@ -1,17 +1,20 @@
+import { useCallback, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import { useNavigation, CommonActions, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import LinearGradient from "react-native-linear-gradient";
 import { RootStackParamList } from "../types/types";
 import { clearToken } from "../utils/authStore";
 import { clearAuthToken } from "../api/client";
 import { disconnectSocket } from "../api/socket";
+import { getProfile } from "../api/auth";
+import { getOrders } from "../api/order";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const PRIMARY = "#ab3500";
+const PRIMARY = "#FF6B35";
 const PRIMARY_CONTAINER = "#FF6B35";
 const SECONDARY = "#006D37";
 const SECONDARY_CONTAINER = "#6BFE9C";
@@ -36,7 +39,6 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
     { icon: "clipboard-list-outline", label: "My Orders", description: "History and active tracking", route: "Home" },
     { icon: "home-map-marker", label: "Address Book", description: "Home, office, and more", route: "AddressBook" },
-    { icon: "wallet-outline", label: "Payments", description: "Cards and digital wallets", route: "PaymentMethods" },
     { icon: "heart-outline", label: "Favorites", description: "Saved restaurants & items", route: "Favorites" },
     { icon: "bell-outline", label: "Notifications", description: "Manage your alerts", route: "Notifications" },
     { icon: "help-circle-outline", label: "Help & Support", description: "24/7 customer service", route: "HelpSupport" },
@@ -45,6 +47,30 @@ const MENU_ITEMS: MenuItem[] = [
 const ProfileScreen = () => {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<NavigationProp>();
+    const [userName, setUserName] = useState("");
+    const [userEmail, setUserEmail] = useState("");
+    const [orderCount, setOrderCount] = useState(0);
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchData = async () => {
+                try {
+                    const [profileRes, ordersRes] = await Promise.all([
+                        getProfile(),
+                        getOrders(),
+                    ]);
+                    if (profileRes.success) {
+                        setUserName(profileRes.user.name || "");
+                        setUserEmail(profileRes.user.email || "");
+                    }
+                    if (ordersRes.success) {
+                        setOrderCount(ordersRes.orders?.length || 0);
+                    }
+                } catch {}
+            };
+            fetchData();
+        }, [])
+    );
 
     const handleMenuPress = (item: MenuItem) => {
         if (item.route === "Home") {
@@ -98,8 +124,8 @@ const ProfileScreen = () => {
                             />
                         </View>
                     </TouchableOpacity>
-                    <Text style={styles.profileName}>Siddharth Sharma</Text>
-                    <Text style={styles.profileEmail}>sharma.sid@email.com</Text>
+                    <Text style={styles.profileName}>{userName || "User"}</Text>
+                    <Text style={styles.profileEmail}>{userEmail}</Text>
                     <View style={styles.goldBadge}>
                         <MaterialCommunityIcons
                             name="star"
@@ -112,7 +138,7 @@ const ProfileScreen = () => {
 
                 <View style={styles.statsRow}>
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>12</Text>
+                        <Text style={styles.statValue}>{orderCount}</Text>
                         <Text style={styles.statLabel}>Orders</Text>
                     </View>
                     <View style={styles.statDivider} />

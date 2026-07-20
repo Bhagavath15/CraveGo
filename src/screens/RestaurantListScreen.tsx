@@ -13,6 +13,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../types/types";
 import { Restaurant, foodFilters } from "../data/restaurantData";
+import { imageSource } from "../utils/imageUtils";
+import { useFavouriteIds, toggleFavourite } from "../context/FavoritesStore";
 import Skeleton from "../components/Skeleton";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -24,6 +26,7 @@ interface Props {
 
 const RestaurantListScreen = ({ restaurants, loading }: Props) => {
   const navigation = useNavigation<NavigationProp>();
+  const { favouriteIds } = useFavouriteIds();
 
   const [selectedFilter, setSelectedFilter] = useState("All");
 
@@ -145,9 +148,21 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
           >
             <View style={styles.imageWrapper}>
               <Image
-                source={item.image}
+                source={imageSource(item.image)}
                 style={styles.restaurantImage}
               />
+
+              <TouchableOpacity
+                style={styles.favBtn}
+                onPress={() => toggleFavourite(item.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialCommunityIcons
+                  name={favouriteIds.has(item.id) ? "heart" : "heart-outline"}
+                  size={22}
+                  color={favouriteIds.has(item.id) ? "#FF6B35" : "#FFF"}
+                />
+              </TouchableOpacity>
 
               <View style={styles.ratingBadge}>
                 <Text style={styles.ratingText}>
@@ -303,6 +318,18 @@ const styles = StyleSheet.create({
     height: 180,
   },
 
+  favBtn: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
   ratingBadge: {
     position: "absolute",
     top: 12,

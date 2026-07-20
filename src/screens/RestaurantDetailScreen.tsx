@@ -6,6 +6,7 @@ import {
     Image,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from "react-native";
 import {
@@ -16,12 +17,14 @@ import {
     useRoute,
 } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { RootStackParamList, CustomizationGroup } from "../types/types";
 import { MenuItem, MenuCategory } from "../data/restaurantData";
 import { getRestaurants, getRestaurantMenu } from "../api/restaurant";
-import { toImageUri } from "../utils/imageUtils";
+import { toImageUri, imageSource } from "../utils/imageUtils";
 import { useCart } from "../context/CartContext";
+import { useIsFavourite, toggleFavourite } from "../context/FavoritesStore";
 import {
     AnimatedHeader,
     RestaurantInfoCard,
@@ -92,6 +95,7 @@ const RestaurantDetailScreen = () => {
     const [, forceUpdate] = useState(0);
     const scrollRef = useRef<any>(null);
     const cart = useCart();
+    const isFav = useIsFavourite(restaurantId);
     const isFocused = useIsFocused();
 
     useFocusEffect(
@@ -315,6 +319,8 @@ const RestaurantDetailScreen = () => {
                     restaurantName={restaurant.name}
                     scrollY={scrollY}
                     onBack={() => navigation.goBack()}
+                    onFavourite={() => toggleFavourite(restaurant.id)}
+                    isFavourite={isFav}
                 />
             )}
 
@@ -336,9 +342,27 @@ const RestaurantDetailScreen = () => {
             >
                 <View style={styles.heroContainer}>
                     <Image
-                        source={restaurant.image}
+                        source={imageSource(restaurant.image)}
                         style={styles.heroImage}
                     />
+                    <View style={styles.heroOverlay}>
+                        <TouchableOpacity
+                            style={styles.heroIconBtn}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <MaterialCommunityIcons name="arrow-left" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.heroIconBtn}
+                            onPress={() => toggleFavourite(restaurant.id)}
+                        >
+                            <MaterialCommunityIcons
+                                name={isFav ? "heart" : "heart-outline"}
+                                size={22}
+                                color={isFav ? "#FF6B35" : "#FFF"}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <RestaurantInfoCard
@@ -441,6 +465,22 @@ const styles = StyleSheet.create({
         height: HERO_HEIGHT,
         width: SCREEN_WIDTH,
         position: "relative",
+    },
+    heroOverlay: {
+        position: "absolute",
+        top: 12,
+        left: 12,
+        right: 12,
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    heroIconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(0,0,0,0.3)",
+        justifyContent: "center",
+        alignItems: "center",
     },
     heroImage: {
         width: "100%",

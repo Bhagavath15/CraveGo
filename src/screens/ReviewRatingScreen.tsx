@@ -16,7 +16,7 @@ import { rateOrder } from "../api/order";
 
 type ScreenRoute = RouteProp<RootStackParamList, "ReviewRating">;
 
-const PRIMARY = "#ab3500";
+const PRIMARY = "#FF6B35";
 const PRIMARY_CONTAINER = "#FF6B35";
 const ON_PRIMARY_CONTAINER = "#5F1900";
 const ON_SURFACE = "#1B1C1C";

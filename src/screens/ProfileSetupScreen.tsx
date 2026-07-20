@@ -17,12 +17,12 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
-import { signUp as signUpApi } from "../api/auth";
+import { updateProfile as updateProfileApi } from "../api/auth";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenRoute = RouteProp<RootStackParamList, "ProfileSetup">;
 
-const PRIMARY = "#ab3500";
+const PRIMARY = "#FF6B35";
 const PRIMARY_CONTAINER = "#FF6B35";
 const SECONDARY = "#006D37";
 const BG = "#FCF9F8";
@@ -54,7 +54,7 @@ const ProfileSetupScreen = () => {
         }
         setSaving(true);
         try {
-            const data = await signUpApi(fullName.trim(), phone);
+            const data = await updateProfileApi(fullName.trim(), phone, email.trim());
             if (data.success) {
                 navigation.reset({
                     index: 0,

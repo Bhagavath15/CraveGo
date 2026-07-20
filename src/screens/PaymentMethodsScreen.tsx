@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 
-const PRIMARY = "#ab3500";
+const PRIMARY = "#FF6B35";
 const PRIMARY_CONTAINER = "#FF6B35";
 const PRIMARY_FIXED = "#FFDBD0";
 const BG = "#FCF9F8";

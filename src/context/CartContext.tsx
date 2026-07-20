@@ -7,6 +7,7 @@ import {
     removeCartItem,
     clearCart as clearCartApi,
 } from "../api/cart";
+import { validateCoupon as validateCouponApi, removeCouponApi } from "../api/coupon";
 import { getToken } from "../utils/authStore";
 
 export interface CartItem {
@@ -29,6 +30,19 @@ interface CartState {
     tax: number;
     discount: number;
     grandTotal: number;
+    couponId: string | null;
+    couponCode: string;
+    couponTitle: string;
+    couponType: string;
+}
+
+interface CouponResult {
+    couponId: string;
+    couponCode: string;
+    couponTitle: string;
+    couponType: string;
+    discount: number;
+    grandTotal: number;
 }
 
 interface CartContextType extends CartState {
@@ -42,6 +56,8 @@ interface CartContextType extends CartState {
     clearCart: () => void;
     getItemQuantity: (menuItemId: string, itemName?: string) => number;
     lastClearTime: number;
+    applyCoupon: (code: string) => Promise<CouponResult>;
+    removeCoupon: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -55,6 +71,10 @@ const emptyCart: CartState = {
     tax: 0,
     discount: 0,
     grandTotal: 0,
+    couponId: null,
+    couponCode: "",
+    couponTitle: "",
+    couponType: "",
 };
 
 const mapItem = (si: any): CartItem => ({
@@ -78,6 +98,10 @@ const fromApi = (cart: any, restName?: string): CartState => {
         tax: cart.tax || 0,
         discount: cart.discount || 0,
         grandTotal: cart.grandTotal || 0,
+        couponId: cart.couponId || null,
+        couponCode: cart.couponCode || "",
+        couponTitle: cart.couponTitle || "",
+        couponType: cart.couponType || "",
     };
     return result;
 };
@@ -119,7 +143,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             await clearCartApi();
         } catch (e) {
         }
-    }, [cart]);
+    }, []);
 
     const addToCart = useCallback(async (item: MenuItem, restId: string, restName: string, customization?: { name: string; price: number }[]) => {
         if (addingRef.current) return;
@@ -143,7 +167,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             addingRef.current = false;
         }
-    }, [cart, clearCart, setCartWithLog]);
+    }, []);
 
     const decrementItem = useCallback(async (menuItemId: string) => {
         try {
@@ -165,6 +189,53 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             if (data.success && data.cart) setCartWithLog(fromApi(data.cart));
         } catch (e) { }
     }, []);
+
+    const applyCoupon = useCallback(async (code: string): Promise<CouponResult> => {
+        if (!cart.restaurantId) throw new Error("No restaurant in cart");
+
+        const res = await validateCouponApi({
+            couponCode: code,
+            restaurantId: cart.restaurantId,
+            subtotal: cart.subtotal,
+            deliveryFee: cart.deliveryFee,
+            tax: cart.tax,
+        });
+
+        if (!res.success) {
+            throw new Error(res.message || "Invalid coupon");
+        }
+
+        const data: CouponResult = res.data;
+
+        setCartWithLog({
+            ...cart,
+            discount: data.discount,
+            grandTotal: data.grandTotal,
+            couponId: data.couponId,
+            couponCode: data.couponCode,
+            couponTitle: data.couponTitle,
+            couponType: data.couponType,
+        });
+
+        return data;
+    }, [cart]);
+
+    const removeCoupon = useCallback(() => {
+        const round2 = (n: number) => Math.round(n * 100) / 100;
+        const restoredGrandTotal = round2(cart.subtotal + cart.deliveryFee + cart.tax);
+
+        setCartWithLog({
+            ...cart,
+            discount: 0,
+            grandTotal: restoredGrandTotal,
+            couponId: null,
+            couponCode: "",
+            couponTitle: "",
+            couponType: "",
+        });
+
+        removeCouponApi().catch(() => {});
+    }, [cart]);
 
     const getItemQuantity = useCallback(
         (menuItemId: string, itemName?: string) => {
@@ -200,8 +271,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             decrementItem,
             clearCart,
             getItemQuantity,
+            applyCoupon,
+            removeCoupon,
         }),
-        [cart, itemCount, totalAmount, loading, lastClearTime, addToCart, removeItem, decrementItem, clearCart, getItemQuantity]
+        [cart, itemCount, totalAmount, loading, lastClearTime, addToCart, removeItem, decrementItem, clearCart, getItemQuantity, applyCoupon, removeCoupon]
     );
 
     return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

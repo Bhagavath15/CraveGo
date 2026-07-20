@@ -7,7 +7,8 @@ import SearchScreen from "../screens/SearchScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 
 const PRIMARY = "#FF6B35";
-const ON_SURFACE_VARIANT = "#594139";
+const ON_SURFACE_VARIANT = "#594141";
+const ON_SURFACE = "#1B1C1C";
 
 const Tab = createBottomTabNavigator();
 

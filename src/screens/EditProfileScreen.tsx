@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
     Alert,
     Image,
@@ -12,9 +12,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { getProfile, updateProfile } from "../api/auth";
+import { getAddresses } from "../api/address";
 
-const PRIMARY = "#ab3500";
+const PRIMARY = "#FF6B35";
 const PRIMARY_CONTAINER = "#FF6B35";
 const ON_PRIMARY_CONTAINER = "#5F1900";
 const SECONDARY = "#006D37";
@@ -28,15 +30,69 @@ const SURFACE_CONTAINER_HIGH = "#EAE7E7";
 const ERROR = "#BA1A1A";
 const ERROR_CONTAINER = "#FFDAD6";
 
+interface AddressItem {
+    _id: string;
+    fullName: string;
+    houseNumber: string;
+    apartment?: string;
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    addressType: string;
+    isDefault?: boolean;
+}
+
 const ProfileScreen = () => {
     const insets = useSafeAreaInsets();
-    const [fullName, setFullName] = useState("Rahul Sharma");
-    const [email, setEmail] = useState("rahul.sharma@example.com");
-    const [phone, setPhone] = useState("+91 98765 43210");
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [addresses, setAddresses] = useState<AddressItem[]>([]);
+    const [saving, setSaving] = useState(false);
     const [orderUpdates, setOrderUpdates] = useState(true);
     const [offersDisc, setOffersDisc] = useState(true);
     const [sysNotif, setSysNotif] = useState(false);
     const navigation = useNavigation();
+
+    useFocusEffect(
+        useCallback(() => {
+            const fetchData = async () => {
+                try {
+                    const [profileRes, addrRes] = await Promise.all([
+                        getProfile(),
+                        getAddresses(),
+                    ]);
+                    if (profileRes.success) {
+                        setFullName(profileRes.user.name || "");
+                        setEmail(profileRes.user.email || "");
+                        setPhone(profileRes.user.phone || "");
+                    }
+                    if (addrRes.success) {
+                        setAddresses(addrRes.addresses || []);
+                    }
+                } catch {}
+            };
+            fetchData();
+        }, [])
+    );
+
+    const handleSave = async () => {
+        if (saving) return;
+        setSaving(true);
+        try {
+            const res = await updateProfile(fullName.trim(), phone.trim());
+            if (res.success) {
+                Alert.alert("Saved", "Profile updated successfully.");
+            } else {
+                Alert.alert("Error", res.message || "Failed to update profile");
+            }
+        } catch {
+            Alert.alert("Error", "Network error. Try again.");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -54,10 +110,11 @@ const ProfileScreen = () => {
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Edit Profile</Text>
                     <TouchableOpacity
-                        style={styles.saveBtn}
-                        onPress={() => Alert.alert("Saved", "Profile updated successfully.")}
+                        style={[styles.saveBtn, saving && { opacity: 0.5 }]}
+                        onPress={handleSave}
+                        disabled={saving}
                     >
-                        <Text style={styles.saveText}>Save</Text>
+                        <Text style={styles.saveText}>{saving ? "Saving..." : "Save"}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -171,51 +228,39 @@ const ProfileScreen = () => {
                             Manage Addresses
                         </Text>
                         <TouchableOpacity>
-                            <Text style={styles.addNewText}>Add New</Text>
+                            <Text style={styles.addNewText} onPress={() => navigation.navigate("AddAddress" as any)}>Add New</Text>
                         </TouchableOpacity>
                     </View>
-                    <View style={[styles.addressCard, styles.addressCardActive]}>
-                        <View style={styles.addressIconBg}>
-                            <MaterialCommunityIcons
-                                name="home"
-                                size={20}
-                                color={PRIMARY}
-                            />
+                    {addresses.length === 0 && (
+                        <View style={styles.addressCard}>
+                            <Text style={styles.addressText}>No addresses saved yet.</Text>
                         </View>
-                        <View style={styles.addressInfo}>
-                            <Text style={styles.addressLabel}>Home</Text>
-                            <Text style={styles.addressText}>
-                                A-402, Green Valley Apartments, Sector 56,
-                                Gurgaon, Haryana 122011
-                            </Text>
-                        </View>
-                        <MaterialCommunityIcons
-                            name="dots-vertical"
-                            size={20}
-                            color={ON_SURFACE_VARIANT}
-                        />
-                    </View>
-                    <View style={styles.addressCard}>
-                        <View style={styles.addressIconBgMuted}>
+                    )}
+                    {addresses.map((addr) => (
+                        <View
+                            key={addr._id}
+                            style={[styles.addressCard, addr.isDefault && styles.addressCardActive]}
+                        >
+                            <View style={addr.isDefault ? styles.addressIconBg : styles.addressIconBgMuted}>
+                                <MaterialCommunityIcons
+                                    name={addr.addressType === "Home" ? "home" : addr.addressType === "Work" ? "briefcase" : "map-marker"}
+                                    size={20}
+                                    color={addr.isDefault ? PRIMARY : ON_SURFACE_VARIANT}
+                                />
+                            </View>
+                            <View style={styles.addressInfo}>
+                                <Text style={styles.addressLabel}>{addr.addressType}</Text>
+                                <Text style={styles.addressText}>
+                                    {addr.houseNumber}{addr.apartment ? `, ${addr.apartment}` : ""}, {addr.area}, {addr.city}, {addr.state} {addr.pincode}
+                                </Text>
+                            </View>
                             <MaterialCommunityIcons
-                                name="briefcase"
+                                name="dots-vertical"
                                 size={20}
                                 color={ON_SURFACE_VARIANT}
                             />
                         </View>
-                        <View style={styles.addressInfo}>
-                            <Text style={styles.addressLabel}>Work</Text>
-                            <Text style={styles.addressText}>
-                                Cyber Hub, Building 10, DLF Phase 2, Gurgaon,
-                                Haryana 122002
-                            </Text>
-                        </View>
-                        <MaterialCommunityIcons
-                            name="dots-vertical"
-                            size={20}
-                            color={ON_SURFACE_VARIANT}
-                        />
-                    </View>
+                    ))}
                 </View>
 
                 <View style={styles.section}>

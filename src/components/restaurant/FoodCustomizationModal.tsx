@@ -10,6 +10,7 @@ import {
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { MenuItem } from "../../data/restaurantData";
 import { CustomizationGroup } from "../../types/types";
+import { imageSource } from "../../utils/imageUtils";
 
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
@@ -158,7 +159,7 @@ const FoodCustomizationModal = ({ visible, selectedItem, customizationGroups, on
             >
                 <View style={styles.header}>
                     <View style={styles.headerRow}>
-                        <Image source={selectedItem.image} style={styles.itemImage} />
+                        <Image source={imageSource(selectedItem.image)} style={styles.itemImage} />
                         <View style={styles.headerInfo}>
                             <Text style={styles.itemName}>{selectedItem.name}</Text>
                             {selectedItem.isBestseller && (

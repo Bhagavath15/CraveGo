@@ -21,5 +21,8 @@ export const resetPassword = (resetToken: string, newPassword: string) =>
 export const resendOtp = (email: string, type: "signup" | "forgot_password") =>
     api.post("/resend-otp", { email, type });
 
-export const signUp = (name: string, phone: string) =>
-    api.post("/signup", { name, phone });
+export const getProfile = () =>
+    api.get<{ success: boolean; user: { _id: string; name: string; email: string; phone?: string; isVerified: boolean } }>("/user/profile");
+
+export const updateProfile = (name: string, phone: string, email?: string) =>
+    api.patch("/user/profile", { name, phone, email });

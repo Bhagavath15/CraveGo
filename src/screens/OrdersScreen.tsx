@@ -18,7 +18,7 @@ import Skeleton from "../components/Skeleton";
 
 const PRIMARY = "#FF6B35";
 const ON_PRIMARY = "#ffffff";
-const PRIMARY_TEXT = "#ab3500";
+const PRIMARY_TEXT = "#FF6B35";
 const SECONDARY = "#006d37";
 const BG = "#fcf9f8";
 const ON_SURFACE = "#1b1c1c";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Image, StyleSheet } from "react-native";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer, createNavigationContainerRef, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import OnBoardingScreen from "../screens/OnBoardingScreen";
@@ -68,9 +68,17 @@ const RootNavigator = () => {
         );
     }
 
+    const navTheme = {
+        ...DefaultTheme,
+        colors: {
+            ...DefaultTheme.colors,
+            background: '#FCF9F8',
+        },
+    };
+
     return (
-        <NavigationContainer>
-            <Stack.Navigator initialRouteName={token ? "Home" : "OnBoarding"} screenOptions={{ headerShown: false }}>
+        <NavigationContainer theme={navTheme}>
+            <Stack.Navigator initialRouteName={token ? "Home" : "OnBoarding"} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FCF9F8' } }}>
                 <Stack.Screen name="Home" component={BottomTabNavigationBar} />
                 <Stack.Screen name="OnBoarding" component={OnBoardingScreen} />
                 <Stack.Screen name="Login" component={LoginScreen} />
@@ -106,7 +114,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#FFF",
+        backgroundColor: "#FCF9F8",
     },
     logo: {
         width: "60%",

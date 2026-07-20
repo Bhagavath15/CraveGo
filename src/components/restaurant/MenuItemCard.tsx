@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { MenuItem } from "../../data/restaurantData";
+import { imageSource } from "../../utils/imageUtils";
 
 interface MenuItemCardProps {
     item: MenuItem;
@@ -48,7 +49,7 @@ const MenuItemCard = ({ item, quantity, onAdd, onIncrement, onDecrement }: MenuI
 
                 <View style={styles.imageWrapper}>
                     <Image
-                        source={item.image}
+                        source={imageSource(item.image)}
                         style={styles.image}
                     />
 
