@@ -1,7 +1,11 @@
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/types";
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const PRIMARY = "#FF6B35";
 const PRIMARY_CONTAINER = "#FF6B35";
@@ -10,20 +14,13 @@ const ON_SURFACE = "#1B1C1C";
 const ON_SURFACE_VARIANT = "#594139";
 const SURFACE_LOWEST = "#FFFFFF";
 const SURFACE_CONTAINER = "#F0EDED";
-const SURFACE_CONTAINER_LOW = "#F6F3F2";
 const OUTLINE_VARIANT = "#E1BFB5";
 const OUTLINE = "#8D7168";
-const SECONDARY = "#006D37";
-const SECONDARY_CONTAINER = "#6BFE9C";
 
 interface Category {
     icon: string;
     title: string;
     description: string;
-}
-
-interface FaqItem {
-    question: string;
 }
 
 const CATEGORIES: Category[] = [
@@ -33,7 +30,7 @@ const CATEGORIES: Category[] = [
     { icon: "account-cog-outline", title: "Account Settings", description: "Privacy, address management, and login issues." },
 ];
 
-const FAQ_ITEMS: FaqItem[] = [
+const FAQ_ITEMS: { question: string }[] = [
     { question: "How do I track my delivery executive?" },
     { question: "What is the '60% OFF' CraveGo promise?" },
     { question: "Can I change my delivery address after ordering?" },
@@ -42,7 +39,11 @@ const FAQ_ITEMS: FaqItem[] = [
 
 const HelpSupportScreen = () => {
     const insets = useSafeAreaInsets();
-    const navigation = useNavigation();
+    const navigation = useNavigation<Nav>();
+
+    const handleComingSoon = () => {
+        Alert.alert("Coming Soon", "This feature will be available soon.");
+    };
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -51,9 +52,7 @@ const HelpSupportScreen = () => {
                     <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Help Center</Text>
-                <TouchableOpacity style={styles.backBtn}>
-                    <MaterialCommunityIcons name="help-circle-outline" size={24} color={ON_SURFACE} />
-                </TouchableOpacity>
+                <View style={styles.backBtn} />
             </View>
 
             <ScrollView
@@ -61,7 +60,7 @@ const HelpSupportScreen = () => {
                 contentContainerStyle={styles.scrollContent}
             >
                 <Text style={styles.heroTitle}>How can we help?</Text>
-                <Text style={styles.heroSubtitle}>Search for FAQs or pick a category below</Text>
+                <Text style={styles.heroSubtitle}>Browse topics below or visit Orders for order-specific help.</Text>
 
                 <View style={styles.searchBar}>
                     <MaterialCommunityIcons name="magnify" size={20} color={OUTLINE} />
@@ -69,53 +68,14 @@ const HelpSupportScreen = () => {
                         style={styles.searchInput}
                         placeholder="Search help articles..."
                         placeholderTextColor={OUTLINE}
+                        editable={false}
                     />
-                </View>
-
-                <View style={styles.recentOrderSection}>
-                    <View style={styles.recentOrderHeader}>
-                        <Text style={styles.sectionTitle}>Recent Order Help</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.viewAllText}>View all orders</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.orderCard}>
-                        <View style={styles.orderCardTop}>
-                            <View style={styles.orderInfo}>
-                                <View style={styles.statusRow}>
-                                    <View style={styles.deliveredBadge}>
-                                        <MaterialCommunityIcons name="check-circle" size={12} color={SECONDARY} />
-                                        <Text style={styles.deliveredText}>Delivered</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.restaurantName}>Spice Garden</Text>
-                                <Text style={styles.orderMeta}>Ordered Oct 12 • ₹842</Text>
-                            </View>
-                            <MaterialCommunityIcons name="chevron-right" size={20} color={OUTLINE_VARIANT} />
-                        </View>
-                        <Text style={styles.orderHelpText}>
-                            Your order was delivered 15 mins ago. Is everything okay with your meal?
-                        </Text>
-                        <View style={styles.chipRow}>
-                            <TouchableOpacity style={styles.chip}>
-                                <Text style={styles.chipText}>Missing Item</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.chip}>
-                                <Text style={styles.chipText}>Poor Quality</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.chip, styles.chipPrimary]}>
-                                <MaterialCommunityIcons name="chat-outline" size={14} color={SURFACE_LOWEST} />
-                                <Text style={[styles.chipText, styles.chipTextPrimary]}>Chat</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
                 </View>
 
                 <Text style={styles.sectionTitle}>Browse Categories</Text>
                 <View style={styles.categoriesSection}>
                     {CATEGORIES.map((cat, i) => (
-                        <TouchableOpacity key={i} style={styles.categoryCard}>
+                        <TouchableOpacity key={i} onPress={handleComingSoon} style={styles.categoryCard}>
                             <View style={styles.categoryIconBg}>
                                 <MaterialCommunityIcons name={cat.icon} size={24} color={PRIMARY} />
                             </View>
@@ -131,7 +91,7 @@ const HelpSupportScreen = () => {
                 <View style={styles.faqSection}>
                     <Text style={styles.sectionTitle}>Top FAQs</Text>
                     {FAQ_ITEMS.map((faq, i) => (
-                        <TouchableOpacity key={i} style={styles.faqItem}>
+                        <TouchableOpacity key={i} onPress={handleComingSoon} style={styles.faqItem}>
                             <Text style={styles.faqQuestion}>{faq.question}</Text>
                             <MaterialCommunityIcons name="chevron-right" size={20} color={OUTLINE_VARIANT} />
                         </TouchableOpacity>
@@ -139,7 +99,7 @@ const HelpSupportScreen = () => {
                 </View>
             </ScrollView>
 
-            <TouchableOpacity style={styles.liveChatFab}>
+            <TouchableOpacity onPress={handleComingSoon} style={styles.liveChatFab}>
                 <MaterialCommunityIcons name="chat" size={22} color={SURFACE_LOWEST} />
                 <Text style={styles.liveChatText}>Live Chat</Text>
             </TouchableOpacity>
@@ -201,6 +161,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         gap: 12,
         marginBottom: 24,
+        opacity: 0.6,
     },
     searchInput: {
         flex: 1,
@@ -209,103 +170,12 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         padding: 0,
     },
-    recentOrderSection: {
-        marginBottom: 24,
-    },
-    recentOrderHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 12,
-    },
     sectionTitle: {
         fontSize: 20,
         fontWeight: "600",
         color: ON_SURFACE,
         lineHeight: 28,
         marginBottom: 12,
-    },
-    viewAllText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY,
-        lineHeight: 20,
-        marginBottom: 12,
-    },
-    orderCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
-    },
-    orderCardTop: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-    orderInfo: {
-        flex: 1,
-    },
-    statusRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 4,
-    },
-    deliveredBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-    },
-    deliveredText: {
-        fontSize: 12,
-        fontWeight: "500",
-        color: SECONDARY,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-    },
-    restaurantName: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 24,
-    },
-    orderMeta: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        marginTop: 1,
-    },
-    orderHelpText: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        marginTop: 12,
-    },
-    chipRow: {
-        flexDirection: "row",
-        gap: 8,
-        marginTop: 12,
-    },
-    chip: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 999,
-        backgroundColor: SURFACE_CONTAINER,
-    },
-    chipText: {
-        fontSize: 12,
-        fontWeight: "500",
-        color: ON_SURFACE,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-    },
-    chipPrimary: {
-        backgroundColor: PRIMARY,
-    },
-    chipTextPrimary: {
-        color: SURFACE_LOWEST,
     },
     categoriesSection: {
         gap: 8,

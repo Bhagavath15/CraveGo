@@ -85,6 +85,7 @@ const ReceiptScreen = () => {
     COD: "Cash on Delivery",
     UPI: "UPI",
     CARD: "Credit / Debit Card",
+    ONLINE: "Online Payment",
   };
 
   const restaurantAddr = "";

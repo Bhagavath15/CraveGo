@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -6,8 +7,6 @@ interface AnimatedHeaderProps {
     restaurantName: string;
     scrollY: Animated.Value;
     onBack: () => void;
-    onSearch?: () => void;
-    onShare?: () => void;
     onFavourite?: () => void;
     isFavourite?: boolean;
 }
@@ -16,12 +15,25 @@ const AnimatedHeader = ({
     restaurantName,
     scrollY,
     onBack,
-    onSearch,
-    onShare,
     onFavourite,
     isFavourite,
 }: AnimatedHeaderProps) => {
     const insets = useSafeAreaInsets();
+    const [showContent, setShowContent] = useState(false);
+    const rafRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        const id = scrollY.addListener(({ value }) => {
+            if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+            rafRef.current = requestAnimationFrame(() => {
+                setShowContent(value > 40);
+            });
+        });
+        return () => {
+            scrollY.removeListener(id);
+            if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+        };
+    }, [scrollY]);
 
     const headerOpacity = scrollY.interpolate({
         inputRange: [0, 80],
@@ -31,6 +43,7 @@ const AnimatedHeader = ({
 
     return (
         <Animated.View
+            pointerEvents={showContent ? "auto" : "none"}
             style={[
                 styles.container,
                 {
@@ -63,44 +76,19 @@ const AnimatedHeader = ({
                 {restaurantName}
             </Animated.Text>
 
-            <View style={{ flexDirection: "row", gap: 8 }}>
-                {onFavourite && (
-                    <TouchableOpacity
-                        style={styles.btn}
-                        onPress={onFavourite}
-                        activeOpacity={0.8}
-                    >
-                        <MaterialCommunityIcons
-                            name={isFavourite ? "heart" : "heart-outline"}
-                            size={22}
-                            color={isFavourite ? "#FF6B35" : "#1B1C1C"}
-                        />
-                    </TouchableOpacity>
-                )}
+            {onFavourite && (
                 <TouchableOpacity
                     style={styles.btn}
-                    onPress={onSearch}
+                    onPress={onFavourite}
                     activeOpacity={0.8}
                 >
                     <MaterialCommunityIcons
-                        name="magnify"
+                        name={isFavourite ? "heart" : "heart-outline"}
                         size={22}
-                        color="#1B1C1C"
+                        color={isFavourite ? "#FF6B35" : "#1B1C1C"}
                     />
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.btn}
-                    onPress={onShare}
-                    activeOpacity={0.8}
-                >
-                    <MaterialCommunityIcons
-                        name="share-variant"
-                        size={22}
-                        color="#1B1C1C"
-                    />
-                </TouchableOpacity>
-            </View>
+            )}
         </Animated.View>
     );
 };

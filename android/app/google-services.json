@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1017692386137",
+    "project_id": "cravego-47d09",
+    "storage_bucket": "cravego-47d09.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1017692386137:android:f629519c926efc49159248",
+        "android_client_info": {
+          "package_name": "com.cravego"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH1QJPsvpLbwKzp01lq51W9PH_iE2_Xc8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

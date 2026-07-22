@@ -35,7 +35,7 @@ export interface Order {
   estimatedDeliveryTime?: number;
   estimatedTime?: string;
   items: OrderItem[];
-  paymentMethod: "COD" | "UPI" | "CARD";
+  paymentMethod: "COD" | "UPI" | "CARD" | "ONLINE";
   paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "Pending" | "Authorized" | "Paid" | "Failed" | "Refunded";
   paymentIntentId?: string;
   orderStatus: number;

@@ -1,6 +1,5 @@
-import { useCallback, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-    Alert,
     Image,
     ScrollView,
     StyleSheet,
@@ -12,8 +11,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { getProfile, updateProfile } from "../api/auth";
+import { useToast } from "../components/Toast";
 import { getAddresses } from "../api/address";
 
 const PRIMARY = "#FF6B35";
@@ -45,50 +45,61 @@ interface AddressItem {
 
 const ProfileScreen = () => {
     const insets = useSafeAreaInsets();
-    const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
+    const { showToast } = useToast();
+    const [profile, setProfile] = useState({ fullName: "", email: "", phone: "" });
     const [addresses, setAddresses] = useState<AddressItem[]>([]);
     const [saving, setSaving] = useState(false);
     const [orderUpdates, setOrderUpdates] = useState(true);
     const [offersDisc, setOffersDisc] = useState(true);
     const [sysNotif, setSysNotif] = useState(false);
     const navigation = useNavigation();
+    const nameRef = useRef<TextInput>(null);
+    const emailRef = useRef<TextInput>(null);
+    const phoneRef = useRef<TextInput>(null);
 
-    useFocusEffect(
-        useCallback(() => {
-            const fetchData = async () => {
-                try {
-                    const [profileRes, addrRes] = await Promise.all([
-                        getProfile(),
-                        getAddresses(),
-                    ]);
-                    if (profileRes.success) {
-                        setFullName(profileRes.user.name || "");
-                        setEmail(profileRes.user.email || "");
-                        setPhone(profileRes.user.phone || "");
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const [profileRes, addrRes] = await Promise.all([
+                    getProfile(),
+                    getAddresses(),
+                ]);
+                if (profileRes.success) {
+                    setProfile({
+                        fullName: profileRes.user.name || "",
+                        email: profileRes.user.email || "",
+                        phone: profileRes.user.phone || "",
+                    });
+                    if (profileRes.user.notifPref) {
+                        setOrderUpdates(profileRes.user.notifPref.orderUpdates ?? true);
+                        setOffersDisc(profileRes.user.notifPref.offersDisc ?? true);
+                        setSysNotif(profileRes.user.notifPref.sysNotif ?? true);
                     }
-                    if (addrRes.success) {
-                        setAddresses(addrRes.addresses || []);
-                    }
-                } catch {}
-            };
-            fetchData();
-        }, [])
-    );
+                }
+                if (addrRes.success) {
+                    setAddresses(addrRes.addresses || []);
+                }
+            } catch {}
+        };
+        load();
+    }, []);
 
     const handleSave = async () => {
         if (saving) return;
         setSaving(true);
         try {
-            const res = await updateProfile(fullName.trim(), phone.trim());
+            const res = await updateProfile(profile.fullName.trim(), profile.phone.trim(), profile.email.trim(), {
+                orderUpdates,
+                offersDisc,
+                sysNotif,
+            });
             if (res.success) {
-                Alert.alert("Saved", "Profile updated successfully.");
+                showToast({ message: "Profile updated successfully.", type: "success" });
             } else {
-                Alert.alert("Error", res.message || "Failed to update profile");
+                showToast({ message: res.message || "Failed to update profile", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Network error. Try again.");
+            showToast({ message: "Network error. Try again.", type: "error" });
         } finally {
             setSaving(false);
         }
@@ -137,7 +148,7 @@ const ProfileScreen = () => {
                             />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.avatarName}>{fullName}</Text>
+                    <Text style={styles.avatarName}>{profile.fullName}</Text>
                     <Text style={styles.avatarBadge}>
                         Premium Member since 2023
                     </Text>
@@ -159,12 +170,13 @@ const ProfileScreen = () => {
                             <View style={styles.field}>
                                 <Text style={styles.fieldLabel}>Full Name</Text>
                                 <TextInput
+                                    ref={nameRef}
                                     style={styles.fieldInput}
-                                    value={fullName}
-                                    onChangeText={setFullName}
+                                    value={profile.fullName}
+                                    onChangeText={v => setProfile(p => ({...p, fullName: v}))}
                                 />
                             </View>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => nameRef.current?.focus()}>
                                 <MaterialCommunityIcons
                                     name="pencil"
                                     size={18}
@@ -179,13 +191,14 @@ const ProfileScreen = () => {
                                     Email Address
                                 </Text>
                                 <TextInput
+                                    ref={emailRef}
                                     style={styles.fieldInput}
-                                    value={email}
-                                    onChangeText={setEmail}
+                                    value={profile.email}
+                                    onChangeText={v => setProfile(p => ({...p, email: v}))}
                                     keyboardType="email-address"
                                 />
                             </View>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => emailRef.current?.focus()}>
                                 <MaterialCommunityIcons
                                     name="pencil"
                                     size={18}
@@ -200,13 +213,14 @@ const ProfileScreen = () => {
                                     Phone Number
                                 </Text>
                                 <TextInput
+                                    ref={phoneRef}
                                     style={styles.fieldInput}
-                                    value={phone}
-                                    onChangeText={setPhone}
+                                    value={profile.phone}
+                                    onChangeText={v => setProfile(p => ({...p, phone: v}))}
                                     keyboardType="phone-pad"
                                 />
                             </View>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => phoneRef.current?.focus()}>
                                 <MaterialCommunityIcons
                                     name="pencil"
                                     size={18}

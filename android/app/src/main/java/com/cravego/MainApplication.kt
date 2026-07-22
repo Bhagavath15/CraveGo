@@ -33,10 +33,12 @@ class MainApplication : Application(), ReactApplication {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channel = NotificationChannel(
         "cravego_otp",
-        "OTP Notifications",
+        "CraveGo Notifications",
         NotificationManager.IMPORTANCE_HIGH
       ).apply {
-        description = "Notifications for OTP verification"
+        description = "Order updates, promotions, and alerts"
+        enableVibration(true)
+        setShowBadge(true)
       }
       val notificationManager = getSystemService(NotificationManager::class.java)
       notificationManager.createNotificationChannel(channel)

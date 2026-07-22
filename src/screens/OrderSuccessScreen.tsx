@@ -1,4 +1,4 @@
-
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
     ScrollView,
     StyleSheet,
@@ -14,6 +14,7 @@ import { RootStackParamList } from "../types/types";
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
 const BG = "#FCF9F8";
+const AUTO_NAVIGATE_DELAY = 4000;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "OrderSuccess">;
@@ -21,13 +22,15 @@ type RouteProps = RouteProp<RootStackParamList, "OrderSuccess">;
 const OrderSuccessScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
-    const { itemCount, orderId, orderNumber, restaurantName, totalPrice, items } = route.params;
+    const { orderId, orderNumber, restaurantName, totalPrice, items } = route.params;
+    const [countdown, setCountdown] = useState(4);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const navigatedRef = useRef(false);
 
-    const handleBackToHome = () => {
-        navigation.navigate("Home");
-    };
-
-    const handleTrackOrder = () => {
+    const handleTrackOrder = useCallback(() => {
+        if (navigatedRef.current) return;
+        navigatedRef.current = true;
+        if (timerRef.current) clearInterval(timerRef.current);
         navigation.navigate("TrackMyOrder", {
             orderId,
             orderNumber,
@@ -35,7 +38,23 @@ const OrderSuccessScreen = () => {
             totalPrice,
             items,
         });
-    };
+    }, [navigation, orderId, orderNumber, restaurantName, totalPrice, items]);
+
+    useEffect(() => {
+        timerRef.current = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    handleTrackOrder();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [handleTrackOrder]);
 
     return (
         <View style={styles.container}>
@@ -56,9 +75,12 @@ const OrderSuccessScreen = () => {
 
                 <Text style={styles.title}>Order Placed Successfully!</Text>
                 <Text style={styles.subtitle}>
-                    Your delicious meal is being prepared.
+                    Restaurant has started preparing your order.
                 </Text>
-                <Text style={styles.orderNumber}>Order #{orderNumber}</Text>
+                <View style={styles.orderIdRow}>
+                    <MaterialCommunityIcons name="receipt" size={16} color={PRIMARY} />
+                    <Text style={styles.orderIdText}>Order #{orderNumber}</Text>
+                </View>
 
                 <View style={styles.summaryCard}>
                     <View style={styles.summaryLeft}>
@@ -78,13 +100,6 @@ const OrderSuccessScreen = () => {
                             </Text>
                         </View>
                     </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryRight}>
-                        <Text style={styles.summaryLabel}>Items</Text>
-                        <Text style={styles.summaryValue}>
-                            {itemCount}
-                        </Text>
-                    </View>
                 </View>
 
                 <TouchableOpacity style={styles.trackButton}
@@ -102,11 +117,17 @@ const OrderSuccessScreen = () => {
 
                 <TouchableOpacity
                     style={styles.homeButton}
-                    onPress={handleBackToHome}
+                    onPress={() => {
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        navigation.navigate("Home");
+                    }}
                 >
                     <Text style={styles.homeButtonText}>Back to Home</Text>
                 </TouchableOpacity>
 
+                <Text style={styles.autoHint}>
+                    Auto-navigating in {countdown}s...
+                </Text>
             </ScrollView>
 
             <Text style={styles.brandFooter}>CraveGo</Text>
@@ -164,19 +185,21 @@ const styles = StyleSheet.create({
         color: "#594139",
         lineHeight: 24,
         textAlign: "center",
+        marginBottom: 16,
     },
-    orderNumber: {
+    orderIdRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: 32,
+    },
+    orderIdText: {
         fontSize: 16,
         fontWeight: "700",
         color: PRIMARY,
         lineHeight: 24,
-        textAlign: "center",
-        marginTop: 4,
-        marginBottom: 32,
     },
     summaryCard: {
-        flexDirection: "row",
-        alignItems: "center",
         backgroundColor: "#F6F3F2",
         borderRadius: 12,
         padding: 16,
@@ -187,7 +210,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        flex: 1,
     },
     iconBox: {
         backgroundColor: `${SECONDARY}33`,
@@ -207,15 +229,6 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#1B1C1C",
         lineHeight: 28,
-    },
-    summaryDivider: {
-        width: 1,
-        height: 40,
-        backgroundColor: "#E1BFB5",
-        marginHorizontal: 16,
-    },
-    summaryRight: {
-        alignItems: "center",
     },
     trackButton: {
         flexDirection: "row",
@@ -243,7 +256,7 @@ const styles = StyleSheet.create({
         width: "100%",
         borderWidth: 1.5,
         borderColor: "#E1BFB5",
-        marginBottom: 24,
+        marginBottom: 12,
     },
     homeButtonText: {
         fontSize: 14,
@@ -251,6 +264,11 @@ const styles = StyleSheet.create({
         color: "#1B1C1C",
         lineHeight: 20,
         letterSpacing: 0.1,
+    },
+    autoHint: {
+        fontSize: 13,
+        color: "#8D7168",
+        lineHeight: 18,
     },
     brandFooter: {
         textAlign: "center",

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -38,12 +37,14 @@ const DeliveryCompletedScreen = () => {
     const cart = useCart();
     const {
         orderId,
-        restaurantName = "Spice Garden",
-        items = "2x Special Chicken Biryani",
-        totalPrice = 850,
-        deliveredTime = "8:42 PM",
-        riderName = "Arjun K.",
+        restaurantName,
+        items,
+        totalPrice,
+        deliveredTime,
+        riderName,
     } = route.params || {};
+
+    const safeRiderName = riderName || "";
 
     const [foodRating, setFoodRating] = useState(0);
     const [riderRating, setRiderRating] = useState(0);
@@ -84,7 +85,11 @@ const DeliveryCompletedScreen = () => {
 
     const handleNavigateToOrderHistory = async () => {
         await cart.clearCart();
-        navigation.navigate("Home", { screen: "OrdersTab" });
+        try {
+            navigation.navigate("Home", { screen: "OrdersTab" });
+        } catch (e) {
+            navigation.navigate("Home");
+        }
     }
 
     return (
@@ -115,13 +120,7 @@ const DeliveryCompletedScreen = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.celebrationSection}>
-                    <Image
-                        source={{
-                            uri: "https://lh3.googleusercontent.com/aida/AP1WRLv2EaHmR7qj92AMC48bzlQ6Gf9pDtQIG8IdGIwz6iNlIlmDqYmGdndrnQDdlmtHG1xE6PBpUXotH1LlkHfZJgMo_-y6aK6qTIeOfsck2-ZI4n3KpzsCdAxIOOPn8YkYMEK5aFDMh0darEZUO-lY2y3FBu0RwPbFArfsSagxU7GdZvsgiZA02CyvEzSuvkpYUsEwfrddghXPdNuy7dutFSWi1jkUjsiPAdhVPQqWuhrKd1tVtcZ17SwuHDW2",
-                        }}
-                        style={styles.celebrationImage}
-                        resizeMode="contain"
-                    />
+                    <MaterialCommunityIcons name="party-popper" size={96} color={SECONDARY} />
                 </View>
 
                 <View style={styles.successSection}>
@@ -132,7 +131,7 @@ const DeliveryCompletedScreen = () => {
                         </Text>
                     </View>
                     <Text style={styles.successSubtext}>
-                        Arrived at {deliveredTime} • Total Time: 28 mins
+                        Arrived at {deliveredTime || "N/A"}
                     </Text>
                 </View>
 
@@ -189,12 +188,12 @@ const DeliveryCompletedScreen = () => {
                     <View style={styles.riderHeader}>
                         <View style={styles.riderAvatar}>
                             <Text style={styles.riderAvatarText}>
-                                {riderName.charAt(0)}
+                                {safeRiderName.charAt(0)}
                             </Text>
                         </View>
                         <View style={styles.riderInfo}>
                             <View style={styles.riderNameRow}>
-                                <Text style={styles.riderName}>{riderName}</Text>
+                                <Text style={styles.riderName}>{safeRiderName}</Text>
                                 <MaterialCommunityIcons name="check-decagram" size={14} color={PRIMARY_CONTAINER} />
                             </View>
                             <Text style={styles.riderRole}>
@@ -240,7 +239,7 @@ const DeliveryCompletedScreen = () => {
                     </View>
                     <TextInput
                         style={styles.commentInput}
-                        placeholder={`Add a comment for ${riderName}...`}
+                        placeholder={`Add a comment for ${safeRiderName}...`}
                         placeholderTextColor={ON_SURFACE_VARIANT + "99"}
                         value={riderComment}
                         onChangeText={setRiderComment}
@@ -315,10 +314,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         paddingVertical: 8,
-    },
-    celebrationImage: {
-        width: "100%",
-        height: "100%",
     },
 
     successSection: {

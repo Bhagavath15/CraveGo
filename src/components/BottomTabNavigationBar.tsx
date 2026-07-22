@@ -28,6 +28,7 @@ const BottomTabNavigationBar = () => {
                 component={HomeScreen}
                 options={{
                     tabBarLabel: "Home",
+                    tabBarAccessibilityLabel: "Home tab",
                     tabBarIcon: ({ color, size }) => (
                         <MaterialCommunityIcons name="home" size={size} color={color} />
                     ),
@@ -38,6 +39,7 @@ const BottomTabNavigationBar = () => {
                 component={SearchScreen}
                 options={{
                     tabBarLabel: "Search",
+                    tabBarAccessibilityLabel: "Search tab",
                     tabBarIcon: ({ color, size }) => (
                         <MaterialCommunityIcons name="magnify" size={size} color={color} />
                     ),
@@ -48,6 +50,7 @@ const BottomTabNavigationBar = () => {
                 component={OrdersScreen}
                 options={{
                     tabBarLabel: "Orders",
+                    tabBarAccessibilityLabel: "Orders tab",
                     tabBarIcon: ({ color, size }) => (
                         <MaterialCommunityIcons name="clipboard-list-outline" size={size} color={color} />
                     ),
@@ -58,6 +61,7 @@ const BottomTabNavigationBar = () => {
                 component={ProfileScreen}
                 options={{
                     tabBarLabel: "Profile",
+                    tabBarAccessibilityLabel: "Profile tab",
                     tabBarIcon: ({ color, size }) => (
                         <MaterialCommunityIcons name="account-outline" size={size} color={color} />
                     ),

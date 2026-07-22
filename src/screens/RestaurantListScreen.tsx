@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+
 import {
   Image,
   ScrollView,
@@ -12,7 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../types/types";
-import { Restaurant, foodFilters } from "../data/restaurantData";
+import { Restaurant } from "../types/types";
 import { imageSource } from "../utils/imageUtils";
 import { useFavouriteIds, toggleFavourite } from "../context/FavoritesStore";
 import Skeleton from "../components/Skeleton";
@@ -28,27 +28,9 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
   const navigation = useNavigation<NavigationProp>();
   const { favouriteIds } = useFavouriteIds();
 
-  const [selectedFilter, setSelectedFilter] = useState("All");
-
   const handleNavigate = (id: string) => {
     navigation.navigate("RestaurantDetail", { restaurantId: id });
   };
-
-  const filteredRestaurants = useMemo(() => {
-    if (!restaurants || selectedFilter === "All") {
-      return restaurants || [];
-    }
-
-    const q = selectedFilter.toLowerCase();
-    const result = restaurants.filter((restaurant) =>
-      restaurant.category.some((c) => c.toLowerCase().includes(q)) ||
-      restaurant.cuisines.toLowerCase().includes(q) ||
-      restaurant.name.toLowerCase().includes(q) ||
-      (restaurant.description || "").toLowerCase().includes(q) ||
-      restaurant.menuItemNames?.some((n) => n.toLowerCase().includes(q))
-    );
-    return result;
-  }, [selectedFilter, restaurants]);
 
   const renderSkeleton = () => (
     <View style={styles.container}>
@@ -90,44 +72,6 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
     <View style={styles.container}>
       <Text style={styles.heading}>What's on your mind?</Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-      >
-        {foodFilters.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            activeOpacity={0.8}
-            style={styles.itemContainer}
-            onPress={() => setSelectedFilter(item.label)}
-          >
-            <View
-              style={[
-                styles.imageContainer,
-                selectedFilter === item.label &&
-                styles.activeImageContainer,
-              ]}
-            >
-              <Image
-                source={item.image}
-                style={styles.categoryImage}
-                resizeMode="contain"
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.label,
-                selectedFilter === item.label &&
-                styles.activeLabel,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       <View style={styles.restaurantHeader}>
         <Text style={styles.restaurantHeading}>
           Popular Near You
@@ -138,8 +82,8 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
         </TouchableOpacity>
       </View>
 
-      {filteredRestaurants.length > 0 ? (
-        filteredRestaurants.map((item) => (
+      {restaurants && restaurants.length > 0 ? (
+        restaurants.map((item) => (
           <TouchableOpacity
             key={item.id}
             activeOpacity={0.85}

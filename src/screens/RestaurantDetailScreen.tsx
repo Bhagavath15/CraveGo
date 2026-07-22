@@ -20,8 +20,10 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 
 import { RootStackParamList, CustomizationGroup } from "../types/types";
-import { MenuItem, MenuCategory } from "../data/restaurantData";
+import { MenuItem, MenuCategory } from "../types/types";
 import { getRestaurants, getRestaurantMenu } from "../api/restaurant";
+import { getAvailableCoupons } from "../api/coupon";
+import { setPendingCoupon } from "../utils/bannerCouponStore";
 import { toImageUri, imageSource } from "../utils/imageUtils";
 import { useCart } from "../context/CartContext";
 import { useIsFavourite, toggleFavourite } from "../context/FavoritesStore";
@@ -49,8 +51,7 @@ interface RestaurantInfo {
     distance: string;
     deliveryTime: string;
     priceForOne: string;
-    offer?: string;
-    offerDescription?: string;
+
     isVeg: boolean;
     isFavorite: boolean;
     address: string;
@@ -92,6 +93,8 @@ const RestaurantDetailScreen = () => {
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState("");
     const [menuY, setMenuY] = useState(0);
+    const [couponOffer, setCouponOffer] = useState<string | undefined>(undefined);
+    const [couponDesc, setCouponDesc] = useState<string | undefined>(undefined);
     const [, forceUpdate] = useState(0);
     const scrollRef = useRef<any>(null);
     const cart = useCart();
@@ -128,12 +131,24 @@ const RestaurantDetailScreen = () => {
                             distance: matched.distance || "",
                             deliveryTime: matched.deliveryTime || "",
                             priceForOne: matched.priceForOne || "",
-                            offer: matched.offer,
-                            offerDescription: matched.offerDescription,
                             isVeg: matched.isVeg ?? false,
                             isFavorite: matched.isFavorite ?? false,
                             address: matched.address || "",
                         });
+                        const couponRes = await getAvailableCoupons(restaurantId, 0);
+                        if (couponRes.success && couponRes.data?.length) {
+                            const best = couponRes.data[0];
+                            const offer = best.discountType === "FLAT"
+                                ? `Save ₹${best.discountValue} off`
+                                : best.discountType === "PERCENTAGE"
+                                    ? `Save ${best.discountValue}% off`
+                                    : best.discountType === "FREE_DELIVERY"
+                                        ? "Free delivery"
+                                        : undefined;
+                            setCouponOffer(offer);
+                            setCouponDesc(best.title || best.description);
+                            setPendingCoupon(best.code);
+                        }
                     }
                 }
 
@@ -345,24 +360,6 @@ const RestaurantDetailScreen = () => {
                         source={imageSource(restaurant.image)}
                         style={styles.heroImage}
                     />
-                    <View style={styles.heroOverlay}>
-                        <TouchableOpacity
-                            style={styles.heroIconBtn}
-                            onPress={() => navigation.goBack()}
-                        >
-                            <MaterialCommunityIcons name="arrow-left" size={22} color="#FFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.heroIconBtn}
-                            onPress={() => toggleFavourite(restaurant.id)}
-                        >
-                            <MaterialCommunityIcons
-                                name={isFav ? "heart" : "heart-outline"}
-                                size={22}
-                                color={isFav ? "#FF6B35" : "#FFF"}
-                            />
-                        </TouchableOpacity>
-                    </View>
                 </View>
 
                 <RestaurantInfoCard
@@ -372,8 +369,8 @@ const RestaurantDetailScreen = () => {
                     rating={restaurant.rating}
                     deliveryTime={restaurant.deliveryTime}
                     distance={restaurant.distance}
-                    offer={restaurant.offer}
-                    offerDescription={restaurant.offerDescription}
+                    offer={couponOffer}
+                    offerDescription={couponDesc}
                 />
 
                 {menu.length > 0 && (

@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import {
     Alert,
     Image,
+    KeyboardAvoidingView,
+    Platform,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -24,6 +27,7 @@ import { useCart } from "../context/CartContext";
 import { placeOrder } from "../api/order";
 import { getAddresses, Address } from "../api/address";
 import Skeleton from "../components/Skeleton";
+import { useToast } from "../components/Toast";
 import { createPaymentIntent } from "../api/payment";
 import { getAvailableCoupons } from "../api/coupon";
 import { getPendingCoupon } from "../utils/bannerCouponStore";
@@ -45,6 +49,7 @@ const CheckoutScreen = () => {
     const route = useRoute<RouteProps>();
 
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
+    const { showToast } = useToast();
 
     const { restaurantId } = route.params;
     const cart = useCart();
@@ -54,21 +59,22 @@ const CheckoutScreen = () => {
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState("");
     const [addressesLoading, setAddressesLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadAddresses = async () => {
+        try {
+            const res = await getAddresses();
+            if (res.success && res.addresses?.length) {
+                setAddresses(res.addresses);
+                const def = res.addresses.find(a => a.isDefault) || res.addresses[0];
+                setSelectedAddressId(def._id);
+            }
+        } catch { }
+    };
 
     useEffect(() => {
-        const loadAddresses = async () => {
-            setAddressesLoading(true);
-            try {
-                const res = await getAddresses();
-                if (res.success && res.addresses?.length) {
-                    setAddresses(res.addresses);
-                    const def = res.addresses.find(a => a.isDefault) || res.addresses[0];
-                    setSelectedAddressId(def._id);
-                }
-            } catch { }
-            setAddressesLoading(false);
-        };
-        loadAddresses();
+        setAddressesLoading(true);
+        loadAddresses().finally(() => setAddressesLoading(false));
     }, []);
 
     const selectedAddr = addresses.length > 0
@@ -121,7 +127,12 @@ const CheckoutScreen = () => {
             defaultBillingDetails: { address: { country: "IN" } },
         });
         if (initError) return initError;
-        return (await presentPaymentSheet()).error;
+        try {
+            const { error: presentError } = await presentPaymentSheet();
+            return presentError;
+        } catch (e: any) {
+            return e;
+        }
     };
 
     const handleOnlinePayment = async () => {
@@ -133,13 +144,13 @@ const CheckoutScreen = () => {
 
         const response = await createPaymentIntent();
         if (!response.success) {
-            Alert.alert("Payment Error", response.message || "Unable to start payment");
+            showToast({ message: response.message || "Unable to start payment", type: "error" });
             return null;
         }
 
         const { clientSecret, paymentIntentId } = response;
         if (!clientSecret) {
-            Alert.alert("Payment Error", "Missing payment details from server.");
+            showToast({ message: "Missing payment details from server.", type: "error" });
             return null;
         }
 
@@ -148,7 +159,7 @@ const CheckoutScreen = () => {
         const error = await presentSheet(clientSecret);
         if (error) {
             pendingPaymentRef.current = null;
-            Alert.alert("Payment Error", error.message);
+            showToast({ message: error.message || "Unable to process your payment.", type: "error" });
             return null;
         }
 
@@ -159,19 +170,19 @@ const CheckoutScreen = () => {
     const handlePlaceOrder = async () => {
         if (placing || placingRef.current) return;
         if (!selectedAddr) {
-            Alert.alert("Address Required", "Please add a delivery address before placing the order.");
+            showToast({ message: "Please add a delivery address before placing the order.", type: "error" });
             return;
         }
         if (!selectedAddr.fullName?.trim()) {
-            Alert.alert("Invalid Address", "The selected address is missing a recipient name. Please update it.");
+            showToast({ message: "The selected address is missing a recipient name. Please update it.", type: "error" });
             return;
         }
         if (!/^\d{6}$/.test(selectedAddr.pincode)) {
-            Alert.alert("Invalid Address", "The selected address has an invalid pincode. Please update it.");
+            showToast({ message: "The selected address has an invalid pincode. Please update it.", type: "error" });
             return;
         }
         if (!/^\d{10}$/.test(selectedAddr.mobileNumber?.replace(/\D/g, ''))) {
-            Alert.alert("Invalid Address", "The selected address has an invalid mobile number. Please update it.");
+            showToast({ message: "The selected address has an invalid mobile number. Please update it.", type: "error" });
             return;
         }
         placingRef.current = true;
@@ -210,7 +221,6 @@ const CheckoutScreen = () => {
                     totalPrice: i.totalPrice,
                 }));
                 const totalPrice = res.order.grandTotal ?? 0;
-                console.log(`CheckoutScreen.tsx 213 totalPrice---->`,totalPrice)
                 try {
                     await cart.clearCart();
                 } catch (e) {
@@ -224,15 +234,12 @@ const CheckoutScreen = () => {
                     items: orderItems,
                 });
             } else {
-                const errMsg = res.message || JSON.stringify(res);
-                Alert.alert("Order Failed", errMsg);
+                const errMsg = res.message || "Failed to place order";
+                showToast({ message: errMsg, type: "error" });
             }
         } catch (err) {
-            if (selectedPayment === "ONLINE") {
-                Alert.alert("Payment Failed", "Unable to process your payment.");
-            } else {
-                Alert.alert("Error", `Something went wrong: ${err instanceof Error ? err.message : "Please try again"}`);
-            }
+            const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+            showToast({ message: msg, type: "error" });
         } finally {
             setPlacing(false);
             placingRef.current = false;
@@ -278,12 +285,50 @@ const CheckoutScreen = () => {
         setCouponError("");
     };
 
+    if (cart.cartItems.length === 0) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel="Go back"
+                        accessibilityRole="button"
+                    >
+                        <MaterialCommunityIcons
+                            name="arrow-left"
+                            size={24}
+                            color={PRIMARY}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Your Cart</Text>
+                    <View style={{ width: 24 }} />
+                </View>
+                <View style={styles.emptyContainer}>
+                    <MaterialCommunityIcons name="cart-off" size={72} color="#cac4d0" />
+                    <Text style={styles.emptyTitle}>Your cart is empty</Text>
+                    <Text style={styles.emptySubtitle}>Looks like you haven't added anything yet.</Text>
+                    <TouchableOpacity
+                        style={styles.emptyButton}
+                        onPress={() => navigation.goBack()}
+                        accessibilityLabel="Browse restaurants"
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.emptyButtonText}>Browse Restaurants</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
                 >
                     <MaterialCommunityIcons
                         name="arrow-left"
@@ -303,10 +348,13 @@ const CheckoutScreen = () => {
                 </TouchableOpacity>
             </View>
 
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadAddresses(); setRefreshing(false); }} tintColor={PRIMARY} />}
             >
                 <View style={styles.section}>
                     <View style={styles.sectionHeaderRow}>
@@ -429,11 +477,12 @@ const CheckoutScreen = () => {
                         </Text>
                     </View>
                     <View style={styles.billDivider} />
+                    {cart.couponCode ? (
                     <View style={styles.billRow}>
                         <Text style={[styles.billLabel, { fontWeight: "600" }]}>Total</Text>
                         <Text style={[styles.billValue, { fontWeight: "700" }]}>₹{totalBeforeDiscount}</Text>
                     </View>
-                    <View style={[styles.billDivider, { marginVertical: 8 }]} />
+                    ) : null}
                     {cart.discount > 0 && (
                         <View style={[styles.billRow, { paddingBottom: 8 }]}>
                             <Text style={styles.billLabel}>
@@ -604,6 +653,7 @@ const CheckoutScreen = () => {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
 
             <View style={styles.footer}>
                 <View style={styles.footerRow}>
@@ -1110,6 +1160,37 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "600",
         color: "#FFF",
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 32,
+    },
+    emptyTitle: {
+        fontSize: 20,
+        fontWeight: "700",
+        color: ON_SURFACE,
+        marginTop: 16,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        color: ON_SURFACE_VARIANT,
+        textAlign: "center",
+        marginTop: 8,
+        lineHeight: 20,
+    },
+    emptyButton: {
+        marginTop: 24,
+        backgroundColor: PRIMARY,
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        borderRadius: 100,
+    },
+    emptyButtonText: {
+        color: "#fff",
+        fontSize: 15,
+        fontWeight: "600",
     },
     totalPayable: {
         fontSize: 13,

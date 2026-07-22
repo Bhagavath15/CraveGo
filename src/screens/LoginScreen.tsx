@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-    Alert,
     ImageBackground,
     Keyboard,
     KeyboardAvoidingView,
@@ -21,6 +20,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { login } from "../api/auth";
 import { setAuthToken } from "../api/client";
+import { useToast } from "../components/Toast";
 import { saveToken } from "../utils/authStore";
 
 const C = {
@@ -39,6 +39,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const LoginScreen = () => {
     const navigation = useNavigation<Nav>();
+    const { showToast } = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -55,10 +56,10 @@ const LoginScreen = () => {
                 setAuthToken(data.token);
                 navigation.reset({ index: 0, routes: [{ name: "Home" }] });
             } else {
-                Alert.alert("Error", data.message || "Login failed");
+                showToast({ message: data.message || "Login failed", type: "error" });
             }
         } catch (e: any) {
-            Alert.alert("Error", e?.message || "Network error. Please try again.");
+            showToast({ message: e?.message || "Network error. Please try again.", type: "error" });
         } finally {
             setLoading(false);
         }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from "react";
-import { MenuItem } from "../data/restaurantData";
+import { MenuItem } from "../types/types";
 import {
     addToCart as addToCartApi,
     getCart,
@@ -164,6 +164,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                     setCartWithLog(fromApi(retry.cart, restName));
                 }
             }
+        } catch (e) {
         } finally {
             addingRef.current = false;
         }

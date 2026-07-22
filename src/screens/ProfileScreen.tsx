@@ -143,11 +143,6 @@ const ProfileScreen = () => {
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>240</Text>
-                        <Text style={styles.statLabel}>Points</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
                         <Text style={styles.statValue}>5</Text>
                         <Text style={styles.statLabel}>Coupons</Text>
                     </View>

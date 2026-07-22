@@ -13,7 +13,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { RootStackParamList } from "../types/types";
-import { Restaurant } from "../data/restaurantData";
+import { Restaurant } from "../types/types";
 import { getFavourites } from "../api/favorites";
 import { imageSource, toImageUri } from "../utils/imageUtils";
 import { useFavouriteIds, toggleFavourite } from "../context/FavoritesStore";
@@ -35,9 +35,11 @@ const FavoritesScreen = () => {
 
     const [favourites, setFavourites] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState("");
 
     const fetchFavourites = useCallback(async () => {
         setLoading(true);
+        setFetchError("");
         try {
             const res = await getFavourites();
             if (res.success && Array.isArray(res.favourites)) {
@@ -65,9 +67,11 @@ const FavoritesScreen = () => {
                 setFavourites(mapped);
             } else {
                 setFavourites([]);
+                setFetchError(res.message || "Failed to load favourites");
             }
         } catch {
             setFavourites([]);
+            setFetchError("Network error. Check your connection.");
         } finally {
             setLoading(false);
         }
@@ -127,6 +131,18 @@ const FavoritesScreen = () => {
 
     const renderEmpty = () => {
         if (loading) return null;
+        if (fetchError) {
+            return (
+                <View style={styles.emptyState}>
+                    <MaterialCommunityIcons name="heart-broken" size={72} color={OUTLINE} />
+                    <Text style={styles.emptyTitle}>Something went wrong</Text>
+                    <Text style={styles.emptySubtitle}>{fetchError}</Text>
+                    <TouchableOpacity style={styles.browseBtn} onPress={fetchFavourites}>
+                        <Text style={styles.browseBtnText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
         return (
             <View style={styles.emptyState}>
                 <MaterialCommunityIcons name="heart-outline" size={72} color={OUTLINE} />

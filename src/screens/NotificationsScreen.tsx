@@ -20,6 +20,7 @@ import {
     markAllNotificationsRead,
     deleteNotification,
 } from "../api/notification";
+import Skeleton from "../components/Skeleton";
 
 const PRIMARY = "#FF6B35";
 const SECONDARY = "#006D37";
@@ -113,6 +114,12 @@ const NotificationsScreen = () => {
             setNotifications(prev =>
                 prev.map(n => n._id === item._id ? { ...n, isRead: true } : n)
             );
+        }
+        if (item.type === "ORDER" || item.type === "PAYMENT") {
+            const orderId = item.data?.orderId || item.data?.order;
+            if (orderId) {
+                (navigation as any).navigate("TrackMyOrder", { orderId });
+            }
         }
     }, []);
 
@@ -223,7 +230,15 @@ const NotificationsScreen = () => {
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={PRIMARY} />
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <View key={i} style={styles.skeletonRow}>
+                            <Skeleton width={40} height={40} borderRadius={20} />
+                            <View style={{ flex: 1, gap: 4 }}>
+                                <Skeleton width="70%" height={14} />
+                                <Skeleton width="40%" height={12} />
+                            </View>
+                        </View>
+                    ))}
                 </View>
             ) : (
                 <FlatList
@@ -281,8 +296,14 @@ const styles = StyleSheet.create({
     },
     loadingContainer: {
         flex: 1,
-        justifyContent: "center",
+        padding: 16,
+        gap: 16,
+    },
+    skeletonRow: {
+        flexDirection: "row",
         alignItems: "center",
+        gap: 12,
+        paddingVertical: 4,
     },
     listContent: {
         paddingHorizontal: 16,

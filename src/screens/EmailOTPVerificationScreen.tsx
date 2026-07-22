@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -16,6 +15,7 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { verifyEmailOtp, resendOtp } from "../api/auth";
+import { useToast } from "../components/Toast";
 
 const C = {
     primary: "#FF6B35",
@@ -39,6 +39,7 @@ const EmailOTPVerificationScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<ScreenRoute>();
     const { email } = route.params;
+    const { showToast } = useToast();
 
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [loading, setLoading] = useState(false);
@@ -67,7 +68,7 @@ const EmailOTPVerificationScreen = () => {
         const newOtp = [...otp];
         newOtp[index] = digit;
         setOtp(newOtp);
-        if (digit && index < 4) {
+        if (digit && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
     };
@@ -80,19 +81,18 @@ const EmailOTPVerificationScreen = () => {
 
     const handleVerify = async () => {
         const code = otp.join("");
-        if (code.length !== 5) return;
+        if (code.length !== 6) return;
         setLoading(true);
         try {
             const data = await verifyEmailOtp(email, code);
             if (data.success) {
-                Alert.alert("Success", "Email verified! You can now login.", [
-                    { text: "OK", onPress: () => navigation.navigate("Login") },
-                ]);
+                showToast({ message: "Email verified successfully!", type: "success" });
+                navigation.navigate("Login");
             } else {
-                Alert.alert("Error", data.message || "Invalid OTP");
+                showToast({ message: data.message || "Invalid OTP", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Something went wrong. Try again.");
+            showToast({ message: "Something went wrong. Try again.", type: "error" });
         } finally {
             setLoading(false);
         }
@@ -104,11 +104,13 @@ const EmailOTPVerificationScreen = () => {
         setOtpExpired(false);
         try {
             const data = await resendOtp(email, "signup");
-            if (!data.success) {
-                Alert.alert("Error", data.message || "Failed to resend OTP");
+            if (data.success) {
+                showToast({ message: "OTP resent successfully", type: "success" });
+            } else {
+                showToast({ message: data.message || "Failed to resend OTP", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Network error");
+            showToast({ message: "Network error", type: "error" });
         }
     };
 
@@ -143,20 +145,21 @@ const EmailOTPVerificationScreen = () => {
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.cardStack}>
                         <View style={styles.cardBack} />
                         <View style={styles.cardFront}>
                             <MaterialCommunityIcons
                                 name="email-check"
-                                size={64}
+                                size={48}
                                 color={C.primary}
                             />
                         </View>
                         <View style={styles.badge}>
                             <MaterialCommunityIcons
                                 name="check-decagram"
-                                size={28}
+                                size={20}
                                 color={C.onPrimary}
                             />
                         </View>
@@ -165,7 +168,7 @@ const EmailOTPVerificationScreen = () => {
                     <View style={styles.headingSection}>
                         <Text style={styles.headingTitle}>Verify Identity</Text>
                         <Text style={styles.headingSubtitle}>
-                            Enter the 5-digit security code sent to{" "}
+                            Enter the 6-digit security code sent to{" "}
                             <Text style={styles.headingEmail}>{email}</Text>
                         </Text>
                     </View>
@@ -223,10 +226,10 @@ const EmailOTPVerificationScreen = () => {
                         <TouchableOpacity
                             style={[
                                 styles.button,
-                                (loading || otp.join("").length !== 5) && styles.buttonDisabled,
+                                (loading || otp.join("").length !== 6) && styles.buttonDisabled,
                             ]}
                             onPress={handleVerify}
-                            disabled={loading || otp.join("").length !== 5}
+                            disabled={loading || otp.join("").length !== 6}
                             activeOpacity={0.97}
                         >
                             <Text style={styles.buttonText}>
@@ -237,17 +240,6 @@ const EmailOTPVerificationScreen = () => {
                                 size={22}
                                 color={C.onPrimary}
                             />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.footer}>
-                        <TouchableOpacity style={styles.footerBtn}>
-                            <MaterialCommunityIcons
-                                name="help-circle-outline"
-                                size={16}
-                                color={C.onSurfaceVariant}
-                            />
-                            <Text style={styles.footerText}>Contact Support</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -299,7 +291,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
-        height: 64,
+        height: 56,
         borderBottomWidth: 1,
         borderBottomColor: C.surfaceContainerHighest,
     },
@@ -312,31 +304,31 @@ const styles = StyleSheet.create({
     },
     logo: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "800",
         letterSpacing: -0.5,
         color: C.primary,
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 16,
+        paddingHorizontal: 24,
+        paddingTop: 24,
         paddingBottom: 48,
         alignItems: "center",
     },
     cardStack: {
-        width: 224,
-        height: 224,
+        width: 160,
+        height: 160,
         justifyContent: "center",
         alignItems: "center",
-        marginTop: 32,
-        marginBottom: 24,
+        marginBottom: 20,
     },
     cardBack: {
         position: "absolute",
-        width: 176,
-        height: 176,
+        width: 128,
+        height: 128,
         backgroundColor: "#fff",
-        borderRadius: 24,
+        borderRadius: 20,
         transform: [{ rotate: "6deg" }, { scale: 0.95 }],
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 20 },
@@ -348,10 +340,10 @@ const styles = StyleSheet.create({
     },
     cardFront: {
         position: "absolute",
-        width: 176,
-        height: 176,
+        width: 128,
+        height: 128,
         backgroundColor: C.primaryFixed,
-        borderRadius: 24,
+        borderRadius: 20,
         transform: [{ rotate: "-3deg" }],
         justifyContent: "center",
         alignItems: "center",
@@ -359,15 +351,15 @@ const styles = StyleSheet.create({
     },
     badge: {
         position: "absolute",
-        bottom: -4,
-        right: -4,
-        width: 56,
-        height: 56,
-        borderRadius: 16,
+        bottom: -2,
+        right: -2,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         backgroundColor: C.primary,
         justifyContent: "center",
         alignItems: "center",
-        borderWidth: 4,
+        borderWidth: 3,
         borderColor: "#fff",
         transform: [{ rotate: "6deg" }],
         shadowColor: C.primary,
@@ -378,23 +370,23 @@ const styles = StyleSheet.create({
     },
     headingSection: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: 28,
     },
     headingTitle: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 32,
-        lineHeight: 36,
+        fontSize: 28,
+        lineHeight: 32,
         fontWeight: "700",
         color: C.onSurface,
-        marginBottom: 8,
+        marginBottom: 6,
     },
     headingSubtitle: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: 14,
+        lineHeight: 20,
         color: C.onSurfaceVariant,
         textAlign: "center",
-        paddingHorizontal: 24,
+        paddingHorizontal: 8,
     },
     headingEmail: {
         fontWeight: "700",
@@ -402,20 +394,20 @@ const styles = StyleSheet.create({
     },
     otpRow: {
         flexDirection: "row",
-        gap: 16,
-        marginBottom: 24,
+        gap: 10,
+        marginBottom: 28,
     },
     otpInput: {
-        width: 64,
-        height: 80,
-        borderRadius: 24,
+        width: 48,
+        height: 60,
+        borderRadius: 16,
         backgroundColor: "#ffffff",
         borderWidth: 2,
         borderColor: "rgba(255,107,53,0.1)",
         textAlign: "center",
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 32,
-        lineHeight: 40,
+        fontSize: 24,
+        lineHeight: 28,
         fontWeight: "800",
         color: C.onSurface,
         shadowColor: "#000",
@@ -433,12 +425,12 @@ const styles = StyleSheet.create({
     },
     resendSection: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: 28,
     },
     resendLabel: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 18,
         letterSpacing: 0.1,
         fontWeight: "600",
         color: C.onSurfaceVariant,
@@ -447,24 +439,24 @@ const styles = StyleSheet.create({
     },
     resendTimer: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 18,
         letterSpacing: 0.1,
         fontWeight: "600",
         color: C.primary,
     },
     resendActive: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 18,
         letterSpacing: 0.1,
         fontWeight: "600",
         color: C.primary,
     },
     expiredText: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 18,
         letterSpacing: 0.1,
         fontWeight: "600",
         color: "#ba1a1a",
@@ -472,17 +464,16 @@ const styles = StyleSheet.create({
     },
     buttonWrap: {
         width: "100%",
-        paddingHorizontal: 8,
     },
     button: {
         flexDirection: "row",
         width: "100%",
-        height: 56,
-        borderRadius: 24,
+        height: 52,
+        borderRadius: 20,
         backgroundColor: C.primary,
         justifyContent: "center",
         alignItems: "center",
-        gap: 12,
+        gap: 10,
         shadowColor: C.primary,
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.3,
@@ -494,26 +485,9 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         fontFamily: "Plus Jakarta Sans",
-        fontSize: 16,
-        lineHeight: 24,
+        fontSize: 15,
+        lineHeight: 22,
         fontWeight: "600",
         color: C.onPrimary,
-    },
-    footer: {
-        marginTop: 24,
-    },
-    footerBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        opacity: 0.7,
-    },
-    footerText: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 11,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        fontWeight: "500",
-        color: C.onSurfaceVariant,
     },
 });

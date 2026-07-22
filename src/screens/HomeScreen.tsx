@@ -17,7 +17,8 @@ import { getRestaurants } from "../api/restaurant";
 import { getBanners, Banner } from "../api/banner";
 import { setPendingCoupon } from "../utils/bannerCouponStore";
 import { toImageUri } from "../utils/imageUtils";
-import { Restaurant } from "../data/restaurantData";
+import { Restaurant } from "../types/types";
+import { useCart } from "../context/CartContext";
 import Skeleton from "../components/Skeleton";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -26,6 +27,7 @@ const BANNER_HEIGHT = 250;
 const HomeScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const cart = useCart();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,50 +36,51 @@ const HomeScreen = () => {
   const scrollRef = useRef<ScrollView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [restRes, bannerRes] = await Promise.all([
-          getRestaurants(),
-          getBanners(),
-        ]);
+  const fetchData = async () => {
+    try {
+      const [restRes, bannerRes] = await Promise.all([
+        getRestaurants(),
+        getBanners(),
+      ]);
 
-        if (bannerRes.success && bannerRes.data?.length) {
-          setBanners(bannerRes.data);
-        }
-
-        if (restRes.success && restRes.restaurants?.length) {
-          const mapped: Restaurant[] = restRes.restaurants.map((r: any) => ({
-            id: r.restaurantId || r._id,
-            name: r.name,
-            image: toImageUri(r.image),
-            description: r.description,
-            category: r.category || [],
-            cuisines: Array.isArray(r.cuisines) ? r.cuisines.join(" • ") : r.cuisines || "",
-            address: r.address || "",
-            rating: r.rating || 0,
-            totalRatings: r.totalRatings?.toString() || "0",
-            distance: r.distance || "",
-            deliveryTime: r.deliveryTime || "",
-            priceForOne: r.priceForOne || "",
-            offer: r.offer,
-            offerDescription: r.offerDescription,
-            isVeg: r.isVeg ?? false,
-            isFavorite: r.isFavorite ?? false,
-            restaurantId: r.restaurantId || r._id,
-            menu: [],
-            menuItemNames: r.menuItemNames || [],
-          }));
-          setRestaurants(mapped);
-        } else {
-          setError(restRes.message || "Failed to load restaurants");
-        }
-      } catch (err) {
-        setError("Network error. Check server connection.");
-      } finally {
-        setLoading(false);
+      if (bannerRes.success && bannerRes.data?.length) {
+        setBanners(bannerRes.data);
       }
-    };
+
+      if (restRes.success && restRes.restaurants?.length) {
+        const mapped: Restaurant[] = restRes.restaurants.map((r: any) => ({
+          id: r.restaurantId || r._id,
+          name: r.name,
+          image: toImageUri(r.image),
+          description: r.description,
+          category: r.category || [],
+          cuisines: Array.isArray(r.cuisines) ? r.cuisines.join(" • ") : r.cuisines || "",
+          address: r.address || "",
+          rating: r.rating || 0,
+          totalRatings: r.totalRatings?.toString() || "0",
+          distance: r.distance || "",
+          deliveryTime: r.deliveryTime || "",
+          priceForOne: r.priceForOne || "",
+          offer: r.offer,
+          offerDescription: r.offerDescription,
+          isVeg: r.isVeg ?? false,
+          isFavorite: r.isFavorite ?? false,
+          restaurantId: r.restaurantId || r._id,
+          menu: [],
+          menuItemNames: r.menuItemNames || [],
+        }));
+        setRestaurants(mapped);
+      } else {
+        setError(restRes.message || "Failed to load restaurants");
+      }
+    } catch (err) {
+      setError("Network error. Check server connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -122,11 +125,22 @@ const HomeScreen = () => {
           />
           <Text>Location</Text>
         </View>
-        <MaterialCommunityIcons
-          name="bell-outline"
-          size={26}
-          color="#de782a"
-        />
+        <TouchableOpacity
+          onPress={() => navigation.navigate("CartCheckout", { restaurantId: cart.restaurantId })}
+          disabled={!cart.restaurantId || cart.itemCount === 0}
+          style={styles.cartBtn}
+        >
+          <MaterialCommunityIcons
+            name="cart-outline"
+            size={26}
+            color={!cart.restaurantId || cart.itemCount === 0 ? "#ccc" : "#de782a"}
+          />
+          {cart.itemCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cart.itemCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       <View style={styles.contentPadding}>
@@ -226,6 +240,12 @@ const HomeScreen = () => {
             <Text style={{ marginTop: 12, fontSize: 16, color: "#888", fontWeight: "600" }}>
               {error}
             </Text>
+            <TouchableOpacity
+              style={{ marginTop: 16, backgroundColor: "#FF6B35", paddingHorizontal: 24, paddingVertical: 10, borderRadius: 100 }}
+              onPress={() => { setLoading(true); setError(""); fetchData(); }}
+            >
+              <Text style={{ color: "#FFF", fontWeight: "600", fontSize: 14 }}>Retry</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <RestaurantListScreen restaurants={restaurants} loading={loading} />
@@ -255,6 +275,8 @@ const styles = StyleSheet.create({
   locationContent: {
     flexDirection: "row",
     gap: 5,
+    flex: 1,
+    alignItems: "center",
   },
   contentPadding: {
     padding: 16,
@@ -355,5 +377,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF6B35",
     width: 24,
     borderRadius: 4,
+  },
+  cartBtn: {
+    position: "relative",
+    padding: 4,
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -2,
+    right: -4,
+    backgroundColor: "#FF6B35",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
 });

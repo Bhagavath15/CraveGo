@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -14,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { register } from "../api/auth";
+import { useToast } from "../components/Toast";
 
 const C = {
     primary: "#FF6B35",
@@ -31,6 +31,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const SignUpScreen = () => {
     const navigation = useNavigation<Nav>();
+    const { showToast } = useToast();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -39,7 +40,7 @@ const SignUpScreen = () => {
 
     const handleSignUp = async () => {
         if (!name.trim() || !email.trim() || !password) {
-            Alert.alert("Error", "All fields are required");
+            showToast({ message: "All fields are required", type: "error" });
             return;
         }
         setLoading(true);
@@ -48,10 +49,10 @@ const SignUpScreen = () => {
             if (data.success) {
                 navigation.navigate("EmailOTPVerification", { email: email.trim() });
             } else {
-                Alert.alert("Error", data.message || "Registration failed");
+                showToast({ message: data.message || "Registration failed", type: "error" });
             }
         } catch (e: any) {
-            Alert.alert("Error", e?.message || "Network error");
+            showToast({ message: e?.message || "Network error", type: "error" });
         } finally {
             setLoading(false);
         }

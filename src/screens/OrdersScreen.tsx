@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -253,6 +254,7 @@ const OrdersScreen = () => {
   const [apiActive, setApiActive] = useState<ActiveOrderData[]>([]);
   const [apiPast, setApiPast] = useState<PastOrderData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   const loadOrders = async () => {
@@ -348,7 +350,9 @@ const OrdersScreen = () => {
         ))}
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollInner} showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.scrollInner} showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadOrders(); setRefreshing(false); }} tintColor={PRIMARY} />}
+      >
         {loading ? (
           activeTab === "Active" ? (
             <>

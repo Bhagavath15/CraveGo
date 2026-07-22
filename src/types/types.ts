@@ -60,6 +60,46 @@ export interface CustomizationOption {
     price: number;
 }
 
+export interface MenuItem {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    image: any;
+    isVeg: boolean;
+    isBestseller?: boolean;
+    customizable?: boolean;
+    customizations?: CustomizationGroup[];
+}
+
+export interface MenuCategory {
+    id: string;
+    title: string;
+    items: MenuItem[];
+}
+
+export interface Restaurant {
+    id: string;
+    name: string;
+    image: any;
+    description: string;
+    category: string[];
+    cuisines: string;
+    address: string;
+    rating: number;
+    totalRatings: string;
+    distance: string;
+    deliveryTime: string;
+    priceForOne: string;
+    offer?: string;
+    offerDescription?: string;
+    isVeg: boolean;
+    isFavorite: boolean;
+    menu: MenuCategory[];
+    restaurantId?: string;
+    menuItemNames?: string[];
+}
+
 export interface CustomizationGroup {
     id: string;
     title: string;

@@ -3,6 +3,8 @@ import { View, Image, StyleSheet } from "react-native";
 import { NavigationContainer, createNavigationContainerRef, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+import ErrorBoundary from "../components/ErrorBoundary";
+import OfflineBanner from "../components/OfflineBanner";
 import OnBoardingScreen from "../screens/OnBoardingScreen";
 import LoginScreen from "../screens/LoginScreen";
 import EmailOTPVerificationScreen from "../screens/EmailOTPVerificationScreen";
@@ -26,8 +28,9 @@ import NotificationsScreen from "../screens/NotificationsScreen";
 import HelpSupportScreen from "../screens/HelpSupportScreen";
 import AddAddressScreen from "../screens/AddAddressScreen";
 import ReceiptScreen from "../screens/ReceiptScreen";
-import { getToken } from "../utils/authStore";
+import { getToken, onTokenChange } from "../utils/authStore";
 import { setOnUnauthorized, clearAuthToken } from "../api/client";
+import { pushService } from "../services/pushService";
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -60,6 +63,18 @@ const RootNavigator = () => {
         loadToken();
     }, []);
 
+    useEffect(() => {
+        if (token) {
+            pushService.init(token);
+        }
+    }, [token]);
+
+    useEffect(() => {
+        return onTokenChange((newToken) => {
+            setToken(newToken);
+        });
+    }, []);
+
     if (loading) {
         return (
             <View style={styles.splash}>
@@ -76,9 +91,29 @@ const RootNavigator = () => {
         },
     };
 
+    const linking = {
+        prefixes: ['cravego://', 'https://cravego.com'],
+        config: {
+            screens: {
+                OnBoarding: '',
+                Login: 'login',
+                SignUp: 'signup',
+                RestaurantDetail: 'restaurant/:restaurantId',
+                CartCheckout: 'cart',
+                OrderSuccess: 'order-success',
+                TrackMyOrder: 'order/:orderId',
+                DeliveryCompleted: 'delivery-completed/:orderId',
+                Notifications: 'notifications',
+            },
+        },
+    } as any;
+
     return (
-        <NavigationContainer theme={navTheme}>
-            <Stack.Navigator initialRouteName={token ? "Home" : "OnBoarding"} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FCF9F8' } }}>
+        <ErrorBoundary>
+        <View style={{ flex: 1 }}>
+            <OfflineBanner />
+            <NavigationContainer theme={navTheme} linking={linking}>
+                <Stack.Navigator initialRouteName={token ? "Home" : "OnBoarding"} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FCF9F8' } }}>
                 <Stack.Screen name="Home" component={BottomTabNavigationBar} />
                 <Stack.Screen name="OnBoarding" component={OnBoardingScreen} />
                 <Stack.Screen name="Login" component={LoginScreen} />
@@ -104,6 +139,8 @@ const RootNavigator = () => {
                 <Stack.Screen name="Receipt" component={ReceiptScreen} options={{ animation: "slide_from_right" }} />
             </Stack.Navigator>
         </NavigationContainer>
+        </View>
+        </ErrorBoundary>
     );
 };
 

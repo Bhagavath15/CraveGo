@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { MenuItem } from "../../data/restaurantData";
+import { MenuItem } from "../../types/types";
 import { imageSource } from "../../utils/imageUtils";
 
 interface MenuItemCardProps {

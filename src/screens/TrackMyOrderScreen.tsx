@@ -62,12 +62,7 @@ const STATUS_DESC: Record<number, string> = {
   7: "Your order has been delivered", 8: "Order has been cancelled",
 };
 
-type Restaurant = { id: string; name: string; rating: number; time: string; coords: [number, number]; };
-const RESTAURANTS: Restaurant[] = [
-  { id: "1", name: "Biryani House", rating: 4.5, time: "30-40 min", coords: [80.2707, 13.0827] },
-  { id: "2", name: "Pizza Corner", rating: 4.2, time: "25-35 min", coords: [80.2810, 13.0750] },
-  { id: "3", name: "Burger Spot", rating: 4.1, time: "20-30 min", coords: [80.2650, 13.0900] },
-];
+
 
 type TrackMyOrderRouteProps = RouteProp<RootStackParamList, "TrackMyOrder">;
 
@@ -93,8 +88,8 @@ export default function TrackMyOrderScreen() {
       if (res.success && res.order) {
         setLiveOrder({
           orderStatus: res.order.orderStatus,
-          riderName: res.order.riderName || "Arjun K.",
-          riderRating: res.order.riderRating ?? 4.8,
+          riderName: res.order.riderName || "",
+          riderRating: res.order.riderRating ?? 0,
           deliveryAddress: typeof res.order.deliveryAddress === "string" ? res.order.deliveryAddress : "",
           estimatedTime: res.order.estimatedTime,
           createdAt: res.order.createdAt,
@@ -160,8 +155,8 @@ export default function TrackMyOrderScreen() {
   const deliveredRef = useRef(false);
 
   const orderStatus = liveOrder?.orderStatus ?? 0;
-  const riderName_ = liveOrder?.riderName ?? "Arjun K.";
-  const riderRating_ = liveOrder?.riderRating ?? 4.8;
+  const riderName_ = liveOrder?.riderName ?? "";
+  const riderRating_ = liveOrder?.riderRating ?? 0;
   const estimatedTime = liveOrder?.estimatedTime;
   const activeIdx = stitchStep(isCancelled ? (cancelledFromStatus ?? orderStatus) : orderStatus);
 
@@ -239,9 +234,12 @@ export default function TrackMyOrderScreen() {
         showsMyLocationButton
         initialRegion={{ latitude: 13.0827, longitude: 80.2707, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
       >
-        {RESTAURANTS.map(r => (
-          <Marker key={r.id} coordinate={{ latitude: r.coords[1], longitude: r.coords[0] }} />
-        ))}
+        {restaurantName && (
+          <Marker
+            coordinate={{ latitude: 13.0827, longitude: 80.2707 }}
+            title={restaurantName}
+          />
+        )}
       </MapView>
 
       <BottomSheet
@@ -385,7 +383,7 @@ export default function TrackMyOrderScreen() {
                   <MaterialCommunityIcons name="home-outline" size={22} color={PRIMARY} />
                   <Text style={[s.postCancelBtnText, { color: PRIMARY }]}>Home</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={s.postCancelBtn} onPress={() => navigation.navigate("Home", { screen: "Orders" })}>
+                <TouchableOpacity style={s.postCancelBtn} onPress={() => navigation.navigate("Home", { screen: "OrdersTab" })}>
                   <MaterialCommunityIcons name="clipboard-list-outline" size={22} color={PRIMARY} />
                   <Text style={[s.postCancelBtnText, { color: PRIMARY }]}>Order History</Text>
                 </TouchableOpacity>

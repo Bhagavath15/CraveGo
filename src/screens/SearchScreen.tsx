@@ -61,6 +61,7 @@ const SearchScreen = () => {
     const [loading, setLoading] = useState(true);
     const [showSearch, setShowSearch] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [fetchError, setFetchError] = useState("");
 
     useFocusEffect(
         useCallback(() => {
@@ -70,27 +71,32 @@ const SearchScreen = () => {
         }, [])
     );
 
+    const mapApiRestaurant = (r: any): SearchRestaurant => ({
+        id: r.restaurantId || r._id,
+        name: r.name,
+        image: toImageUri(r.image),
+        cuisines: Array.isArray(r.cuisines) ? r.cuisines.join(" • ") : r.cuisines || "",
+        rating: r.rating || 0,
+        deliveryTime: r.deliveryTime || "",
+        distance: r.distance || "",
+        priceForOne: r.priceForOne || "",
+        offer: r.offer,
+        isVeg: r.isVeg ?? false,
+        menuItemNames: r.menuItemNames || [],
+    });
+
     useEffect(() => {
         const fetchRestaurants = async () => {
             try {
                 const res = await getRestaurants();
                 if (res.success && res.restaurants?.length) {
-                    const mapped: SearchRestaurant[] = res.restaurants.map((r: any) => ({
-                        id: r.restaurantId || r._id,
-                        name: r.name,
-                        image: toImageUri(r.image),
-                        cuisines: Array.isArray(r.cuisines) ? r.cuisines.join(" • ") : r.cuisines || "",
-                        rating: r.rating || 0,
-                        deliveryTime: r.deliveryTime || "",
-                        distance: r.distance || "",
-                        priceForOne: r.priceForOne || "",
-                        offer: r.offer,
-                        isVeg: r.isVeg ?? false,
-                        menuItemNames: r.menuItemNames || [],
-                    }));
-                    setRestaurants(mapped);
+                    setRestaurants(res.restaurants.map(mapApiRestaurant));
+                } else {
+                    setFetchError(res?.message || "Failed to load restaurants");
                 }
-            } catch { } finally {
+            } catch (e: any) {
+                setFetchError(e?.message || "Network error");
+            } finally {
                 setLoading(false);
             }
         };
@@ -122,15 +128,30 @@ const SearchScreen = () => {
         return nums ? Math.min(...nums.map(Number)) : 99;
     };
 
-    const filteredBySearch = useMemo(() => {
-        if (!searchQuery.trim()) return restaurants;
-        const q = searchQuery.toLowerCase();
-        return restaurants.filter((r) =>
-            r.name.toLowerCase().includes(q) ||
-            r.cuisines.toLowerCase().includes(q) ||
-            r.menuItemNames.some((item) => item.toLowerCase().includes(q))
-        );
-    }, [restaurants, searchQuery]);
+    const [searchResults, setSearchResults] = useState<SearchRestaurant[] | null>(null);
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults(null);
+            return;
+        }
+        setLoading(true);
+        const timer = setTimeout(async () => {
+            try {
+                const res = await getRestaurants(searchQuery.trim());
+                if (res.success && res.restaurants) {
+                    setSearchResults(res.restaurants.map(mapApiRestaurant));
+                }
+            } catch { } finally {
+                setLoading(false);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const filteredBySearch = searchResults
+        ? searchResults
+        : restaurants;
 
     const filteredRestaurants = useMemo(() =>
         filteredBySearch.filter((r) => {
@@ -308,7 +329,7 @@ const SearchScreen = () => {
                                 color={ON_SURFACE}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerBtn}>
+                        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("Notifications")}>
                             <MaterialCommunityIcons
                                 name="bell-outline"
                                 size={24}
@@ -372,7 +393,7 @@ const SearchScreen = () => {
                             </View>
                         ))
                     ) : filteredRestaurants.length === 0 ? (
-                        <Text style={styles.emptyText}>No restaurants match your filters.</Text>
+                        <Text style={styles.emptyText}>{fetchError || "No restaurants match your filters."}</Text>
                     ) : (
                         filteredRestaurants.map(renderRestaurantCard)
                     )}
