@@ -19,18 +19,9 @@ import { toImageUri, imageSource } from "../utils/imageUtils";
 import { useCart } from "../context/CartContext";
 import { useFavouriteIds, toggleFavourite } from "../context/FavoritesStore";
 import Skeleton from "../components/Skeleton";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
-const PRIMARY = "#FF6B35";
-const PRIMARY_CONTAINER = "#FF6B35";
-const SECONDARY = "#006D37";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_VARIANT = "#E5E2E1";
-const SURFACE_CONTAINER = "#F0EDED";
-const TERTIARY_CONTAINER = "#C29200";
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -199,7 +190,7 @@ const SearchScreen = () => {
                     <MaterialCommunityIcons
                         name="filter-variant"
                         size={18}
-                        color={isActive ? "#FFF" : ON_SURFACE_VARIANT}
+                        color={isActive ? colors.white : colors.textSecondary}
                     />
                 )}
                 <Text
@@ -236,14 +227,14 @@ const SearchScreen = () => {
                     <MaterialCommunityIcons
                         name={favouriteIds.has(r.id) ? "heart" : "heart-outline"}
                         size={20}
-                        color={favouriteIds.has(r.id) ? PRIMARY : "#FFF"}
+                        color={favouriteIds.has(r.id) ? colors.primary : colors.white}
                     />
                 </TouchableOpacity>
                 <View style={styles.ratingBadge}>
                     <MaterialCommunityIcons
                         name="star"
                         size={14}
-                        color={SECONDARY}
+                        color={colors.secondary}
                     />
                     <Text style={styles.ratingText}>
                         {r.rating}
@@ -261,7 +252,7 @@ const SearchScreen = () => {
                         <MaterialCommunityIcons
                             name="leaf"
                             size={12}
-                            color="#5F1900"
+                            color={colors.primaryDark}
                         />
                         <Text style={styles.pureVegText}>
                             PURE VEG
@@ -292,7 +283,7 @@ const SearchScreen = () => {
                         <MaterialCommunityIcons
                             name="clock-outline"
                             size={16}
-                            color={ON_SURFACE_VARIANT}
+                            color={colors.textSecondary}
                         />
                         <Text style={styles.metaText}>
                             {r.deliveryTime}
@@ -302,7 +293,7 @@ const SearchScreen = () => {
                         <MaterialCommunityIcons
                             name="map-marker"
                             size={16}
-                            color={ON_SURFACE_VARIANT}
+                            color={colors.textSecondary}
                         />
                         <Text style={styles.metaText}>
                             {r.distance}
@@ -326,14 +317,14 @@ const SearchScreen = () => {
                             <MaterialCommunityIcons
                                 name={showSearch ? "close" : "magnify"}
                                 size={24}
-                                color={ON_SURFACE}
+                                color={colors.textPrimary}
                             />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("Notifications")}>
                             <MaterialCommunityIcons
                                 name="bell-outline"
                                 size={24}
-                                color={ON_SURFACE}
+                                color={colors.textPrimary}
                             />
                         </TouchableOpacity>
                     </View>
@@ -342,18 +333,18 @@ const SearchScreen = () => {
 
             {showSearch && (
                 <View style={styles.searchBar}>
-                    <MaterialCommunityIcons name="magnify" size={20} color={ON_SURFACE_VARIANT} />
+                    <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search restaurants or cuisines..."
-                        placeholderTextColor={ON_SURFACE_VARIANT}
+                        placeholderTextColor={colors.textSecondary}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         autoFocus
                     />
                     {searchQuery.length > 0 && (
                         <TouchableOpacity onPress={handleClearSearch}>
-                            <MaterialCommunityIcons name="close-circle" size={18} color={ON_SURFACE_VARIANT} />
+                            <MaterialCommunityIcons name="close-circle" size={18} color={colors.textSecondary} />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -409,7 +400,7 @@ const SearchScreen = () => {
                         <MaterialCommunityIcons
                             name="shopping-outline"
                             size={24}
-                            color="#FFF"
+                            color={colors.white}
                         />
                         <View style={styles.fabBadge}>
                             <Text style={styles.fabBadgeText}>
@@ -434,104 +425,96 @@ export default SearchScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     header: {
-        backgroundColor: BG,
-        paddingBottom: 4,
+        backgroundColor: colors.background,
+        paddingBottom: spacing.xs,
     },
     headerRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxxl,
     },
     headerIcons: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: spacing.xs,
     },
     headerBtn: {
-        width: 40,
-        height: 40,
+        width: sizes.avatar,
+        height: sizes.avatar,
         justifyContent: "center",
         alignItems: "center",
     },
     scrollContent: {
-        paddingBottom: 32,
+        paddingBottom: spacing.xl,
     },
     filterRow: {
-        marginBottom: 16,
-        paddingLeft: 16,
+        marginBottom: spacing.md,
+        paddingLeft: spacing.md,
     },
     filterContent: {
-        gap: 8,
+        gap: spacing.sm,
         flexDirection: "row",
-        paddingRight: 16,
+        paddingRight: spacing.md,
     },
     filterChip: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 999,
+        gap: spacing.xs,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.full,
     },
     filterChipPrimary: {
-        backgroundColor: PRIMARY,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        elevation: 3,
+        backgroundColor: colors.primary,
+        ...shadows.card,
     },
     filterChipActive: {
-        backgroundColor: SURFACE_LOWEST,
+        backgroundColor: colors.surface,
         borderWidth: 1.5,
-        borderColor: PRIMARY,
+        borderColor: colors.primary,
     },
     filterChipInactive: {
-        backgroundColor: SURFACE_LOWEST,
+        backgroundColor: colors.surface,
         borderWidth: 1.5,
-        borderColor: OUTLINE_VARIANT,
+        borderColor: colors.outlineVariant,
     },
     filterChipText: {
-        fontSize: 14,
-        fontWeight: "600",
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     filterChipTextPrimary: {
-        color: "#FFF",
+        color: colors.white,
     },
     filterChipTextOn: {
-        color: PRIMARY,
+        color: colors.primary,
     },
     filterChipTextOff: {
-        color: ON_SURFACE_VARIANT,
+        color: colors.textSecondary,
     },
     cardGrid: {
-        paddingHorizontal: 16,
-        gap: 24,
+        paddingHorizontal: spacing.md,
+        gap: spacing.lg,
     },
     restaurantCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.xxl,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: `${SURFACE_VARIANT}4D`,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
+        borderColor: `${colors.surfaceContainerHighest}4D`,
+        ...shadows.card,
     },
     cardImageWrapper: {
         height: 224,
@@ -539,8 +522,8 @@ const styles = StyleSheet.create({
     },
     searchFavBtn: {
         position: "absolute",
-        top: 12,
-        left: 12,
+        top: spacing.sm + spacing.xs,
+        left: spacing.sm + spacing.xs,
         width: 34,
         height: 34,
         borderRadius: 17,
@@ -555,125 +538,121 @@ const styles = StyleSheet.create({
     },
     ratingBadge: {
         position: "absolute",
-        top: 12,
-        right: 12,
+        top: spacing.sm + spacing.xs,
+        right: spacing.sm + spacing.xs,
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: spacing.xs,
         backgroundColor: "rgba(255,255,255,0.9)",
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.sm,
     },
     ratingText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     freeDeliveryBadge: {
         position: "absolute",
-        bottom: 12,
-        left: 12,
-        backgroundColor: SECONDARY,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 999,
+        bottom: spacing.sm + spacing.xs,
+        left: spacing.sm + spacing.xs,
+        backgroundColor: colors.secondary,
+        paddingHorizontal: spacing.sm + spacing.xs,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.full,
     },
     freeDeliveryText: {
         fontSize: 11,
-        fontWeight: "500",
-        color: "#FFF",
-        lineHeight: 16,
-        letterSpacing: 0.5,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.white,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
         textTransform: "uppercase",
     },
     pureVegBadge: {
         position: "absolute",
-        top: 12,
-        left: 12,
+        top: spacing.sm + spacing.xs,
+        left: spacing.sm + spacing.xs,
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
-        backgroundColor: TERTIARY_CONTAINER,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
+        gap: spacing.xs,
+        backgroundColor: colors.tertiary,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.sm,
     },
     pureVegText: {
         fontSize: 11,
-        fontWeight: "500",
-        color: "#5F1900",
-        lineHeight: 16,
-        letterSpacing: 0.5,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.primaryDark,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
     },
     cardBody: {
-        padding: 16,
+        padding: spacing.md,
     },
     cardTitleRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "flex-start",
-        marginBottom: 4,
+        marginBottom: spacing.xs,
     },
     cardRestaurantName: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
         flex: 1,
-        marginRight: 8,
+        marginRight: spacing.sm,
     },
     cardPrice: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
+        lineHeight: typography.lineHeight.md,
     },
     cardCuisines: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        marginBottom: 12,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        marginBottom: spacing.sm + spacing.xs,
     },
     cardMeta: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 16,
-        paddingTop: 12,
+        gap: spacing.md,
+        paddingTop: spacing.sm + spacing.xs,
         borderTopWidth: 1,
-        borderTopColor: `${SURFACE_VARIANT}80`,
+        borderTopColor: `${colors.surfaceContainerHighest}80`,
     },
     metaItem: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: spacing.xs,
     },
     metaText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     fab: {
         position: "absolute",
-        bottom: 16,
-        right: 16,
-        left: 16,
-        backgroundColor: PRIMARY,
+        bottom: spacing.md,
+        right: spacing.md,
+        left: spacing.md,
+        backgroundColor: colors.primary,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 12,
+        gap: spacing.sm + spacing.xs,
         paddingVertical: 14,
-        borderRadius: 16,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 8,
+        borderRadius: radius.lg,
+        ...shadows.button,
     },
     fabIconRow: {
         position: "relative",
@@ -685,72 +664,72 @@ const styles = StyleSheet.create({
         width: 18,
         height: 18,
         borderRadius: 9,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         justifyContent: "center",
         alignItems: "center",
     },
     fabBadgeText: {
-        fontSize: 10,
-        fontWeight: "700",
-        color: PRIMARY,
+        fontSize: typography.fontSize.xs,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
     },
     fabLabel: {
-        fontSize: 10,
-        fontWeight: "700",
-        color: "#FFF",
-        lineHeight: 14,
+        fontSize: typography.fontSize.xs,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.white,
+        lineHeight: typography.lineHeight.xs,
         textTransform: "uppercase",
         opacity: 0.8,
     },
     fabPrice: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#FFF",
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.white,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     emptyText: {
         textAlign: "center",
-        fontSize: 16,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.xl,
         marginTop: 60,
     },
     searchBar: {
         flexDirection: "row",
         alignItems: "center",
-        marginHorizontal: 16,
-        marginBottom: 8,
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        paddingHorizontal: 12,
+        marginHorizontal: spacing.md,
+        marginBottom: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        paddingHorizontal: spacing.sm + spacing.xs,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: OUTLINE_VARIANT,
-        gap: 8,
+        borderColor: colors.outlineVariant,
+        gap: spacing.sm,
     },
     searchInput: {
         flex: 1,
-        fontSize: 16,
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.lg,
+        color: colors.textPrimary,
         padding: 0,
     },
     skeletonCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.xxl,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: `${SURFACE_VARIANT}4D`,
+        borderColor: `${colors.surfaceContainerHighest}4D`,
     },
     skeletonBody: {
-        padding: 16,
-        gap: 8,
+        padding: spacing.md,
+        gap: spacing.sm,
     },
     skeletonMeta: {
         flexDirection: "row",
-        gap: 16,
-        paddingTop: 12,
+        gap: spacing.md,
+        paddingTop: spacing.sm + spacing.xs,
         borderTopWidth: 1,
-        borderTopColor: `${SURFACE_VARIANT}80`,
+        borderTopColor: `${colors.surfaceContainerHighest}80`,
     },
 });

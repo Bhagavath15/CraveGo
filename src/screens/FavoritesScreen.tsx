@@ -18,13 +18,7 @@ import { getFavourites } from "../api/favorites";
 import { imageSource, toImageUri } from "../utils/imageUtils";
 import { useFavouriteIds, toggleFavourite } from "../context/FavoritesStore";
 import Skeleton from "../components/Skeleton";
-
-const PRIMARY = "#FF6B35";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE = "#8D7168";
-const SURFACE_LOWEST = "#FFFFFF";
+import { colors, spacing, typography, radius, shadows } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -105,7 +99,7 @@ const FavoritesScreen = () => {
                     <MaterialCommunityIcons
                         name={favouriteIds.has(item.id) ? "heart" : "heart-outline"}
                         size={20}
-                        color={favouriteIds.has(item.id) ? PRIMARY : "#FFF"}
+                        color={favouriteIds.has(item.id) ? colors.primary : colors.white}
                     />
                 </TouchableOpacity>
                 <View style={styles.ratingBadge}>
@@ -117,11 +111,11 @@ const FavoritesScreen = () => {
                 <Text style={styles.cardDesc}>{item.description}</Text>
                 <View style={styles.cardFooter}>
                     <View style={styles.footerItem}>
-                        <MaterialCommunityIcons name="map-marker" size={14} color="#666" />
+                        <MaterialCommunityIcons name="map-marker" size={14} color={colors.textMuted} />
                         <Text style={styles.footerText}>{item.distance}</Text>
                     </View>
                     <View style={styles.footerItem}>
-                        <MaterialCommunityIcons name="clock-time-four-outline" size={14} color="#666" />
+                        <MaterialCommunityIcons name="clock-time-four-outline" size={14} color={colors.textMuted} />
                         <Text style={styles.footerText}>{item.deliveryTime}</Text>
                     </View>
                 </View>
@@ -134,7 +128,7 @@ const FavoritesScreen = () => {
         if (fetchError) {
             return (
                 <View style={styles.emptyState}>
-                    <MaterialCommunityIcons name="heart-broken" size={72} color={OUTLINE} />
+                    <MaterialCommunityIcons name="heart-broken" size={72} color={colors.outline} />
                     <Text style={styles.emptyTitle}>Something went wrong</Text>
                     <Text style={styles.emptySubtitle}>{fetchError}</Text>
                     <TouchableOpacity style={styles.browseBtn} onPress={fetchFavourites}>
@@ -145,7 +139,7 @@ const FavoritesScreen = () => {
         }
         return (
             <View style={styles.emptyState}>
-                <MaterialCommunityIcons name="heart-outline" size={72} color={OUTLINE} />
+                <MaterialCommunityIcons name="heart-outline" size={72} color={colors.outline} />
                 <Text style={styles.emptyTitle}>No favourites yet</Text>
                 <Text style={styles.emptySubtitle}>
                     Save your favourite restaurants for quick access later.
@@ -164,7 +158,7 @@ const FavoritesScreen = () => {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.headerBar}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Favourites</Text>
                 <View style={styles.backBtn} />
@@ -186,7 +180,7 @@ const FavoritesScreen = () => {
                     keyExtractor={(item) => item.id}
                     renderItem={renderRestaurant}
                     ListEmptyComponent={renderEmpty}
-                    contentContainerStyle={favourites.length === 0 ? { flex: 1 } : { padding: 16 }}
+                    contentContainerStyle={favourites.length === 0 ? { flex: 1 } : { padding: spacing.md }}
                     showsVerticalScrollIndicator={false}
                 />
             )}
@@ -199,15 +193,15 @@ export default FavoritesScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     headerBar: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     backBtn: {
         width: 40,
@@ -216,28 +210,28 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
     },
     loadingContainer: {
-        padding: 16,
-        gap: 16,
+        padding: spacing.md,
+        gap: spacing.md,
     },
     skeletonCard: {
-        backgroundColor: SURFACE_LOWEST,
+        backgroundColor: colors.surface,
         borderRadius: 14,
         marginBottom: 18,
         overflow: "hidden",
-        padding: 16,
+        padding: spacing.md,
     },
     card: {
-        backgroundColor: SURFACE_LOWEST,
+        backgroundColor: colors.surface,
         borderRadius: 14,
         marginBottom: 18,
         overflow: "hidden",
         elevation: 3,
-        shadowColor: "#000",
+        shadowColor: colors.shadow,
         shadowOpacity: 0.08,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
@@ -265,27 +259,27 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 12,
         right: 12,
-        backgroundColor: "#FFF",
-        borderRadius: 20,
+        backgroundColor: colors.white,
+        borderRadius: radius.xl,
         paddingHorizontal: 10,
         paddingVertical: 5,
         elevation: 4,
     },
     ratingText: {
         fontSize: 13,
-        fontWeight: "700",
-        color: "#222",
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
     },
     cardContent: {
         padding: 14,
     },
     cardName: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.xl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
     },
     cardDesc: {
-        color: ON_SURFACE_VARIANT,
+        color: colors.textSecondary,
         marginTop: 5,
         fontSize: 13,
     },
@@ -297,42 +291,42 @@ const styles = StyleSheet.create({
     footerItem: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: spacing.xs,
     },
     footerText: {
         fontSize: 13,
-        color: "#666",
-        fontWeight: "600",
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.semibold,
     },
     emptyState: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 32,
+        paddingHorizontal: spacing.xl,
         gap: 12,
     },
     emptyTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        marginTop: 8,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        marginTop: spacing.sm,
     },
     emptySubtitle: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
         textAlign: "center",
-        lineHeight: 20,
+        lineHeight: typography.lineHeight.md,
     },
     browseBtn: {
-        marginTop: 16,
-        backgroundColor: PRIMARY,
-        paddingHorizontal: 32,
+        marginTop: spacing.md,
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.xl,
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: radius.md,
     },
     browseBtnText: {
-        color: "#FFF",
-        fontSize: 16,
-        fontWeight: "600",
+        color: colors.white,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
     },
 });

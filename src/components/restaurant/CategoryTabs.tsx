@@ -7,6 +7,7 @@ import {
     View,
     LayoutChangeEvent,
 } from "react-native";
+import { colors } from "../../theme";
 
 interface CategoryTabsProps {
     categories: string[];
@@ -14,7 +15,6 @@ interface CategoryTabsProps {
     onSelect: (category: string) => void;
 }
 
-const PRIMARY = "#FF6B35";
 
 const CategoryTabs = ({
     categories,
@@ -84,16 +84,16 @@ const styles = StyleSheet.create({
     },
     tabActive: {
         borderBottomWidth: 2,
-        borderBottomColor: PRIMARY,
+        borderBottomColor: colors.primary,
     },
     tabText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#594139",
+        color: colors.textSecondary,
         letterSpacing: 0.1,
     },
     tabTextActive: {
-        color: PRIMARY,
+        color: colors.primary,
     },
 });
 

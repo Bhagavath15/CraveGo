@@ -16,21 +16,7 @@ import { RootStackParamList } from "../types/types";
 import { connectSocket } from "../api/socket";
 import { getOrders, reorder } from "../api/order";
 import Skeleton from "../components/Skeleton";
-
-const PRIMARY = "#FF6B35";
-const ON_PRIMARY = "#ffffff";
-const PRIMARY_TEXT = "#FF6B35";
-const SECONDARY = "#006d37";
-const BG = "#fcf9f8";
-const ON_SURFACE = "#1b1c1c";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#e1bfb5";
-const SURFACE_LOWEST = "#ffffff";
-const SURFACE_CONTAINER_LOW = "#f6f3f2";
-const SURFACE_CONTAINER = "#f0eded";
-const SURFACE_CONTAINER_HIGH = "#eae7e7";
-const SURFACE_VARIANT = "#e5e2e1";
-const ERROR = "#ba1a1a";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -82,9 +68,9 @@ const PaymentBadge = ({ method, status }: { method?: string; status?: string }) 
   const label = status === "Paid" ? "Paid" : status === "Authorized" ? "Authorized" : status === "Refunded" ? "Refunded" : "Pending";
   const isPaid = status === "Paid";
   const isRefunded = status === "Refunded";
-  const bg = isPaid ? `${SECONDARY}15` : isRefunded ? `${ERROR}15` : "#FFF3E0";
-  const border = isPaid ? `${SECONDARY}30` : isRefunded ? `${ERROR}30` : "#FFE0B2";
-  const color = isPaid ? SECONDARY : isRefunded ? ERROR : "#E65100";
+  const bg = isPaid ? `${colors.secondary}15` : isRefunded ? `${colors.error}15` : "#FFF3E0";
+  const border = isPaid ? `${colors.secondary}30` : isRefunded ? `${colors.error}30` : "#FFE0B2";
+  const color = isPaid ? colors.secondary : isRefunded ? colors.error : "#E65100";
   const icon = isPaid ? "shield-check" : isRefunded ? "refresh" : "clock-outline";
   return (
     <View style={[as.pill, { backgroundColor: bg, borderColor: border }]}>
@@ -97,10 +83,10 @@ const PaymentBadge = ({ method, status }: { method?: string; status?: string }) 
 const StatusBadge = ({ status }: { status: string }) => {
   const isDelivered = status === "Delivered";
   const isCancelled = status === "Cancelled";
-  const color = isCancelled ? ERROR : SECONDARY;
+  const color = isCancelled ? colors.error : colors.secondary;
   const icon = isCancelled ? "cancel" : "check-circle";
   return (
-    <View style={[as.pill, { backgroundColor: isCancelled ? "#FFDAD6" : `${SECONDARY}15`, borderColor: isCancelled ? "#FFDAD699" : `${SECONDARY}30` }]}>
+    <View style={[as.pill, { backgroundColor: isCancelled ? colors.errorLight : `${colors.secondary}15`, borderColor: isCancelled ? `${colors.errorLight}99` : `${colors.secondary}30` }]}>
       <MaterialCommunityIcons name={icon} size={14} color={color} />
       <Text style={[as.pillText, { color }]}>{status}</Text>
     </View>
@@ -112,27 +98,23 @@ const ActiveOrderCard = ({ order }: { order: ActiveOrderData }) => {
   const itemsText = order.items.map(i => `${i.quantity}x ${i.name}`).join(", ");
   return (
     <View style={as.card}>
-      <View style={as.cardTop}>
-        <View style={as.cardHeader}>
-          <View style={as.restaurantInfo}>
-            <View style={as.imageBox}>
-              {order.image ? (
-                <Image source={{ uri: order.image }} style={as.image} />
-              ) : (
-                <MaterialCommunityIcons name="silverware" size={22} color={ON_SURFACE_VARIANT} />
-              )}
-            </View>
-            <View>
-              <Text style={as.restaurantName}>{order.restaurantName}</Text>
-              <Text style={as.orderNumber}>{order.orderNumber}</Text>
-            </View>
-          </View>
+      <View style={as.cardHeader}>
+        <View style={as.imageBox}>
+          {order.image ? (
+            <Image source={{ uri: order.image }} style={as.image} />
+          ) : (
+            <MaterialCommunityIcons name="silverware" size={22} color={colors.textSecondary} />
+          )}
+        </View>
+        <View style={as.headerInfo}>
+          <Text style={as.restaurantName}>{order.restaurantName}</Text>
+          <Text style={as.orderNumber}>{order.orderNumber}</Text>
         </View>
       </View>
 
       <View style={as.statusRow}>
         <View style={as.statusIconBox}>
-          <MaterialCommunityIcons name={order.statusIcon as any} size={18} color={PRIMARY} />
+          <MaterialCommunityIcons name={order.statusIcon as any} size={16} color={colors.primary} />
         </View>
         <Text style={as.statusText}>{order.statusText}</Text>
       </View>
@@ -140,32 +122,31 @@ const ActiveOrderCard = ({ order }: { order: ActiveOrderData }) => {
       <Text style={as.itemsText} numberOfLines={1}>{itemsText}</Text>
 
       <View style={as.metaRow}>
-        <View>
-          <Text style={as.metaLabel}>Estimated Arrival</Text>
+        <View style={as.metaCol}>
+          <Text style={as.metaLabel}>Est. Arrival</Text>
           <Text style={as.metaValue}>{order.estimatedArrival || "25 - 30 mins"}</Text>
         </View>
-        <View style={as.priceCol}>
-          <Text style={as.metaLabel}>Total Price</Text>
+        <View style={as.metaColRight}>
+          <Text style={as.metaLabel}>Total</Text>
           <Text style={as.metaValue}>₹{order.totalPrice}</Text>
           <PaymentBadge method={order.paymentMethod} status={order.paymentStatus} />
         </View>
       </View>
 
-      <View style={as.cardActions}>
-        <TouchableOpacity
-          style={as.trackBtn}
-          onPress={() => navigation.navigate("TrackMyOrder", {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            restaurantName: order.restaurantName,
-            totalPrice: order.totalPrice,
-            items: order.items,
-          })}
-        >
-          <MaterialCommunityIcons name="map-marker" size={16} color={ON_PRIMARY} />
-          <Text style={as.trackBtnText}>Track Order</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={as.trackBtn}
+        onPress={() => navigation.navigate("TrackMyOrder", {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          restaurantName: order.restaurantName,
+          totalPrice: order.totalPrice,
+          items: order.items,
+        })}
+      >
+        <MaterialCommunityIcons name="map-marker-path" size={18} color={colors.white} />
+        <Text style={as.trackBtnText}>Track Order</Text>
+        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.white} />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -187,43 +168,44 @@ const PastOrderCard = ({ order }: { order: PastOrderData }) => {
   return (
     <View style={as.card}>
       <View style={as.pastTopRow}>
-        <View style={as.restaurantInfo}>
+        <View style={as.pastLeft}>
           <View style={[as.imageBox, as.pastImageBox]}>
             {order.image ? (
               <Image source={{ uri: order.image }} style={as.image} />
             ) : (
-              <MaterialCommunityIcons name="silverware" size={22} color={ON_SURFACE_VARIANT} />
+              <MaterialCommunityIcons name="silverware" size={20} color={colors.textSecondary} />
             )}
           </View>
-          <Text style={as.restaurantName}>{order.restaurantName}</Text>
+          <View style={as.pastInfo}>
+            <Text style={as.restaurantName}>{order.restaurantName}</Text>
+            <View style={as.pastStatusRow}>
+              <StatusBadge status={order.status} />
+              <PaymentBadge method={order.paymentMethod} status={order.paymentStatus} />
+              <Text style={as.pastDate}> • {order.dateTime}</Text>
+            </View>
+          </View>
         </View>
         <Text style={as.pastPrice}>₹{order.totalPrice}</Text>
-      </View>
-
-      <View style={as.pastStatusRow}>
-        <StatusBadge status={order.status} />
-        <PaymentBadge method={order.paymentMethod} status={order.paymentStatus} />
-        <Text style={as.pastDate}> • {order.dateTime}</Text>
       </View>
 
       <Text style={as.itemsText}>{itemsText}</Text>
 
       <View style={as.pastActions}>
         <TouchableOpacity style={as.reorderBtn} onPress={handleReorder}>
-          <MaterialCommunityIcons name="replay" size={16} color={ON_PRIMARY} />
+          <MaterialCommunityIcons name="replay" size={16} color={colors.white} />
           <Text style={as.reorderBtnText}>Reorder</Text>
         </TouchableOpacity>
         <TouchableOpacity style={as.receiptBtn} onPress={handleViewReceipt}>
-          <MaterialCommunityIcons name="receipt" size={16} color={PRIMARY_TEXT} />
+          <MaterialCommunityIcons name="receipt" size={16} color={colors.primary} />
           <Text style={as.receiptBtnText}>Receipt</Text>
         </TouchableOpacity>
         {isCancelled ? (
           <TouchableOpacity style={as.detailBtn}>
-            <MaterialCommunityIcons name="information-outline" size={18} color={ON_SURFACE_VARIANT} />
+            <MaterialCommunityIcons name="information-outline" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         ) : order.rating ? (
           <View style={as.ratedBadge}>
-            <MaterialCommunityIcons name="star" size={14} color={PRIMARY} />
+            <MaterialCommunityIcons name="star" size={14} color={colors.rating} />
             <Text style={as.ratedText}>{order.rating}.0</Text>
           </View>
         ) : (
@@ -237,8 +219,8 @@ const PastOrderCard = ({ order }: { order: PastOrderData }) => {
               totalPrice: order.totalPrice,
             })}
           >
-            <MaterialCommunityIcons name="star" size={16} color={PRIMARY} />
-            <Text style={as.rateMealText}>Rate Meal</Text>
+            <MaterialCommunityIcons name="star" size={16} color={colors.rating} />
+            <Text style={as.rateMealText}>Rate</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -333,12 +315,10 @@ const OrdersScreen = () => {
     <View style={[s.wrapper, { paddingTop: insets.top }]}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>My Orders</Text>
-        <TouchableOpacity style={s.headerBtn}>
-          <MaterialCommunityIcons name="magnify" size={24} color={ON_SURFACE} />
-        </TouchableOpacity>
+        <View style={s.headerBtn} />
       </View>
 
       <View style={s.tabBar}>
@@ -351,7 +331,7 @@ const OrdersScreen = () => {
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollInner} showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadOrders(); setRefreshing(false); }} tintColor={PRIMARY} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadOrders(); setRefreshing(false); }} tintColor={colors.primary} />}
       >
         {loading ? (
           activeTab === "Active" ? (
@@ -415,7 +395,7 @@ const OrdersScreen = () => {
               </>
             ) : (
               <View style={s.emptyState}>
-                <MaterialCommunityIcons name="clipboard-list-outline" size={64} color={OUTLINE_VARIANT} />
+                <MaterialCommunityIcons name="clipboard-list-outline" size={64} color={colors.outlineVariant} />
                 <Text style={s.emptyTitle}>No Active Orders</Text>
                 <Text style={s.emptySub}>Your active orders will appear here</Text>
               </View>
@@ -445,7 +425,7 @@ const OrdersScreen = () => {
               filteredPast.map(o => <PastOrderCard key={o.id} order={o} />)
             ) : (
               <View style={s.emptyState}>
-                <MaterialCommunityIcons name="clipboard-list-outline" size={64} color={OUTLINE_VARIANT} />
+                <MaterialCommunityIcons name="clipboard-list-outline" size={64} color={colors.outlineVariant} />
                 <Text style={s.emptyTitle}>No {filter === "All Orders" ? "" : filter.toLowerCase()} orders</Text>
                 <Text style={s.emptySub}>{filter === "All Orders" ? "You have no past orders yet" : filter === "Cancelled" ? "No cancelled orders found" : "No delivered orders found"}</Text>
               </View>
@@ -460,92 +440,94 @@ const OrdersScreen = () => {
 
 const as = StyleSheet.create({
   card: {
-    backgroundColor: SURFACE_LOWEST, borderRadius: 12, padding: 16, marginBottom: 12,
-    borderWidth: 1, borderColor: SURFACE_VARIANT,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, marginBottom: 12,
+    borderWidth: 1, borderColor: colors.surfaceContainerHighest,
+    ...shadows.card,
   },
-  cardTop: {},
-  cardHeader: {},
-  restaurantInfo: { flexDirection: "row", alignItems: "center", gap: 12 },
-  imageBox: { width: 48, height: 48, borderRadius: 10, backgroundColor: SURFACE_CONTAINER, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  pastImageBox: { width: 40, height: 40, borderRadius: 8 },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  headerInfo: { flex: 1 },
+  imageBox: { width: 48, height: 48, borderRadius: 10, backgroundColor: colors.surfaceContainer, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  pastImageBox: { width: sizes.avatar, height: sizes.avatar, borderRadius: radius.sm },
   image: { width: "100%", height: "100%" },
-  restaurantName: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
-  orderNumber: { fontSize: 12, fontWeight: "500", color: ON_SURFACE_VARIANT, lineHeight: 16, letterSpacing: 0.5 },
+  restaurantName: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
+  orderNumber: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.textSecondary, lineHeight: typography.lineHeight.sm, letterSpacing: typography.letterSpacing.wider },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 },
-  statusIconBox: { width: 26, height: 26, borderRadius: 13, backgroundColor: `${PRIMARY}15`, alignItems: "center", justifyContent: "center" },
-  statusText: { fontSize: 13, fontWeight: "600", color: PRIMARY, lineHeight: 18 },
-  itemsText: { fontSize: 13, color: ON_SURFACE_VARIANT, lineHeight: 18, marginTop: 6 },
-  metaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: SURFACE_VARIANT },
-  metaLabel: { fontSize: 10, fontWeight: "500", color: ON_SURFACE_VARIANT, lineHeight: 14, letterSpacing: 0.5, textTransform: "uppercase" },
-  metaValue: { fontSize: 14, fontWeight: "700", color: ON_SURFACE, lineHeight: 20, marginTop: 2 },
-  priceCol: { alignItems: "flex-end" },
-  cardActions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
+  statusIconBox: { width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.primary}15`, alignItems: "center", justifyContent: "center" },
+  statusText: { fontSize: 13, fontWeight: typography.fontWeight.semibold, color: colors.primary, lineHeight: 18 },
+  itemsText: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginTop: 6 },
+  metaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: colors.surfaceContainerHighest },
+  metaCol: {},
+  metaColRight: { alignItems: "flex-end" },
+  metaLabel: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.medium, color: colors.textSecondary, lineHeight: typography.lineHeight.xs, letterSpacing: typography.letterSpacing.wider, textTransform: "uppercase" },
+  metaValue: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.md, marginTop: 2 },
   trackBtn: {
-    flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: PRIMARY,
-    paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: colors.primary, marginTop: 12,
+    paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10,
   },
-  trackBtnText: { fontSize: 13, fontWeight: "700", color: ON_PRIMARY, lineHeight: 18 },
+  trackBtnText: { fontSize: 13, fontWeight: typography.fontWeight.bold, color: colors.white, lineHeight: 18 },
 
-  pastTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  pastPrice: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
-  pastStatusRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  pastDate: { fontSize: 11, fontWeight: "500", color: ON_SURFACE_VARIANT, lineHeight: 16, letterSpacing: 0.5 },
+  pastTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  pastLeft: { flexDirection: "row", alignItems: "center", flex: 1, gap: 12 },
+  pastInfo: { flex: 1 },
+  pastPrice: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
+  pastStatusRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 4, marginTop: 4 },
+  pastDate: { fontSize: 11, fontWeight: typography.fontWeight.medium, color: colors.textSecondary, lineHeight: typography.lineHeight.sm, letterSpacing: typography.letterSpacing.wider },
   pill: {
-    flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: 8, borderWidth: 1,
+    flexDirection: "row", alignItems: "center", gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: radius.sm, borderWidth: 1,
   },
-  pillText: { fontSize: 11, fontWeight: "600", lineHeight: 16 },
+  pillText: { fontSize: 11, fontWeight: typography.fontWeight.semibold, lineHeight: typography.lineHeight.sm },
   pastActions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
   reorderBtn: {
-    flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: PRIMARY,
-    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10,
+    flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: colors.primary,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 10,
   },
   receiptBtn: {
-    flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${PRIMARY}15`,
-    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: `${PRIMARY}30`,
+    flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: `${colors.primary}15`,
+    paddingVertical: spacing.sm, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1, borderColor: `${colors.primary}30`,
   },
-  reorderBtnText: { fontSize: 12, fontWeight: "700", color: ON_PRIMARY, lineHeight: 16 },
-  receiptBtnText: { fontSize: 12, fontWeight: "700", color: PRIMARY_TEXT, lineHeight: 16 },
-  rateMealBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  rateMealText: { fontSize: 12, fontWeight: "600", color: PRIMARY, lineHeight: 16, letterSpacing: 0.1 },
+  reorderBtnText: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold, color: colors.white, lineHeight: typography.lineHeight.sm },
+  receiptBtnText: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold, color: colors.primary, lineHeight: typography.lineHeight.sm },
+  rateMealBtn: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  rateMealText: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.primary, lineHeight: typography.lineHeight.sm, letterSpacing: typography.letterSpacing.normal },
   ratedBadge: { flexDirection: "row", alignItems: "center", gap: 2 },
-  ratedText: { fontSize: 12, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 16 },
-  detailBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: SURFACE_CONTAINER, alignItems: "center", justifyContent: "center" },
+  ratedText: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, color: colors.textSecondary, lineHeight: typography.lineHeight.sm },
+  detailBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surfaceContainer, alignItems: "center", justifyContent: "center" },
 });
 
 const s = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: BG },
+  wrapper: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: spacing.md, paddingVertical: 12,
   },
-  headerBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  headerBtn: { width: sizes.avatar, height: sizes.avatar, justifyContent: "center", alignItems: "center" },
+  headerTitle: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
   tabBar: {
-    flexDirection: "row", borderBottomWidth: 1, borderBottomColor: SURFACE_VARIANT,
-    paddingHorizontal: 16,
+    flexDirection: "row", borderBottomWidth: 1, borderBottomColor: colors.surfaceContainerHighest,
+    paddingHorizontal: spacing.md,
   },
   tabBtn: { flex: 1, paddingVertical: 12, alignItems: "center", position: "relative" },
-  tabText: { fontSize: 14, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 20, letterSpacing: 0.1 },
-  tabTextActive: { color: PRIMARY },
-  tabIndicator: { position: "absolute", bottom: -1, left: "25%", right: "25%", height: 3, backgroundColor: PRIMARY, borderRadius: 999 },
+  tabText: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.semibold, color: colors.textSecondary, lineHeight: typography.lineHeight.md, letterSpacing: typography.letterSpacing.normal },
+  tabTextActive: { color: colors.primary },
+  tabIndicator: { position: "absolute", bottom: -1, left: "25%", right: "25%", height: 3, backgroundColor: colors.primary, borderRadius: radius.full },
   scroll: { flex: 1 },
-  scrollInner: { paddingHorizontal: 16, paddingBottom: 32 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 24, marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
-  countBadge: { backgroundColor: `${SECONDARY}20`, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  countText: { fontSize: 11, fontWeight: "600", color: SECONDARY, lineHeight: 16, letterSpacing: 0.5 },
-  viewAll: { fontSize: 12, fontWeight: "700", color: PRIMARY, lineHeight: 16, letterSpacing: 0.1 },
+  scrollInner: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.lg, marginBottom: 12 },
+  sectionTitle: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
+  countBadge: { backgroundColor: `${colors.secondary}20`, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full },
+  countText: { fontSize: 11, fontWeight: typography.fontWeight.semibold, color: colors.secondary, lineHeight: typography.lineHeight.sm, letterSpacing: typography.letterSpacing.wider },
+  viewAll: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold, color: colors.primary, lineHeight: typography.lineHeight.sm, letterSpacing: typography.letterSpacing.normal },
   filterRow: { marginBottom: 12,marginTop:12 },
-  filterContent: { gap: 8, flexDirection: "row", paddingVertical: 4 },
-  filterChip: { paddingHorizontal: 24, paddingVertical: 8, backgroundColor: SURFACE_CONTAINER_HIGH, borderRadius: 999 },
-  filterChipActive: { backgroundColor: PRIMARY, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 3 },
-  filterChipText: { fontSize: 13, fontWeight: "600", color: ON_SURFACE_VARIANT, lineHeight: 18, letterSpacing: 0.1 },
-  filterChipTextActive: { color: ON_PRIMARY },
-  emptyState: { alignItems: "center", paddingVertical: 48, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
-  emptySub: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20 },
+  filterContent: { gap: spacing.sm, flexDirection: "row", paddingVertical: spacing.xs },
+  filterChip: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.surfaceContainerHigh, borderRadius: radius.full },
+  filterChipActive: { backgroundColor: colors.primary, ...shadows.small },
+  filterChipText: { fontSize: 13, fontWeight: typography.fontWeight.semibold, color: colors.textSecondary, lineHeight: 18, letterSpacing: typography.letterSpacing.normal },
+  filterChipTextActive: { color: colors.white },
+  emptyState: { alignItems: "center", paddingVertical: spacing.xxl, gap: spacing.sm },
+  emptyTitle: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
+  emptySub: { fontSize: typography.fontSize.md, color: colors.textSecondary, lineHeight: typography.lineHeight.md },
 });
 
 export default OrdersScreen;

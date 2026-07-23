@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import {
   Image,
   ScrollView,
@@ -16,6 +17,41 @@ import { Restaurant } from "../types/types";
 import { imageSource } from "../utils/imageUtils";
 import { useFavouriteIds, toggleFavourite } from "../context/FavoritesStore";
 import Skeleton from "../components/Skeleton";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
+
+interface FoodFilter {
+  id: string;
+  label: string;
+  image: any;
+}
+
+const foodFilters: FoodFilter[] = [
+  {
+    id: "1",
+    label: "All",
+    image: require("../assets/images/allFood.png"),
+  },
+  {
+    id: "2",
+    label: "Biryani",
+    image: require("../assets/images/briyani.png"),
+  },
+  {
+    id: "3",
+    label: "South Indian",
+    image: require("../assets/images/southIndian.png"),
+  },
+  {
+    id: "4",
+    label: "North Indian",
+    image: require("../assets/images/northIndian.png"),
+  },
+  {
+    id: "5",
+    label: "Pizza",
+    image: require("../assets/images/pizza.png"),
+  },
+];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,6 +63,21 @@ interface Props {
 const RestaurantListScreen = ({ restaurants, loading }: Props) => {
   const navigation = useNavigation<NavigationProp>();
   const { favouriteIds } = useFavouriteIds();
+  const [selectedFilter, setSelectedFilter] = useState("All");
+
+  const filteredRestaurants =
+    selectedFilter === "All"
+      ? restaurants
+      : restaurants?.filter((r) => {
+          const filterLower = selectedFilter.toLowerCase();
+          const matchesCategory = r.category.some(
+            (c) => c.toLowerCase() === filterLower,
+          );
+          const matchesMenuItem = r.menuItemNames?.some((name) =>
+            name.toLowerCase().includes(filterLower),
+          );
+          return matchesCategory || matchesMenuItem;
+        });
 
   const handleNavigate = (id: string) => {
     navigation.navigate("RestaurantDetail", { restaurantId: id });
@@ -40,7 +91,7 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
         {Array.from({ length: 6 }).map((_, i) => (
           <View key={i} style={styles.itemContainer}>
             <Skeleton width={72} height={72} borderRadius={36} />
-            <Skeleton width={50} height={14} style={{ marginTop: 8 }} />
+            <Skeleton width={50} height={14} style={{ marginTop: spacing.sm }} />
           </View>
         ))}
       </ScrollView>
@@ -55,7 +106,7 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
           <Skeleton width="100%" height={180} borderRadius={14} />
           <View style={styles.restaurantContent}>
             <Skeleton width="60%" height={20} />
-            <Skeleton width="90%" height={14} style={{ marginTop: 8 }} />
+            <Skeleton width="90%" height={14} style={{ marginTop: spacing.sm }} />
             <View style={styles.restaurantFooter}>
               <Skeleton width="30%" height={14} />
               <Skeleton width="25%" height={14} />
@@ -72,6 +123,34 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
     <View style={styles.container}>
       <Text style={styles.heading}>What's on your mind?</Text>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {foodFilters.map((filter) => (
+          <TouchableOpacity
+            key={filter.id}
+            style={styles.itemContainer}
+            onPress={() => setSelectedFilter(filter.label)}
+          >
+            <View
+              style={[
+                styles.imageContainer,
+                selectedFilter === filter.label && styles.activeImageContainer,
+              ]}
+            >
+              <Image source={filter.image} style={styles.categoryImage} />
+            </View>
+
+            <Text
+              style={[
+                styles.label,
+                selectedFilter === filter.label && styles.activeLabel,
+              ]}
+            >
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <View style={styles.restaurantHeader}>
         <Text style={styles.restaurantHeading}>
           Popular Near You
@@ -82,8 +161,8 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
         </TouchableOpacity>
       </View>
 
-      {restaurants && restaurants.length > 0 ? (
-        restaurants.map((item) => (
+      {filteredRestaurants && filteredRestaurants.length > 0 ? (
+        filteredRestaurants.map((item) => (
           <TouchableOpacity
             key={item.id}
             activeOpacity={0.85}
@@ -104,7 +183,7 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
                 <MaterialCommunityIcons
                   name={favouriteIds.has(item.id) ? "heart" : "heart-outline"}
                   size={22}
-                  color={favouriteIds.has(item.id) ? "#FF6B35" : "#FFF"}
+                  color={favouriteIds.has(item.id) ? colors.primary : colors.white}
                 />
               </TouchableOpacity>
 
@@ -129,7 +208,7 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
                   <MaterialCommunityIcons
                     name="map-marker"
                     size={16}
-                    color="#666"
+                    color={colors.textMuted}
                   />
                   <Text style={styles.footerText}>
                     {item.distance}
@@ -140,7 +219,7 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
                   <MaterialCommunityIcons
                     name="clock-time-four-outline"
                     size={16}
-                    color="#666"
+                    color={colors.textMuted}
                   />
                   <Text style={styles.footerText}>
                     {item.deliveryTime}
@@ -155,7 +234,7 @@ const RestaurantListScreen = ({ restaurants, loading }: Props) => {
           <MaterialCommunityIcons
             name="food-off"
             size={60}
-            color="#CCC"
+            color={colors.inactive}
           />
           <Text style={styles.emptyText}>
             No restaurants found
@@ -170,13 +249,13 @@ export default RestaurantListScreen;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
+    marginTop: spacing.lg,
   },
 
   heading: {
     fontSize: 22,
-    fontWeight: "700",
-    color: "#222",
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
     marginBottom: 18,
   },
 
@@ -184,42 +263,35 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: colors.inputBackground,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#EFEFEF",
+    borderColor: colors.outlineLight,
   },
 
   activeImageContainer: {
-    backgroundColor: "#FFF3EC",
-    borderColor: "#FF6B35",
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primary,
     borderWidth: 2,
-    shadowColor: "#FF6B35",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    elevation: 5,
+    ...shadows.medium,
   },
 
   itemContainer: {
     alignItems: "center",
-    marginRight: 16,
+    marginRight: spacing.md,
   },
 
   label: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     fontSize: 13,
-    color: "#666",
-    fontWeight: "500",
+    color: colors.textMuted,
+    fontWeight: typography.fontWeight.medium,
   },
 
   activeLabel: {
-    color: "#FF6B35",
-    fontWeight: "700",
+    color: colors.primary,
+    fontWeight: typography.fontWeight.bold,
   },
 
   categoryImage: {
@@ -237,20 +309,20 @@ const styles = StyleSheet.create({
 
   restaurantHeading: {
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: typography.fontWeight.bold,
   },
 
   seeAll: {
-    color: "#DE782A",
-    fontWeight: "700",
+    color: colors.primary,
+    fontWeight: typography.fontWeight.bold,
   },
 
   restaurantCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: colors.white,
     borderRadius: 14,
     marginBottom: 18,
     overflow: "hidden",
-    elevation: 3,
+    ...shadows.card,
   },
 
   imageWrapper: {
@@ -264,8 +336,8 @@ const styles = StyleSheet.create({
 
   favBtn: {
     position: "absolute",
-    top: 12,
-    left: 12,
+    top: spacing.sm + spacing.xs,
+    left: spacing.sm + spacing.xs,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -276,19 +348,19 @@ const styles = StyleSheet.create({
   },
   ratingBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "#FFF",
-    borderRadius: 20,
+    top: spacing.sm + spacing.xs,
+    right: spacing.sm + spacing.xs,
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    elevation: 4,
+    ...shadows.medium,
   },
 
   ratingText: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#222",
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
   },
 
   restaurantContent: {
@@ -296,19 +368,19 @@ const styles = StyleSheet.create({
   },
 
   restaurantName: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
   },
 
   restaurantDescription: {
-    color: "#666",
+    color: colors.textMuted,
     marginTop: 5,
   },
 
   restaurantFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 12,
+    marginTop: spacing.sm + spacing.xs,
   },
 
   footerItem: {
@@ -317,10 +389,10 @@ const styles = StyleSheet.create({
   },
 
   footerText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "600",
+    marginLeft: spacing.xs,
+    fontSize: typography.fontSize.md,
+    color: colors.textMuted,
+    fontWeight: typography.fontWeight.semibold,
   },
 
   emptyContainer: {
@@ -330,9 +402,9 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#888",
-    fontWeight: "600",
+    marginTop: spacing.sm + spacing.xs,
+    fontSize: typography.fontSize.lg,
+    color: colors.textLight,
+    fontWeight: typography.fontWeight.semibold,
   },
 });

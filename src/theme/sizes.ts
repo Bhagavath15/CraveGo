@@ -1,0 +1,17 @@
+export const sizes = {
+  inputHeight: 52,
+  inputHeightLg: 54,
+  buttonHeight: 52,
+  buttonHeightLg: 56,
+  icon: 20,
+  iconSm: 16,
+  iconLg: 24,
+  iconXl: 28,
+  iconXxl: 32,
+  avatar: 40,
+  avatarLg: 96,
+  headerHeight: 64,
+  headerHeightSm: 56,
+  tabBarHeight: 56,
+  heroHeight: 280,
+} as const;

@@ -1,6 +1,7 @@
 import { Component } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { colors, spacing, typography, radius } from "../theme";
 
 interface Props {
     children: React.ReactNode;
@@ -33,7 +34,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         if (this.state.hasError) {
             return (
                 <View style={styles.container}>
-                    <MaterialCommunityIcons name="alert-circle-outline" size={64} color="#ba1a1a" />
+                    <MaterialCommunityIcons name="alert-circle-outline" size={64} color={colors.error} />
                     <Text style={styles.title}>Something went wrong</Text>
                     <Text style={styles.subtitle}>An unexpected error occurred. Please try again.</Text>
                     <TouchableOpacity style={styles.button} onPress={this.handleRetry} accessibilityLabel="Retry" accessibilityRole="button">
@@ -51,32 +52,32 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#FCF9F8",
-        padding: 24,
+        backgroundColor: colors.background,
+        padding: spacing.lg,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#1c1b1f",
-        marginTop: 16,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        marginTop: spacing.md,
     },
     subtitle: {
-        fontSize: 14,
-        color: "#6b676e",
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
         textAlign: "center",
-        marginTop: 8,
-        lineHeight: 20,
+        marginTop: spacing.sm,
+        lineHeight: typography.lineHeight.md,
     },
     button: {
-        marginTop: 24,
-        backgroundColor: "#ba1a1a",
-        paddingHorizontal: 32,
+        marginTop: spacing.lg,
+        backgroundColor: colors.error,
+        paddingHorizontal: spacing.xl,
         paddingVertical: 14,
-        borderRadius: 100,
+        borderRadius: radius.full,
     },
     buttonText: {
-        color: "#fff",
+        color: colors.white,
         fontSize: 15,
-        fontWeight: "600",
+        fontWeight: typography.fontWeight.semibold,
     },
 });

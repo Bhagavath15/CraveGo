@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { colors, shadows } from "../../theme";
 
 interface RestaurantInfoCardProps {
     name: string;
@@ -12,8 +13,6 @@ interface RestaurantInfoCardProps {
     offerDescription?: string;
 }
 
-const PRIMARY = "#FF6B35";
-const SECONDARY = "#006D37";
 
 const RestaurantInfoCard = ({
     name,
@@ -39,7 +38,7 @@ const RestaurantInfoCard = ({
                     <MaterialCommunityIcons
                         name="star"
                         size={16}
-                        color="#FFF"
+                        color={colors.white}
                     />
                     <Text style={styles.ratingText}>{rating}</Text>
                 </View>
@@ -50,7 +49,7 @@ const RestaurantInfoCard = ({
                     <MaterialCommunityIcons
                         name="clock-outline"
                         size={18}
-                        color={PRIMARY}
+                        color={colors.primary}
                     />
                     <Text style={styles.infoItemText}>
                         {deliveryTime}
@@ -63,7 +62,7 @@ const RestaurantInfoCard = ({
                     <MaterialCommunityIcons
                         name="map-marker"
                         size={18}
-                        color={PRIMARY}
+                        color={colors.primary}
                     />
                     <Text style={styles.infoItemText}>{distance}</Text>
                 </View>
@@ -78,7 +77,7 @@ const RestaurantInfoCard = ({
                         <MaterialCommunityIcons
                             name="brightness-percent"
                             size={20}
-                            color="#FFF"
+                            color={colors.white}
                         />
                     </View>
 
@@ -94,7 +93,7 @@ const RestaurantInfoCard = ({
                     <MaterialCommunityIcons
                         name="chevron-right"
                         size={20}
-                        color="#594139"
+                        color={colors.textSecondary}
                     />
                 </TouchableOpacity>
             )}
@@ -106,14 +105,10 @@ const styles = StyleSheet.create({
     card: {
         marginTop: -48,
         marginHorizontal: 16,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         borderRadius: 24,
         padding: 16,
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
+        ...shadows.card,
     },
     header: {
         flexDirection: "row",
@@ -123,13 +118,13 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 28,
         fontWeight: "700",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
         lineHeight: 36,
     },
     cuisines: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#594139",
+        color: colors.textSecondary,
         marginTop: 4,
         letterSpacing: 0.1,
     },
@@ -143,7 +138,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     ratingText: {
-        color: SECONDARY,
+        color: colors.secondary,
         fontWeight: "700",
         fontSize: 14,
     },
@@ -170,7 +165,7 @@ const styles = StyleSheet.create({
     infoItemText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
     },
     offerCard: {
         flexDirection: "row",
@@ -187,7 +182,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
         marginRight: 12,
@@ -195,13 +190,13 @@ const styles = StyleSheet.create({
     offerTitle: {
         fontSize: 14,
         fontWeight: "600",
-        color: PRIMARY,
+        color: colors.primary,
         letterSpacing: 0.1,
     },
     offerSubtitle: {
         fontSize: 11,
         fontWeight: "500",
-        color: "#594139",
+        color: colors.textSecondary,
         marginTop: 2,
         letterSpacing: 0.5,
     },

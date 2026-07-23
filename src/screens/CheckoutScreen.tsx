@@ -27,29 +27,24 @@ import { useCart } from "../context/CartContext";
 import { placeOrder } from "../api/order";
 import { getAddresses, Address } from "../api/address";
 import Skeleton from "../components/Skeleton";
-import { useToast } from "../components/Toast";
+import Toast from "react-native-toast-message";
 import { createPaymentIntent } from "../api/payment";
 import { getAvailableCoupons } from "../api/coupon";
 import { getPendingCoupon } from "../utils/bannerCouponStore";
-
-const PRIMARY = "#FF6B35";
-const SECONDARY = "#006D37";
-const BG = "#FCF9F8";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER_HIGH = "#EAE7E7";
-const OUTLINE_VARIANT = "#E1BFB5";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
+import { colors, spacing, typography, radius, shadows } from "../theme";
 
 type RouteProps = RouteProp<RootStackParamList, "CartCheckout">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const SECTION_HEADER_ICON_SIZE = 20;
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const CheckoutScreen = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProps>();
 
     const { initPaymentSheet, presentPaymentSheet } = useStripe();
-    const { showToast } = useToast();
 
     const { restaurantId } = route.params;
     const cart = useCart();
@@ -83,8 +78,9 @@ const CheckoutScreen = () => {
 
     const deliveryFee = cart.deliveryFee ?? 0;
     const tax = cart.tax ?? 0;
-    const totalBeforeDiscount = (cart.totalAmount ?? 0) + deliveryFee + tax;
+    const totalBeforeDiscount = round2((cart.totalAmount ?? 0) + deliveryFee + tax);
     const grandTotal = cart.grandTotal ?? 0;
+    const savings = cart.discount > 0 ? cart.discount : 0;
 
     const pendingPaymentRef = useRef<{ paymentIntentId: string | undefined; clientSecret: string | undefined } | null>(null);
 
@@ -144,13 +140,13 @@ const CheckoutScreen = () => {
 
         const response = await createPaymentIntent();
         if (!response.success) {
-            showToast({ message: response.message || "Unable to start payment", type: "error" });
+            Toast.show({ text1: response.message || "Unable to start payment", type: "error" });
             return null;
         }
 
         const { clientSecret, paymentIntentId } = response;
         if (!clientSecret) {
-            showToast({ message: "Missing payment details from server.", type: "error" });
+            Toast.show({ text1: "Missing payment details from server.", type: "error" });
             return null;
         }
 
@@ -159,7 +155,7 @@ const CheckoutScreen = () => {
         const error = await presentSheet(clientSecret);
         if (error) {
             pendingPaymentRef.current = null;
-            showToast({ message: error.message || "Unable to process your payment.", type: "error" });
+            Toast.show({ text1: error.message || "Unable to process your payment.", type: "error" });
             return null;
         }
 
@@ -170,19 +166,19 @@ const CheckoutScreen = () => {
     const handlePlaceOrder = async () => {
         if (placing || placingRef.current) return;
         if (!selectedAddr) {
-            showToast({ message: "Please add a delivery address before placing the order.", type: "error" });
+            Toast.show({ text1: "Please add a delivery address before placing the order.", type: "error" });
             return;
         }
         if (!selectedAddr.fullName?.trim()) {
-            showToast({ message: "The selected address is missing a recipient name. Please update it.", type: "error" });
+            Toast.show({ text1: "The selected address is missing a recipient name. Please update it.", type: "error" });
             return;
         }
         if (!/^\d{6}$/.test(selectedAddr.pincode)) {
-            showToast({ message: "The selected address has an invalid pincode. Please update it.", type: "error" });
+            Toast.show({ text1: "The selected address has an invalid pincode. Please update it.", type: "error" });
             return;
         }
         if (!/^\d{10}$/.test(selectedAddr.mobileNumber?.replace(/\D/g, ''))) {
-            showToast({ message: "The selected address has an invalid mobile number. Please update it.", type: "error" });
+            Toast.show({ text1: "The selected address has an invalid mobile number. Please update it.", type: "error" });
             return;
         }
         placingRef.current = true;
@@ -235,11 +231,11 @@ const CheckoutScreen = () => {
                 });
             } else {
                 const errMsg = res.message || "Failed to place order";
-                showToast({ message: errMsg, type: "error" });
+                Toast.show({ text1: errMsg, type: "error" });
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
-            showToast({ message: msg, type: "error" });
+            Toast.show({ text1: msg, type: "error" });
         } finally {
             setPlacing(false);
             placingRef.current = false;
@@ -248,6 +244,10 @@ const CheckoutScreen = () => {
 
     const handleRemove = (itemId: string) => {
         cart.removeItem(itemId);
+    };
+
+    const handleDecrementFromCart = (itemId: string) => {
+        cart.decrementItem(itemId);
     };
 
     const handleClearCart = () => {
@@ -289,31 +289,21 @@ const CheckoutScreen = () => {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        accessibilityLabel="Go back"
-                        accessibilityRole="button"
-                    >
-                        <MaterialCommunityIcons
-                            name="arrow-left"
-                            size={24}
-                            color={PRIMARY}
-                        />
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <View style={styles.headerBackBtn}>
+                            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.textPrimary} />
+                        </View>
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Your Cart</Text>
-                    <View style={{ width: 24 }} />
+                    <View style={styles.headerBackBtn} />
                 </View>
                 <View style={styles.emptyContainer}>
-                    <MaterialCommunityIcons name="cart-off" size={72} color="#cac4d0" />
+                    <View style={styles.emptyIconWrap}>
+                        <MaterialCommunityIcons name="cart-off" size={56} color={colors.white} />
+                    </View>
                     <Text style={styles.emptyTitle}>Your cart is empty</Text>
                     <Text style={styles.emptySubtitle}>Looks like you haven't added anything yet.</Text>
-                    <TouchableOpacity
-                        style={styles.emptyButton}
-                        onPress={() => navigation.goBack()}
-                        accessibilityLabel="Browse restaurants"
-                        accessibilityRole="button"
-                    >
+                    <TouchableOpacity style={styles.emptyButton} onPress={() => navigation.goBack()}>
                         <Text style={styles.emptyButtonText}>Browse Restaurants</Text>
                     </TouchableOpacity>
                 </View>
@@ -322,373 +312,356 @@ const CheckoutScreen = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             <View style={styles.header}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityLabel="Go back"
-                    accessibilityRole="button"
-                >
-                    <MaterialCommunityIcons
-                        name="arrow-left"
-                        size={24}
-                        color={PRIMARY}
-                    />
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <View style={styles.headerBackBtn}>
+                        <MaterialCommunityIcons name="arrow-left" size={22} color={colors.textPrimary} />
+                    </View>
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Your Cart</Text>
-                <TouchableOpacity
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                    <MaterialCommunityIcons
-                        name="bell-outline"
-                        size={24}
-                        color={PRIMARY}
-                    />
+                <View style={styles.headerCenter}>
+                    <Text style={styles.headerTitle}>Your Cart</Text>
+                    <Text style={styles.headerSubtitle}>{cart.itemCount} Item{cart.itemCount !== 1 ? "s" : ""}</Text>
+                </View>
+                <TouchableOpacity onPress={handleClearCart}>
+                    <View style={styles.headerBackBtn}>
+                        <MaterialCommunityIcons name="delete-outline" size={22} color={colors.textSecondary} />
+                    </View>
                 </TouchableOpacity>
             </View>
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadAddresses(); setRefreshing(false); }} tintColor={PRIMARY} />}
-            >
-                <View style={styles.section}>
-                    <View style={styles.sectionHeaderRow}>
-                        <Text style={styles.sectionTitle}>Order Summary</Text>
-                        <Text style={styles.itemCountLabel}>
-                            {cart.itemCount} Item
-                            {cart.itemCount !== 1 ? "s" : ""}
-                        </Text>
-                    </View>
-
-                    {cart.cartItems.map((item) => (
-                        <View
-                            key={item.id}
-                            style={styles.cartItemCard}
-                        >
-                            <Image
-                                source={typeof item.image === "string" ? { uri: item.image } : item.image}
-                                style={styles.cartItemImage}
-                            />
-                            <View style={styles.cartItemContent}>
-                                <View style={styles.cartItemHeader}>
-                                    <Text
-                                        style={styles.cartItemName}
-                                        numberOfLines={1}
-                                    >
-                                        {item.name}
-                                    </Text>
-                                    <Text style={styles.cartItemPrice}>
-                                        ₹{item.price * item.quantity}
-                                    </Text>
-                                </View>
-                                <Text style={styles.cartItemQuantity}>
-                                    Quantity: {item.quantity}
-                                </Text>
-                                <View style={styles.cartItemActions}>
-                                    <TouchableOpacity
-                                        style={styles.editButton}
-                                        onPress={() => {
-                                            navigation.navigate(
-                                                "RestaurantDetail",
-                                                { restaurantId: cart.restaurantId || restaurantId, editItemId: item.id }
-                                            );
-                                        }}
-                                    >
-                                        <Text style={styles.editText}>
-                                            Edit
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => handleRemove(item.id)}
-                                    >
-                                        <Text style={styles.removeText}>
-                                            Remove
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadAddresses(); setRefreshing(false); }} tintColor={colors.primary} />}
+                >
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeaderRow}>
+                            <View style={styles.sectionHeaderLeft}>
+                                <MaterialCommunityIcons name="shopping-outline" size={SECTION_HEADER_ICON_SIZE} color={colors.textPrimary} />
+                                <Text style={styles.sectionTitle}>Order Summary</Text>
                             </View>
                         </View>
-                    ))}
-                </View>
 
-                <View style={styles.addressSection}>
-                    <View style={styles.addressSectionHeader}>
-                        <View style={styles.addressTitleRow}>
-                            <MaterialCommunityIcons
-                                name="map-marker"
-                                size={20}
-                                color={PRIMARY}
-                            />
-                            <Text style={styles.sectionTitle}>
-                                Delivery Address
-                            </Text>
-                        </View>
-                        <TouchableOpacity
-                            onPress={() => navigation.navigate("AddressBook")}
-                        >
-                            <Text style={styles.changeText}>Change</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.addressCard}>
-                        {addressesLoading ? (
-                            <View style={{ gap: 8 }}>
-                                <Skeleton width="30%" height={14} borderRadius={6} />
-                                <Skeleton width="100%" height={14} borderRadius={6} />
-                                <Skeleton width="60%" height={14} borderRadius={6} />
-                            </View>
-                        ) : !selectedAddr ? (
-                            <Text style={styles.addressText}>No address available</Text>
-                        ) : (
-                            <>
-                                <Text style={styles.addressLabel}>{selectedAddr.addressType}</Text>
-                                <Text style={styles.addressText}>
-                                    {selectedAddr.houseNumber}{selectedAddr.apartment ? `, ${selectedAddr.apartment}` : ""}, {selectedAddr.area}, {selectedAddr.city} — {selectedAddr.pincode}
-                                </Text>
-                            </>
-                        )}
-                    </View>
-                </View>
+                        {cart.cartItems.map((item) => {
+                            const itemTotal = item.totalPrice || item.price * item.quantity;
+                            const unitPrice = item.price;
+                            return (
+                                <View key={item.id} style={styles.cartItemCard}>
+                                    <Image
+                                        source={typeof item.image === "string" ? { uri: item.image } : item.image}
+                                        style={styles.cartItemImage}
+                                    />
+                                    <View style={styles.cartItemBody}>
+                                        <View style={styles.cartItemTop}>
+                                            <View style={styles.cartItemNameRow}>
+                                                {item.isVeg && <View style={styles.vegDot} />}
+                                                <Text style={styles.cartItemName}>{item.name}</Text>
+                                            </View>
+                                            <Text style={styles.cartItemTotalPrice}>₹{itemTotal}</Text>
+                                        </View>
 
-                <View style={styles.billSection}>
-                    <Text style={styles.billSectionTitle}>Bill Summary</Text>
-                    <View style={styles.billRow}>
-                        <Text style={styles.billLabel}>Item Total</Text>
-                        <Text style={styles.billValue}>
-                            ₹{cart.totalAmount}
-                        </Text>
-                    </View>
-                    <View style={styles.billRow}>
-                        <Text style={styles.billLabel}>Delivery Fee</Text>
-                        <Text style={[styles.billValue, deliveryFee === 0 && styles.freeText]}>
-                            {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
-                        </Text>
-                    </View>
-                    <View style={styles.billRow}>
-                        <Text style={styles.billLabel}>
-                            Tax
-                        </Text>
-                        <Text style={styles.billValue}>
-                            ₹{tax}
-                        </Text>
-                    </View>
-                    <View style={styles.billDivider} />
-                    {cart.couponCode ? (
-                    <View style={styles.billRow}>
-                        <Text style={[styles.billLabel, { fontWeight: "600" }]}>Total</Text>
-                        <Text style={[styles.billValue, { fontWeight: "700" }]}>₹{totalBeforeDiscount}</Text>
-                    </View>
-                    ) : null}
-                    {cart.discount > 0 && (
-                        <View style={[styles.billRow, { paddingBottom: 8 }]}>
-                            <Text style={styles.billLabel}>
-                                Discount {cart.couponCode ? `(${cart.couponCode})` : ""}
-                            </Text>
-                            <Text style={[styles.billValue, { color: SECONDARY }]}>
-                                -₹{cart.discount}
-                            </Text>
-                        </View>
-                    )}
-                    <View style={styles.billGrandRow}>
-                        <Text style={styles.grandTotalLabel}>
-                            Grand Total
-                        </Text>
-                        <Text style={styles.grandTotalValue}>
-                            ₹{grandTotal}
-                        </Text>
-                    </View>
-                </View>
+                                        {item.customization && item.customization.length > 0 && (
+                                            <Text style={styles.cartItemCustom} numberOfLines={2}>
+                                                {item.customization.map(c => c.name).join(", ")}
+                                            </Text>
+                                        )}
 
-                <View style={styles.couponSection}>
-                    <View style={styles.couponSectionHeader}>
-                        <MaterialCommunityIcons name="brightness-percent" size={20} color={ON_SURFACE} />
-                        <Text style={styles.couponSectionTitle}>Coupon</Text>
-                    </View>
+                                        <View style={styles.cartItemUnitRow}>
+                                            <Text style={styles.cartItemUnitPrice}>₹{unitPrice} each</Text>
+                                        </View>
 
-                    {cart.couponCode ? (
-                        <View style={styles.appliedCouponCard}>
-                            <View style={styles.appliedCouponInfo}>
-                                <MaterialCommunityIcons name="check-circle" size={20} color={SECONDARY} />
-                                <View style={styles.appliedCouponText}>
-                                    <Text style={styles.appliedCouponCode}>{cart.couponCode}</Text>
-                                    {cart.couponTitle ? (
-                                        <Text style={styles.appliedCouponTitle}>{cart.couponTitle}</Text>
-                                    ) : null}
+                                        <View style={styles.cartItemActionsRow}>
+                                            <View style={styles.qtyStepper}>
+                                                <TouchableOpacity
+                                                    style={styles.qtyBtn}
+                                                    onPress={() => handleDecrementFromCart(item.id)}
+                                                >
+                                                    <MaterialCommunityIcons name="minus" size={14} color={colors.primary} />
+                                                </TouchableOpacity>
+                                                <Text style={styles.qtyValue}>{item.quantity}</Text>
+                                                <TouchableOpacity
+                                                    style={styles.qtyBtn}
+                                                    onPress={() => cart.addToCart(
+                                                        { id: item.id, name: item.name, price: item.price, image: item.image, isVeg: item.isVeg, description: "", isBestseller: false, customizable: false, customizations: [] },
+                                                        cart.restaurantId || restaurantId,
+                                                        ""
+                                                    )}
+                                                >
+                                                    <MaterialCommunityIcons name="plus" size={14} color={colors.primary} />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.removeBtn}
+                                                onPress={() => handleRemove(item.id)}
+                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                            >
+                                                <MaterialCommunityIcons name="delete-outline" size={18} color={colors.textMuted} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
                                 </View>
+                            );
+                        })}
+                    </View>
+
+                    <View style={styles.addressSection}>
+                        <View style={styles.addressSectionHeader}>
+                            <View style={styles.addressTitleRow}>
+                                <MaterialCommunityIcons name="map-marker-outline" size={SECTION_HEADER_ICON_SIZE} color={colors.textPrimary} />
+                                <Text style={styles.sectionTitle}>Delivery Address</Text>
                             </View>
-                            <TouchableOpacity onPress={handleRemoveCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                                <MaterialCommunityIcons name="close-circle" size={22} color={ON_SURFACE_VARIANT} />
+                            <TouchableOpacity onPress={() => navigation.navigate("AddressBook")}>
+                                <View style={styles.changeBtn}>
+                                    <Text style={styles.changeText}>Change</Text>
+                                    <MaterialCommunityIcons name="chevron-right" size={16} color={colors.primary} />
+                                </View>
                             </TouchableOpacity>
                         </View>
-                    ) : (
-                        <>
-                            <View style={styles.couponInputRow}>
-                                <TextInput
-                                    style={styles.couponInput}
-                                    placeholder="Enter coupon code"
-                                    placeholderTextColor={ON_SURFACE_VARIANT}
-                                    value={couponInput}
-                                    onChangeText={(t) => { setCouponInput(t.toUpperCase()); setCouponError(""); }}
-                                    autoCapitalize="characters"
-                                />
-                                <TouchableOpacity
-                                    style={[styles.applyBtn, applyingCoupon && { opacity: 0.6 }]}
-                                    onPress={() => handleApplyCoupon()}
-                                    disabled={applyingCoupon}
-                                >
-                                    <Text style={styles.applyBtnText}>{applyingCoupon ? "..." : "Apply"}</Text>
-                                </TouchableOpacity>
-                            </View>
-                            {couponError ? <Text style={styles.couponErrorText}>{couponError}</Text> : null}
-
-                            {availableCoupons.length > 0 && (
+                        <View style={styles.addressCard}>
+                            {addressesLoading ? (
+                                <View style={{ gap: 8 }}>
+                                    <Skeleton width="30%" height={12} borderRadius={6} />
+                                    <Skeleton width="100%" height={12} borderRadius={6} />
+                                    <Skeleton width="60%" height={12} borderRadius={6} />
+                                </View>
+                            ) : !selectedAddr ? (
+                                <View style={styles.noAddressWrap}>
+                                    <MaterialCommunityIcons name="map-marker-off-outline" size={32} color={colors.outlineVariant} />
+                                    <Text style={styles.noAddressText}>No address available</Text>
+                                </View>
+                            ) : (
                                 <>
-                                    <TouchableOpacity
-                                        style={styles.availableCouponsToggle}
-                                        onPress={() => setShowCoupons(!showCoupons)}
-                                    >
-                                        <Text style={styles.availableCouponsLabel}>
-                                            {availableCoupons.length} coupon{availableCoupons.length > 1 ? "s" : ""} available
-                                        </Text>
+                                    <View style={styles.addressTypeRow}>
                                         <MaterialCommunityIcons
-                                            name={showCoupons ? "chevron-up" : "chevron-down"}
-                                            size={18}
-                                            color={PRIMARY}
+                                            name={selectedAddr.addressType === "Home" ? "home-outline" : selectedAddr.addressType === "Work" ? "briefcase-outline" : "map-marker-outline"}
+                                            size={14}
+                                            color={colors.primary}
                                         />
-                                    </TouchableOpacity>
-                                    {showCoupons && (
-                                        <View style={styles.availableCouponsList}>
-                                            {availableCoupons.map((c: any) => (
-                                                <TouchableOpacity
-                                                    key={c._id}
-                                                    style={styles.availableCouponItem}
-                                                    onPress={() => handleApplyCoupon(c.code)}
-                                                >
-                                                    <View style={styles.availableCouponHeader}>
-                                                        <MaterialCommunityIcons name="brightness-percent" size={16} color={PRIMARY} />
-                                                        <Text style={styles.availableCouponCode}>{c.code}</Text>
-                                                    </View>
-                                                    <Text style={styles.availableCouponTitle}>
-                                                        {c.title || c.description || `${c.discountType === "FLAT" ? "₹" : ""}${c.discountValue}${c.discountType === "PERCENTAGE" ? "%" : ""} off`}
-                                                    </Text>
-                                                    {c.minimumOrderAmount > 0 && (
-                                                        <Text style={styles.availableCouponMin}>Min. order ₹{c.minimumOrderAmount}</Text>
-                                                    )}
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
+                                        <Text style={styles.addressLabel}>{selectedAddr.addressType || "Other"}</Text>
+                                    </View>
+                                    <Text style={styles.addressName}>{selectedAddr.fullName}</Text>
+                                    <Text style={styles.addressText}>
+                                        {selectedAddr.houseNumber}{selectedAddr.apartment ? `, ${selectedAddr.apartment}` : ""}, {selectedAddr.area}, {selectedAddr.city} — {selectedAddr.pincode}
+                                    </Text>
+                                    {selectedAddr.mobileNumber && (
+                                        <Text style={styles.addressPhone}>{selectedAddr.mobileNumber}</Text>
                                     )}
                                 </>
                             )}
-                        </>
-                    )}
-                </View>
-
-                <View style={styles.paymentSection}>
-                    <View style={styles.paymentTitleRow}>
-                        <MaterialCommunityIcons
-                            name="wallet-outline"
-                            size={20}
-                            color={ON_SURFACE}
-                        />
-                        <Text style={styles.paymentSectionTitle}>
-                            Payment Method
-                        </Text>
+                        </View>
                     </View>
-                    <TouchableOpacity
-                        style={[
-                            styles.paymentOption,
-                            selectedPayment === "ONLINE" && styles.paymentOptionSelected,
-                        ]}
-                        onPress={() => setSelectedPayment("ONLINE")}
-                    >
-                        <View style={styles.radioOuter}>
-                            {selectedPayment === "ONLINE" && (
-                                <View style={styles.radioInner} />
+
+                    <View style={styles.billSection}>
+                        <View style={styles.billHeaderRow}>
+                            <MaterialCommunityIcons name="file-document-outline" size={SECTION_HEADER_ICON_SIZE} color={colors.textPrimary} />
+                            <Text style={styles.billSectionTitle}>Bill Summary</Text>
+                        </View>
+                        <View style={styles.billRows}>
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Item Total</Text>
+                                <Text style={styles.billValue}>₹{cart.totalAmount}</Text>
+                            </View>
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Delivery Fee</Text>
+                                <Text style={[styles.billValue, deliveryFee === 0 && styles.freeText]}>
+                                    {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
+                                </Text>
+                            </View>
+                            <View style={styles.billRow}>
+                                <Text style={styles.billLabel}>Tax & Charges</Text>
+                                <Text style={styles.billValue}>₹{tax}</Text>
+                            </View>
+                            {savings > 0 && (
+                                <View style={styles.billRow}>
+                                    <Text style={styles.billLabel}>
+                                        Discount {cart.couponCode ? `(${cart.couponCode})` : ""}
+                                    </Text>
+                                    <Text style={[styles.billValue, styles.savingsText]}>-₹{savings}</Text>
+                                </View>
                             )}
+                            <View style={styles.billDivider} />
+                            <View style={styles.billGrandRow}>
+                                <Text style={styles.grandTotalLabel}>Grand Total</Text>
+                                <View style={styles.grandTotalRight}>
+                                    {savings > 0 && (
+                                        <Text style={styles.grandTotalOld}>₹{totalBeforeDiscount}</Text>
+                                    )}
+                                    <Text style={styles.grandTotalValue}>₹{grandTotal}</Text>
+                                </View>
+                            </View>
                         </View>
-                        <MaterialCommunityIcons
-                            name="credit-card-outline"
-                            size={22}
-                            color={ON_SURFACE}
-                        />
-                        <View style={styles.paymentOptionText}>
-                            <Text style={styles.paymentOptionLabel}>
-                                Online Payment
-                            </Text>
-                            <Text style={styles.paymentOptionHint}>
-                                Razorpay
-                            </Text>
+                        {savings > 0 && (
+                            <View style={styles.savingsBanner}>
+                                <MaterialCommunityIcons name="tag-check" size={14} color={colors.secondary} />
+                                <Text style={styles.savingsBannerText}>You saved ₹{savings} on this order!</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.couponSection}>
+                        <View style={styles.couponSectionHeader}>
+                            <MaterialCommunityIcons name="brightness-percent" size={SECTION_HEADER_ICON_SIZE} color={colors.textPrimary} />
+                            <Text style={styles.sectionTitle}>Coupon</Text>
                         </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[
-                            styles.paymentOption,
-                            selectedPayment === "COD" && styles.paymentOptionSelected,
-                        ]}
-                        onPress={() => setSelectedPayment("COD")}
-                    >
-                        <View style={styles.radioOuter}>
-                            {selectedPayment === "COD" && (
-                                <View style={styles.radioInner} />
-                            )}
+
+                        {cart.couponCode ? (
+                            <View style={styles.appliedCouponCard}>
+                                <View style={styles.appliedCouponLeft}>
+                                    <View style={styles.appliedCouponIconWrap}>
+                                        <MaterialCommunityIcons name="check" size={16} color={colors.white} />
+                                    </View>
+                                    <View style={styles.appliedCouponText}>
+                                        <Text style={styles.appliedCouponCode}>{cart.couponCode}</Text>
+                                        {cart.couponTitle && (
+                                            <Text style={styles.appliedCouponTitle}>{cart.couponTitle}</Text>
+                                        )}
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={handleRemoveCoupon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                    <MaterialCommunityIcons name="close-circle" size={22} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={styles.couponInputRow}>
+                                    <View style={styles.couponInputWrap}>
+                                        <MaterialCommunityIcons name="brightness-percent" size={16} color={colors.textMuted} />
+                                        <TextInput
+                                            style={styles.couponInput}
+                                            placeholder="Enter coupon code"
+                                            placeholderTextColor={colors.textMuted}
+                                            value={couponInput}
+                                            onChangeText={(t) => { setCouponInput(t.toUpperCase()); setCouponError(""); }}
+                                            autoCapitalize="characters"
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        style={[styles.applyBtn, applyingCoupon && { opacity: 0.6 }]}
+                                        onPress={() => handleApplyCoupon()}
+                                        disabled={applyingCoupon}
+                                    >
+                                        <Text style={styles.applyBtnText}>{applyingCoupon ? "..." : "Apply"}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                {couponError ? (
+                                    <View style={styles.couponErrorRow}>
+                                        <MaterialCommunityIcons name="alert-circle-outline" size={14} color={colors.error} />
+                                        <Text style={styles.couponErrorText}>{couponError}</Text>
+                                    </View>
+                                ) : null}
+
+                                {availableCoupons.length > 0 && (
+                                    <>
+                                        <TouchableOpacity
+                                            style={styles.availableCouponsToggle}
+                                            onPress={() => setShowCoupons(!showCoupons)}
+                                        >
+                                            <View style={styles.availableCouponsToggleLeft}>
+                                                <MaterialCommunityIcons name="tag-outline" size={16} color={colors.primary} />
+                                                <Text style={styles.availableCouponsLabel}>
+                                                    {availableCoupons.length} coupon{availableCoupons.length > 1 ? "s" : ""} available
+                                                </Text>
+                                            </View>
+                                            <MaterialCommunityIcons
+                                                name={showCoupons ? "chevron-up" : "chevron-down"}
+                                                size={18}
+                                                color={colors.textSecondary}
+                                            />
+                                        </TouchableOpacity>
+                                        {showCoupons && (
+                                            <View style={styles.availableCouponsList}>
+                                                {availableCoupons.map((c: any) => (
+                                                    <TouchableOpacity
+                                                        key={c._id}
+                                                        style={styles.availableCouponItem}
+                                                        onPress={() => handleApplyCoupon(c.code)}
+                                                    >
+                                                        <View style={styles.availableCouponHeader}>
+                                                            <View style={styles.couponBadge}>
+                                                                <MaterialCommunityIcons name="brightness-percent" size={14} color={colors.primary} />
+                                                            </View>
+                                                            <Text style={styles.availableCouponCode}>{c.code}</Text>
+                                                        </View>
+                                                        <Text style={styles.availableCouponTitle}>
+                                                            {c.title || c.description || `${c.discountType === "FLAT" ? "₹" : ""}${c.discountValue}${c.discountType === "PERCENTAGE" ? "%" : ""} off`}
+                                                        </Text>
+                                                        {c.minimumOrderAmount > 0 && (
+                                                            <Text style={styles.availableCouponMin}>Min. order ₹{c.minimumOrderAmount}</Text>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </View>
+
+                    <View style={styles.paymentSection}>
+                        <View style={styles.paymentTitleRow}>
+                            <MaterialCommunityIcons name="wallet-outline" size={SECTION_HEADER_ICON_SIZE} color={colors.textPrimary} />
+                            <Text style={styles.sectionTitle}>Payment Method</Text>
                         </View>
-                        <MaterialCommunityIcons
-                            name="cash"
-                            size={22}
-                            color={ON_SURFACE}
-                        />
-                        <View style={styles.paymentOptionText}>
-                            <Text style={styles.paymentOptionLabel}>
-                                Cash on Delivery
-                            </Text>
-                            <Text style={styles.paymentOptionHint}>
-                                Pay when your food arrives
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+                        <TouchableOpacity
+                            style={[styles.paymentOption, selectedPayment === "ONLINE" && styles.paymentOptionSelected]}
+                            onPress={() => setSelectedPayment("ONLINE")}
+                        >
+                            <View style={styles.radioOuter}>
+                                {selectedPayment === "ONLINE" && <View style={styles.radioInner} />}
+                            </View>
+                            <View style={styles.paymentIconWrap}>
+                                <MaterialCommunityIcons name="credit-card-outline" size={20} color={selectedPayment === "ONLINE" ? colors.primary : colors.textSecondary} />
+                            </View>
+                            <View style={styles.paymentInfo}>
+                                <Text style={[styles.paymentOptionLabel, selectedPayment === "ONLINE" && { color: colors.textPrimary }]}>Online Payment</Text>
+                                <Text style={styles.paymentOptionHint}>Pay via Razorpay</Text>
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.paymentOption, selectedPayment === "COD" && styles.paymentOptionSelected]}
+                            onPress={() => setSelectedPayment("COD")}
+                        >
+                            <View style={styles.radioOuter}>
+                                {selectedPayment === "COD" && <View style={styles.radioInner} />}
+                            </View>
+                            <View style={styles.paymentIconWrap}>
+                                <MaterialCommunityIcons name="cash" size={20} color={selectedPayment === "COD" ? colors.primary : colors.textSecondary} />
+                            </View>
+                            <View style={styles.paymentInfo}>
+                                <Text style={[styles.paymentOptionLabel, selectedPayment === "COD" && { color: colors.textPrimary }]}>Cash on Delivery</Text>
+                                <Text style={styles.paymentOptionHint}>Pay when your food arrives</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
             </KeyboardAvoidingView>
 
             <View style={styles.footer}>
-                <View style={styles.footerRow}>
-                    <TouchableOpacity
-                        style={[styles.placeOrderButton, placing && { opacity: 0.7 }]}
-                        onPress={handlePlaceOrder}
-                        disabled={placing}
-                        activeOpacity={0.9}
-                    >
-                        <Text style={styles.placeOrderText}>
-                            {placing ? "Placing Order..." : "Place Order"}
-                        </Text>
-                        {!placing && (
-                            <MaterialCommunityIcons
-                                name="chevron-right"
-                                size={24}
-                                color="#FFF"
-                            />
-                        )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.clearCartBtn}
-                        onPress={handleClearCart}
-                        disabled={placing}
-                    >
-                        <MaterialCommunityIcons
-                            name="delete-outline"
-                            size={22}
-                            color={ON_SURFACE_VARIANT}
-                        />
-                    </TouchableOpacity>
+                <View style={styles.footerTotals}>
+                    <Text style={styles.footerTotalLabel}>Total Payable</Text>
+                    <Text style={styles.footerTotalValue}>₹{grandTotal}</Text>
                 </View>
-                <Text style={styles.totalPayable}>
-                    Total Payable • ₹{grandTotal}
-                </Text>
+                <TouchableOpacity
+                    style={[styles.placeOrderButton, placing && { opacity: 0.7 }]}
+                    onPress={handlePlaceOrder}
+                    disabled={placing}
+                    activeOpacity={0.9}
+                >
+                    <Text style={styles.placeOrderText}>
+                        {placing ? "Placing Order..." : "Place Order"}
+                    </Text>
+                    {!placing && (
+                        <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
+                    )}
+                    {placing && (
+                        <MaterialCommunityIcons name="loading" size={20} color={colors.white} />
+                    )}
+                </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
@@ -699,132 +672,175 @@ export default CheckoutScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: `${OUTLINE_VARIANT}33`,
-        backgroundColor: `${BG}E6`,
+        backgroundColor: colors.background + "E6",
+    },
+    headerBackBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.full,
+        backgroundColor: colors.surfaceContainer,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    headerCenter: {
+        alignItems: "center",
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.xl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+    },
+    headerSubtitle: {
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textSecondary,
+        marginTop: 1,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: 24,
+        paddingBottom: spacing.lg,
     },
 
     section: {
-        paddingHorizontal: 16,
-        paddingTop: 20,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.lg,
     },
     sectionHeaderRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: spacing.md,
+    },
+    sectionHeaderLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
     },
     sectionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
-    },
-    itemCountLabel: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: PRIMARY,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
     },
 
     cartItemCard: {
         flexDirection: "row",
-        alignItems: "center",
-        gap: 16,
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
+        gap: 14,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: 14,
+        marginBottom: 10,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}4D`,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
+        borderColor: colors.outlineVariant + "4D",
+        ...shadows.card,
     },
     cartItemImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-        backgroundColor: SURFACE_CONTAINER_HIGH,
+        width: 84,
+        height: 84,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceContainerHigh,
     },
-    cartItemContent: {
+    cartItemBody: {
         flex: 1,
     },
-    cartItemHeader: {
+    cartItemTop: {
         flexDirection: "row",
-        justifyContent: "space-between",
         alignItems: "flex-start",
+        justifyContent: "space-between",
+    },
+    cartItemNameRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: 6,
+        flex: 1,
+        marginRight: spacing.sm,
+    },
+    vegDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 2,
+        backgroundColor: colors.veg,
+        marginTop: 4,
     },
     cartItemName: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        flex: 1,
-        marginRight: 8,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        flexShrink: 1,
     },
-    cartItemPrice: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY,
+    cartItemCustom: {
+        fontSize: typography.fontSize.sm,
+        color: colors.textMuted,
+        marginTop: 4,
+        lineHeight: typography.lineHeight.md,
     },
-    cartItemQuantity: {
-        fontSize: 13,
-        color: ON_SURFACE_VARIANT,
-        marginTop: 2,
+    cartItemUnitRow: {
+        marginTop: 6,
     },
-    cartItemActions: {
+    cartItemUnitPrice: {
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+    },
+    cartItemActionsRow: {
         flexDirection: "row",
-        gap: 8,
+        alignItems: "center",
+        justifyContent: "space-between",
         marginTop: 8,
     },
-    editButton: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
+    qtyStepper: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: colors.surfaceContainer,
+        borderRadius: radius.sm,
         borderWidth: 1,
-        borderColor: `${PRIMARY}33`,
-        backgroundColor: `${PRIMARY}0D`,
+        borderColor: colors.outlineVariant + "80",
     },
-    editText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: PRIMARY,
+    qtyBtn: {
+        width: 30,
+        height: 30,
+        justifyContent: "center",
+        alignItems: "center",
     },
-    removeText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        paddingVertical: 8,
-        paddingHorizontal: 8,
+    qtyValue: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        minWidth: 24,
+        textAlign: "center",
+    },
+    removeBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.full,
+        backgroundColor: colors.surfaceContainer,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    cartItemTotalPrice: {
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        flexShrink: 0,
     },
 
     addressSection: {
-        marginHorizontal: 16,
-        marginTop: 8,
-        borderRadius: 12,
-        padding: 16,
-        backgroundColor: `${SURFACE_CONTAINER_HIGH}66`,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        borderRadius: radius.md,
+        padding: spacing.md,
+        backgroundColor: colors.surface,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}33`,
+        borderColor: colors.outlineVariant + "4D",
+        ...shadows.card,
     },
     addressSectionHeader: {
         flexDirection: "row",
@@ -835,280 +851,382 @@ const styles = StyleSheet.create({
     addressTitleRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: spacing.sm,
+    },
+    changeBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 2,
     },
     changeText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: PRIMARY,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
     },
     addressCard: {
-        backgroundColor: SURFACE_LOWEST,
-        padding: 16,
-        borderRadius: 8,
+        backgroundColor: colors.background,
+        padding: spacing.md,
+        borderRadius: radius.sm,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}1A`,
+        borderColor: colors.outlineVariant + "33",
+    },
+    addressTypeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: spacing.xs,
     },
     addressLabel: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
+        textTransform: "capitalize",
+    },
+    addressName: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        marginBottom: 2,
     },
     addressText: {
-        fontSize: 13,
-        color: ON_SURFACE_VARIANT,
-        marginTop: 4,
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+    },
+    addressPhone: {
+        fontSize: typography.fontSize.sm,
+        color: colors.textMuted,
+        marginTop: spacing.xs,
+    },
+    noAddressWrap: {
+        alignItems: "center",
+        paddingVertical: spacing.md,
+        gap: spacing.sm,
+    },
+    noAddressText: {
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
     },
 
     billSection: {
-        marginHorizontal: 16,
-        marginTop: 16,
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.md,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}4D`,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
+        borderColor: colors.outlineVariant + "4D",
+        ...shadows.card,
     },
-    billSectionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
+    billHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
         paddingBottom: 12,
         borderBottomWidth: 1,
-        borderBottomColor: `${OUTLINE_VARIANT}33`,
+        borderBottomColor: colors.outlineVariant + "33",
         marginBottom: 12,
+    },
+    billSectionTitle: {
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+    },
+    billRows: {
+        gap: 10,
     },
     billRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingVertical: 4,
     },
     billLabel: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
     },
     billValue: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
     },
     freeText: {
-        color: SECONDARY,
-        fontWeight: "700",
+        color: colors.secondary,
+        fontWeight: typography.fontWeight.bold,
+    },
+    savingsText: {
+        color: colors.secondary,
     },
     billDivider: {
         borderTopWidth: 1,
-        borderTopColor: OUTLINE_VARIANT,
+        borderTopColor: colors.outlineVariant,
         borderStyle: "dashed",
-        marginVertical: 12,
+        marginVertical: 8,
     },
     billGrandRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        paddingTop: 4,
     },
     grandTotalLabel: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+    },
+    grandTotalRight: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+    },
+    grandTotalOld: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textMuted,
+        textDecorationLine: "line-through",
     },
     grandTotalValue: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: PRIMARY,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
+    },
+    savingsBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: spacing.xs,
+        marginTop: 12,
+        paddingVertical: 10,
+        backgroundColor: colors.secondary + "0D",
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: colors.secondary + "26",
+    },
+    savingsBannerText: {
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.secondary,
     },
 
     couponSection: {
-        marginHorizontal: 16,
-        marginTop: 16,
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.md,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}4D`,
+        borderColor: colors.outlineVariant + "4D",
+        ...shadows.card,
     },
     couponSectionHeader: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: spacing.sm,
         marginBottom: 12,
-    },
-    couponSectionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
     },
     couponInputRow: {
         flexDirection: "row",
-        gap: 8,
+        gap: spacing.sm,
+    },
+    couponInputWrap: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        height: 46,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
+        borderRadius: radius.sm,
+        paddingHorizontal: 12,
+        backgroundColor: colors.surface,
     },
     couponInput: {
         flex: 1,
-        height: 44,
-        borderWidth: 1,
-        borderColor: OUTLINE_VARIANT,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        backgroundColor: SURFACE_LOWEST,
-        letterSpacing: 1,
+        height: "100%",
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        letterSpacing: typography.letterSpacing.xl,
+        padding: 0,
     },
     applyBtn: {
-        height: 44,
-        paddingHorizontal: 20,
-        backgroundColor: PRIMARY,
-        borderRadius: 8,
+        height: 46,
+        paddingHorizontal: spacing.lg,
+        backgroundColor: colors.primary,
+        borderRadius: radius.sm,
         justifyContent: "center",
         alignItems: "center",
     },
     applyBtnText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#FFF",
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.white,
+    },
+    couponErrorRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
+        marginTop: spacing.sm,
     },
     couponErrorText: {
-        fontSize: 12,
-        color: "#D32F2F",
-        marginTop: 6,
+        fontSize: typography.fontSize.sm,
+        color: colors.error,
     },
     appliedCouponCard: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: `${SECONDARY}0D`,
+        backgroundColor: colors.secondary + "08",
         borderWidth: 1,
-        borderColor: `${SECONDARY}33`,
-        borderRadius: 8,
+        borderColor: colors.secondary + "26",
+        borderRadius: radius.sm,
         padding: 12,
     },
-    appliedCouponInfo: {
+    appliedCouponLeft: {
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
         flex: 1,
     },
+    appliedCouponIconWrap: {
+        width: 28,
+        height: 28,
+        borderRadius: radius.full,
+        backgroundColor: colors.secondary,
+        justifyContent: "center",
+        alignItems: "center",
+    },
     appliedCouponText: {
         flex: 1,
     },
     appliedCouponCode: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: SECONDARY,
-        letterSpacing: 1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.secondary,
+        letterSpacing: typography.letterSpacing.xl,
     },
     appliedCouponTitle: {
-        fontSize: 12,
-        color: ON_SURFACE_VARIANT,
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
         marginTop: 2,
     },
     availableCouponsToggle: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
-        gap: 4,
+        justifyContent: "space-between",
         marginTop: 12,
-        paddingVertical: 6,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
+    },
+    availableCouponsToggleLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
     },
     availableCouponsLabel: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: PRIMARY,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
     },
     availableCouponsList: {
-        marginTop: 8,
-        gap: 8,
+        marginTop: spacing.sm,
+        gap: spacing.sm,
     },
     availableCouponItem: {
         borderWidth: 1,
-        borderColor: `${PRIMARY}33`,
-        borderRadius: 8,
+        borderColor: colors.primary + "26",
+        borderRadius: radius.sm,
         padding: 12,
-        backgroundColor: `${PRIMARY}05`,
+        backgroundColor: colors.primary + "05",
     },
     availableCouponHeader: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: spacing.sm,
+    },
+    couponBadge: {
+        width: 24,
+        height: 24,
+        borderRadius: radius.full,
+        backgroundColor: colors.primary + "15",
+        justifyContent: "center",
+        alignItems: "center",
     },
     availableCouponCode: {
-        fontSize: 13,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        letterSpacing: 0.5,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
+        letterSpacing: typography.letterSpacing.wider,
     },
     availableCouponTitle: {
-        fontSize: 12,
-        color: ON_SURFACE_VARIANT,
-        marginTop: 4,
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+        marginTop: spacing.xs,
     },
     availableCouponMin: {
-        fontSize: 11,
-        color: ON_SURFACE_VARIANT,
+        fontSize: typography.fontSize.xs,
+        color: colors.textMuted,
         marginTop: 2,
     },
 
     paymentSection: {
-        marginHorizontal: 16,
-        marginTop: 16,
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        marginBottom: spacing.lg,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.md,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}4D`,
+        borderColor: colors.outlineVariant + "4D",
+        ...shadows.card,
     },
     paymentTitleRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
-        marginBottom: 16,
-    },
-    paymentSectionTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        gap: spacing.sm,
+        marginBottom: spacing.md,
     },
     paymentOption: {
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
         paddingHorizontal: 12,
-        borderRadius: 8,
-        marginBottom: 8,
+        borderRadius: radius.sm,
+        marginBottom: spacing.sm,
         borderWidth: 1,
-        borderColor: "transparent",
+        borderColor: colors.transparent,
     },
     paymentOptionSelected: {
-        backgroundColor: `${PRIMARY}0D`,
-        borderColor: `${PRIMARY}33`,
+        backgroundColor: colors.primary + "08",
+        borderColor: colors.primary + "26",
     },
-    paymentOptionText: {
+    paymentIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceContainer,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    paymentInfo: {
         flex: 1,
     },
     paymentOptionLabel: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
     },
     paymentOptionHint: {
-        fontSize: 12,
-        color: ON_SURFACE_VARIANT,
-        marginTop: 2,
+        fontSize: typography.fontSize.sm,
+        color: colors.textMuted,
+        marginTop: 1,
     },
     radioOuter: {
         width: 20,
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: `${PRIMARY}80`,
+        borderColor: colors.primary + "80",
         alignItems: "center",
         justifyContent: "center",
     },
@@ -1116,88 +1234,88 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
     },
 
     footer: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        paddingBottom: 24,
-        backgroundColor: `${BG}D9`,
-        borderTopWidth: 1,
-        borderTopColor: `${OUTLINE_VARIANT}1A`,
-    },
-    footerRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 12,
+        paddingBottom: spacing.lg,
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.outlineVariant + "4D",
+        gap: spacing.md,
+        ...shadows.floating,
     },
-    clearCartBtn: {
+    footerTotals: {
         flex: 1,
-        height: 54,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: OUTLINE_VARIANT,
-        justifyContent: "center",
-        alignItems: "center",
+    },
+    footerTotalLabel: {
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+    },
+    footerTotalValue: {
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
     },
     placeOrderButton: {
-        flex: 9,
-        backgroundColor: PRIMARY,
+        flex: 1,
+        backgroundColor: colors.primary,
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        paddingVertical: 18,
-        borderRadius: 12,
-        gap: 4,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
+        paddingVertical: 16,
+        borderRadius: radius.md,
+        gap: spacing.sm,
+        ...shadows.button,
     },
     placeOrderText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#FFF",
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.white,
     },
+
     emptyContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 32,
+        paddingHorizontal: spacing.xl,
+    },
+    emptyIconWrap: {
+        width: 100,
+        height: 100,
+        borderRadius: radius.full,
+        backgroundColor: colors.primary + "15",
+        justifyContent: "center",
+        alignItems: "center",
     },
     emptyTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        marginTop: 16,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        marginTop: spacing.lg,
     },
     emptySubtitle: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
         textAlign: "center",
-        marginTop: 8,
-        lineHeight: 20,
+        marginTop: spacing.sm,
+        lineHeight: typography.lineHeight.md,
     },
     emptyButton: {
-        marginTop: 24,
-        backgroundColor: PRIMARY,
-        paddingHorizontal: 32,
+        marginTop: spacing.lg,
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.xl,
         paddingVertical: 14,
-        borderRadius: 100,
+        borderRadius: radius.full,
+        ...shadows.button,
     },
     emptyButtonText: {
-        color: "#fff",
-        fontSize: 15,
-        fontWeight: "600",
+        color: colors.white,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
     },
-    totalPayable: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: PRIMARY,
-        textAlign: "center",
-        marginTop: 8,
-    },
-
 });

@@ -11,9 +11,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { MenuItem } from "../../types/types";
 import { CustomizationGroup } from "../../types/types";
 import { imageSource } from "../../utils/imageUtils";
-
-const PRIMARY = "#FF6B35";
-const SECONDARY = "#006D37";
+import { colors } from "../../theme";
 
 type Props = {
     visible: boolean;
@@ -105,7 +103,7 @@ const FoodCustomizationModal = ({ visible, selectedItem, customizationGroups, on
                                 <MaterialCommunityIcons
                                     name="check"
                                     size={14}
-                                    color="#FFF"
+                                    color={colors.white}
                                 />
                             )}
                         </View>
@@ -167,7 +165,7 @@ const FoodCustomizationModal = ({ visible, selectedItem, customizationGroups, on
                                     <MaterialCommunityIcons
                                         name="leaf"
                                         size={12}
-                                        color={SECONDARY}
+                                        color={colors.secondary}
                                     />
                                     <Text style={styles.bestsellerText}>BESTSELLER</Text>
                                 </View>
@@ -214,12 +212,12 @@ const FoodCustomizationModal = ({ visible, selectedItem, customizationGroups, on
 
 const styles = StyleSheet.create({
     sheetBackground: {
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
     },
     handle: {
-        backgroundColor: "#E1BFB5",
+        backgroundColor: colors.outlineVariant,
         width: 40,
     },
     scrollContent: {
@@ -247,7 +245,7 @@ const styles = StyleSheet.create({
     itemName: {
         fontSize: 20,
         fontWeight: "700",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
         lineHeight: 28,
     },
     bestsellerBadge: {
@@ -258,25 +256,25 @@ const styles = StyleSheet.create({
     bestsellerText: {
         fontSize: 11,
         fontWeight: "700",
-        color: SECONDARY,
+        color: colors.secondary,
         letterSpacing: 0.5,
     },
     basePrice: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#594139",
+        color: colors.textSecondary,
         marginTop: 2,
     },
     description: {
         fontSize: 14,
         fontWeight: "400",
-        color: "#594139",
+        color: colors.textSecondary,
         lineHeight: 20,
         marginTop: 12,
     },
     divider: {
         height: 1,
-        backgroundColor: "#E1BFB5",
+        backgroundColor: colors.outlineVariant,
         opacity: 0.3,
         marginVertical: 16,
     },
@@ -286,7 +284,7 @@ const styles = StyleSheet.create({
     groupTitle: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
         marginBottom: 12,
     },
     optionRow: {
@@ -297,13 +295,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: 12,
         marginBottom: 6,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         borderWidth: 1,
         borderColor: "rgba(225,191,181,0.12)",
     },
     optionRowSelected: {
-        borderColor: PRIMARY,
-        backgroundColor: "#FFF5F0",
+        borderColor: colors.primary,
+        backgroundColor: colors.primarySoft,
     },
     optionLeft: {
         flexDirection: "row",
@@ -316,36 +314,36 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: "#8D7168",
+        borderColor: colors.outline,
         alignItems: "center",
         justifyContent: "center",
     },
     radioSelected: {
-        borderColor: PRIMARY,
+        borderColor: colors.primary,
     },
     radioInner: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
     },
     checkbox: {
         width: 20,
         height: 20,
         borderRadius: 4,
         borderWidth: 2,
-        borderColor: "#8D7168",
+        borderColor: colors.outline,
         alignItems: "center",
         justifyContent: "center",
     },
     checkboxSelected: {
-        borderColor: PRIMARY,
-        backgroundColor: PRIMARY,
+        borderColor: colors.primary,
+        backgroundColor: colors.primary,
     },
     optionName: {
         fontSize: 14,
         fontWeight: "400",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
     },
     optionNameSelected: {
         fontWeight: "600",
@@ -353,17 +351,17 @@ const styles = StyleSheet.create({
     optionPrice: {
         fontSize: 13,
         fontWeight: "500",
-        color: "#594139",
+        color: colors.textSecondary,
     },
     optionPriceSelected: {
-        color: PRIMARY,
+        color: colors.primary,
     },
     footer: {
         paddingHorizontal: 20,
         paddingVertical: 16,
         paddingBottom: 32,
         marginHorizontal: -20,
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
         borderTopWidth: 1,
         borderTopColor: "rgba(225,191,181,0.3)",
         marginTop: 16,
@@ -377,15 +375,15 @@ const styles = StyleSheet.create({
     totalLabel: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
     },
     totalPrice: {
         fontSize: 20,
         fontWeight: "700",
-        color: PRIMARY,
+        color: colors.primary,
     },
     addButton: {
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
         paddingVertical: 16,
         borderRadius: 16,
         alignItems: "center",
@@ -396,7 +394,7 @@ const styles = StyleSheet.create({
     addButtonText: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#FFF",
+        color: colors.white,
         letterSpacing: 0.5,
     },
 });

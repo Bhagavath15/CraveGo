@@ -5,10 +5,7 @@ import HomeScreen from "../screens/HomeScreen";
 import OrdersScreen from "../screens/OrdersScreen";
 import SearchScreen from "../screens/SearchScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-
-const PRIMARY = "#FF6B35";
-const ON_SURFACE_VARIANT = "#594141";
-const ON_SURFACE = "#1B1C1C";
+import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
 
@@ -17,8 +14,8 @@ const BottomTabNavigationBar = () => {
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: PRIMARY,
-                tabBarInactiveTintColor: ON_SURFACE_VARIANT,
+                tabBarActiveTintColor: colors.primary,
+                tabBarInactiveTintColor: colors.textSecondary,
                 tabBarStyle: styles.tabBar,
                 tabBarLabelStyle: styles.tabBarLabel,
             }}
@@ -73,7 +70,7 @@ const BottomTabNavigationBar = () => {
 
 const styles = StyleSheet.create({
     tabBar: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         borderTopWidth: 1,
         borderTopColor: "rgba(225,191,181,0.3)",
         paddingBottom: 4,
@@ -89,11 +86,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
     },
     placeholderText: {
         fontSize: 16,
-        color: ON_SURFACE_VARIANT,
+        color: colors.textSecondary,
     },
 });
 

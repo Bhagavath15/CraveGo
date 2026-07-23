@@ -14,8 +14,9 @@ import LinearGradient from "react-native-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../types/types";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const onboardingData = [
     {
@@ -53,6 +54,9 @@ const OnBoardingScreen = () => {
 
     return (
         <View style={styles.container}>
+            <TouchableOpacity style={styles.skipTop} onPress={() => navigation.replace("Login")}>
+                <Text style={styles.skipTopText}>Skip</Text>
+            </TouchableOpacity>
             <ScrollView
                 ref={scrollRef}
                 horizontal
@@ -64,39 +68,39 @@ const OnBoardingScreen = () => {
             >
                 {onboardingData.map((data, index) => (
                     <View key={index} style={styles.page}>
-                        <View style={styles.imageContainer}>
-                            <Image source={data.image} resizeMode="cover" style={styles.image} />
-                            <LinearGradient
-                                colors={["transparent", "rgba(255,255,255,0.15)", "rgba(255,255,255,0.7)", "#FFFFFF"]}
-                                locations={[0, 0.45, 0.75, 1]}
-                                style={styles.overlay}
-                            />
-                        </View>
-
-                        <View style={styles.dotsRow}>
-                            {onboardingData.map((_, dotIndex) => (
-                                <View
-                                    key={dotIndex}
-                                    style={[styles.dot, dotIndex === step && styles.activeDot]}
-                                />
-                            ))}
-                        </View>
-
-                        <View style={styles.content}>
-                            <Text style={styles.title}>{data.title}</Text>
-                            <Text style={styles.description}>{data.description}</Text>
-                        </View>
+                        <Image source={data.image} resizeMode="cover" style={styles.bgImage} />
+                        <LinearGradient
+                            colors={["transparent", "rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.8)"]}
+                            locations={[0, 0.4, 0.7, 1]}
+                            style={styles.bgOverlay}
+                        />
                     </View>
                 ))}
             </ScrollView>
 
-            {isLastStep && (
-                <View style={styles.bottomArea}>
-                    <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85} onPress={() => navigation.replace("Login")}>
-                        <Text style={styles.primaryButtonText}>Get Started</Text>
-                    </TouchableOpacity>
+            <View style={styles.bottomSheet}>
+                <View style={styles.dotsRow}>
+                    {onboardingData.map((_, dotIndex) => (
+                        <View
+                            key={dotIndex}
+                            style={[styles.dot, dotIndex === step && styles.activeDot]}
+                        />
+                    ))}
                 </View>
-            )}
+
+                <Text style={styles.title}>{onboardingData[step].title}</Text>
+                <Text style={styles.description}>{onboardingData[step].description}</Text>
+
+                <View style={styles.buttonSlot}>
+                    {isLastStep ? (
+                        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85} onPress={() => navigation.replace("Login")}>
+                            <Text style={styles.primaryButtonText}>Get Started</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <Text style={styles.swipeHint}>Swipe to continue</Text>
+                    )}
+                </View>
+            </View>
         </View>
     );
 };
@@ -106,78 +110,106 @@ export default OnBoardingScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.black,
     },
     scrollView: {
-        flex: 1,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
     page: {
         width: SCREEN_WIDTH,
+        height: SCREEN_HEIGHT,
     },
-    imageContainer: {
-        height: 520,
-        overflow: "hidden",
-    },
-    image: {
+    bgImage: {
         width: "100%",
         height: "100%",
     },
-    overlay: {
+    bgOverlay: {
         position: "absolute",
         left: 0,
         right: 0,
         bottom: 0,
-        height: 220,
+        height: SCREEN_HEIGHT * 0.6,
+    },
+    bottomSheet: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 28,
+        paddingBottom: spacing.xxl,
+        paddingTop: spacing.lg,
     },
     dotsRow: {
         flexDirection: "row",
         justifyContent: "center",
-        paddingVertical: 20,
+        marginBottom: spacing.lg,
     },
     dot: {
-        width: 10,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: "#E5E5E5",
-        marginHorizontal: 4,
+        width: 8,
+        height: 8,
+        borderRadius: radius.xs,
+        backgroundColor: "rgba(255,255,255,0.4)",
+        marginHorizontal: 5,
     },
     activeDot: {
-        width: 30,
-        backgroundColor: "#D9480F",
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 24,
-        alignItems: "center",
-        gap: 16,
+        width: 28,
+        backgroundColor: colors.white,
     },
     title: {
         fontSize: 30,
-        fontWeight: "700",
+        fontWeight: typography.fontWeight.bold,
         textAlign: "center",
+        color: colors.white,
+        marginBottom: 12,
     },
     description: {
-        color: "#6B7280",
-        fontSize: 16,
+        color: "rgba(255,255,255,0.8)",
+        fontSize: typography.fontSize.lg,
         textAlign: "center",
-        lineHeight: 24,
+        lineHeight: typography.lineHeight.xl,
+        marginBottom: 36,
+        paddingHorizontal: spacing.sm,
     },
-    bottomArea: {
-        width: "100%",
+    buttonSlot: {
+        height: sizes.buttonHeight,
+        justifyContent: "center",
         alignItems: "center",
-        paddingBottom: 30,
-        paddingHorizontal: 24,
+    },
+    swipeHint: {
+        color: "rgba(255,255,255,0.35)",
+        fontSize: 13,
+        fontWeight: typography.fontWeight.medium,
+        letterSpacing: typography.letterSpacing.wider,
+    },
+    skipTop: {
+        position: "absolute",
+        top: 60,
+        right: spacing.lg,
+        zIndex: 10,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.xl,
+        backgroundColor: "rgba(0,0,0,0.3)",
+    },
+    skipTopText: {
+        color: "rgba(255,255,255,0.8)",
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
     },
     primaryButton: {
-        width: "75%",
-        backgroundColor: "#D9480F",
-        paddingVertical: 16,
-        borderRadius: 14,
+        width: "100%",
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
         alignItems: "center",
     },
     primaryButtonText: {
-        color: "#FFF",
-        fontWeight: "700",
-        fontSize: 16,
+        color: colors.white,
+        fontWeight: typography.fontWeight.bold,
+        fontSize: typography.fontSize.lg,
     },
 });

@@ -2,15 +2,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "rea
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
-
-const PRIMARY = "#FF6B35";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const SURFACE_LOWEST = "#FFFFFF";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SECONDARY = "#006D37";
-const SURFACE_CONTAINER = "#F0EDED";
+import { colors, spacing, typography, radius } from "../theme";
 
 const PaymentMethodsScreen = () => {
     const insets = useSafeAreaInsets();
@@ -20,7 +12,7 @@ const PaymentMethodsScreen = () => {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.headerBar}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Payments</Text>
                 <View style={styles.backBtn} />
@@ -31,7 +23,7 @@ const PaymentMethodsScreen = () => {
                 contentContainerStyle={styles.scrollContent}
             >
                 <View style={styles.infoBanner}>
-                    <MaterialCommunityIcons name="lock-outline" size={20} color={SECONDARY} />
+                    <MaterialCommunityIcons name="lock-outline" size={20} color={colors.secondary} />
                     <Text style={styles.infoBannerText}>
                         Your payments are processed securely through Stripe. We do not store your card details.
                     </Text>
@@ -41,7 +33,7 @@ const PaymentMethodsScreen = () => {
 
                 <View style={styles.optionCard}>
                     <View style={styles.optionIconBg}>
-                        <MaterialCommunityIcons name="cash" size={24} color={PRIMARY} />
+                        <MaterialCommunityIcons name="cash" size={24} color={colors.primary} />
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionLabel}>Cash on Delivery</Text>
@@ -51,7 +43,7 @@ const PaymentMethodsScreen = () => {
 
                 <View style={styles.optionCard}>
                     <View style={styles.optionIconBg}>
-                        <MaterialCommunityIcons name="credit-card-outline" size={24} color={PRIMARY} />
+                        <MaterialCommunityIcons name="credit-card-outline" size={24} color={colors.primary} />
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionLabel}>Credit / Debit Card</Text>
@@ -61,7 +53,7 @@ const PaymentMethodsScreen = () => {
 
                 <View style={styles.optionCard}>
                     <View style={styles.optionIconBg}>
-                        <MaterialCommunityIcons name="bank-outline" size={24} color={PRIMARY} />
+                        <MaterialCommunityIcons name="bank-outline" size={24} color={colors.primary} />
                     </View>
                     <View style={styles.optionInfo}>
                         <Text style={styles.optionLabel}>UPI</Text>
@@ -70,7 +62,7 @@ const PaymentMethodsScreen = () => {
                 </View>
 
                 <View style={styles.noteCard}>
-                    <MaterialCommunityIcons name="information-outline" size={18} color={ON_SURFACE_VARIANT} />
+                    <MaterialCommunityIcons name="information-outline" size={18} color={colors.textSecondary} />
                     <Text style={styles.noteText}>
                         Payment method selection is available at checkout. All online payments are processed via Stripe.
                     </Text>
@@ -85,15 +77,15 @@ export default PaymentMethodsScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     headerBar: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     backBtn: {
         width: 40,
@@ -102,53 +94,53 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
     },
     scrollContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 32,
+        paddingHorizontal: spacing.md,
+        paddingBottom: spacing.xl,
     },
     infoBanner: {
         flexDirection: "row",
         alignItems: "center",
         gap: 8,
-        backgroundColor: `${SECONDARY}12`,
-        padding: 12,
-        borderRadius: 12,
-        marginTop: 8,
-        marginBottom: 24,
+        backgroundColor: colors.secondary + "12",
+        padding: spacing.sm,
+        borderRadius: radius.md,
+        marginTop: spacing.sm,
+        marginBottom: spacing.lg,
     },
     infoBannerText: {
         flex: 1,
-        fontSize: 13,
-        fontWeight: "400",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 18,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.regular,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        marginBottom: 12,
+        fontSize: typography.fontSize.xl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
         lineHeight: 26,
     },
     optionCard: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: SURFACE_LOWEST,
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 8,
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+        borderRadius: radius.md,
+        marginBottom: spacing.sm,
         gap: 12,
     },
     optionIconBg: {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: `${PRIMARY}18`,
+        backgroundColor: colors.primary + "18",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -156,31 +148,31 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     optionLabel: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
     },
     optionDesc: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
         marginTop: 1,
     },
     noteCard: {
         flexDirection: "row",
         alignItems: "flex-start",
         gap: 8,
-        backgroundColor: SURFACE_CONTAINER,
-        padding: 12,
-        borderRadius: 12,
-        marginTop: 16,
+        backgroundColor: colors.surfaceContainer,
+        padding: spacing.sm,
+        borderRadius: radius.md,
+        marginTop: spacing.md,
     },
     noteText: {
         flex: 1,
-        fontSize: 12,
-        fontWeight: "400",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.regular,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
     },
 });

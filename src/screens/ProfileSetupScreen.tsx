@@ -1,7 +1,5 @@
 import { useState } from "react";
 import {
-    Alert,
-    Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -18,21 +16,11 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { updateProfile as updateProfileApi } from "../api/auth";
+import Toast from "react-native-toast-message";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenRoute = RouteProp<RootStackParamList, "ProfileSetup">;
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_CONTAINER = "#FF6B35";
-const SECONDARY = "#006D37";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_CONTAINER_HIGHEST = "#E5E2E1";
-const SURFACE_CONTAINER_LOW = "#F6F3F2";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_VARIANT = "#E5E2E1";
 
 const ProfileSetupScreen = () => {
     const insets = useSafeAreaInsets();
@@ -49,7 +37,7 @@ const ProfileSetupScreen = () => {
 
     const handleSave = async () => {
         if (saving || !fullName.trim()) {
-            Alert.alert("Required", "Please enter your name.");
+            Toast.show({ text1: "Please enter your name.", type: "error" });
             return;
         }
         setSaving(true);
@@ -61,10 +49,10 @@ const ProfileSetupScreen = () => {
                     routes: [{ name: "Home" }],
                 });
             } else {
-                Alert.alert("Error", data.message || "Registration failed");
+                Toast.show({ text1: data.message || "Registration failed", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Network error. Try again.");
+            Toast.show({ text1: "Network error. Try again.", type: "error" });
         } finally {
             setSaving(false);
         }
@@ -77,7 +65,7 @@ const ProfileSetupScreen = () => {
                     <MaterialCommunityIcons
                         name="silverware"
                         size={28}
-                        color={PRIMARY}
+                        color={colors.primary}
                     />
                     <Text style={styles.brandName}>CraveGo</Text>
                 </View>
@@ -109,14 +97,14 @@ const ProfileSetupScreen = () => {
                                 <MaterialCommunityIcons
                                     name="account-outline"
                                     size={48}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                             </View>
                             <TouchableOpacity style={styles.cameraBtn}>
                                 <MaterialCommunityIcons
                                     name="camera"
                                     size={20}
-                                    color="#FFF"
+                                    color={colors.white}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -129,12 +117,12 @@ const ProfileSetupScreen = () => {
                                 <MaterialCommunityIcons
                                     name="account-outline"
                                     size={20}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                                 <TextInput
                                     style={styles.fieldInput}
                                     placeholder="Enter your full name"
-                                    placeholderTextColor={`${ON_SURFACE_VARIANT}99`}
+                                    placeholderTextColor={`${colors.textSecondary}99`}
                                     value={fullName}
                                     onChangeText={setFullName}
                                 />
@@ -147,7 +135,7 @@ const ProfileSetupScreen = () => {
                                 <MaterialCommunityIcons
                                     name="phone-outline"
                                     size={20}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                                 <TextInput
                                     style={styles.fieldInput}
@@ -157,7 +145,7 @@ const ProfileSetupScreen = () => {
                                 <MaterialCommunityIcons
                                     name="check-circle"
                                     size={20}
-                                    color={SECONDARY}
+                                    color={colors.secondary}
                                 />
                             </View>
                         </View>
@@ -168,12 +156,12 @@ const ProfileSetupScreen = () => {
                                 <MaterialCommunityIcons
                                     name="email-outline"
                                     size={20}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                                 <TextInput
                                     style={styles.fieldInput}
                                     placeholder="name@example.com"
-                                    placeholderTextColor={`${ON_SURFACE_VARIANT}99`}
+                                    placeholderTextColor={`${colors.textSecondary}99`}
                                     value={email}
                                     onChangeText={setEmail}
                                     keyboardType="email-address"
@@ -194,7 +182,7 @@ const ProfileSetupScreen = () => {
                                     <MaterialCommunityIcons
                                         name="bell-outline"
                                         size={20}
-                                        color={PRIMARY}
+                                        color={colors.primary}
                                     />
                                 </View>
                                 <View>
@@ -210,11 +198,11 @@ const ProfileSetupScreen = () => {
                                 value={enableNotif}
                                 onValueChange={setEnableNotif}
                                 trackColor={{
-                                    false: SURFACE_CONTAINER_HIGHEST,
-                                    true: "#FFDBD0",
+                                    false: colors.surfaceContainerHighest,
+                                    true: colors.primaryLight,
                                 }}
                                 thumbColor={
-                                    enableNotif ? PRIMARY : SURFACE_LOWEST
+                                    enableNotif ? colors.primary : colors.surface
                                 }
                             />
                         </View>
@@ -224,13 +212,13 @@ const ProfileSetupScreen = () => {
                                 <View
                                     style={[
                                         styles.toggleIconBg,
-                                        { backgroundColor: `${SECONDARY}0D` },
+                                        { backgroundColor: `${colors.secondary}0D` },
                                     ]}
                                 >
                                     <MaterialCommunityIcons
                                         name="map-marker-outline"
                                         size={20}
-                                        color={SECONDARY}
+                                        color={colors.secondary}
                                     />
                                 </View>
                                 <View>
@@ -246,11 +234,11 @@ const ProfileSetupScreen = () => {
                                 value={enableLocation}
                                 onValueChange={setEnableLocation}
                                 trackColor={{
-                                    false: SURFACE_CONTAINER_HIGHEST,
-                                    true: "#FFDBD0",
+                                    false: colors.surfaceContainerHighest,
+                                    true: colors.primaryLight,
                                 }}
                                 thumbColor={
-                                    enableLocation ? PRIMARY : SURFACE_LOWEST
+                                    enableLocation ? colors.primary : colors.surface
                                 }
                             />
                         </View>
@@ -267,7 +255,7 @@ const ProfileSetupScreen = () => {
                     <MaterialCommunityIcons
                         name="arrow-right"
                         size={18}
-                        color="#FFF"
+                        color={colors.white}
                     />
                 </TouchableOpacity>
             </View>
@@ -280,57 +268,57 @@ export default ProfileSetupScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
     },
     brandRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: spacing.sm,
     },
     brandName: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: PRIMARY,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
+        lineHeight: typography.lineHeight.xxxl,
     },
     skipText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     scrollContent: {
-        padding: 16,
+        padding: spacing.md,
         paddingBottom: 120,
     },
     heroSection: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     heroTitle: {
         fontSize: 28,
-        fontWeight: "700",
-        color: ON_SURFACE,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
         lineHeight: 36,
-        letterSpacing: -0.3,
+        letterSpacing: typography.letterSpacing.snug,
     },
     heroDesc: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        marginTop: 4,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        marginTop: spacing.xs,
     },
     avatarSection: {
         alignItems: "center",
-        marginBottom: 32,
+        marginBottom: spacing.xl,
     },
     avatarOuter: {
         position: "relative",
@@ -339,135 +327,127 @@ const styles = StyleSheet.create({
         width: 128,
         height: 128,
         borderRadius: 64,
-        backgroundColor: SURFACE_CONTAINER_LOW,
+        backgroundColor: colors.surfaceContainerLow,
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 4,
-        borderColor: SURFACE_LOWEST,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 20,
-        elevation: 4,
+        borderColor: colors.surface,
+        ...shadows.floating,
     },
     cameraBtn: {
         position: "absolute",
-        bottom: 4,
-        right: 4,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: PRIMARY,
+        bottom: spacing.xs,
+        right: spacing.xs,
+        width: sizes.avatar,
+        height: sizes.avatar,
+        borderRadius: sizes.avatar / 2,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 2,
-        borderColor: SURFACE_LOWEST,
+        borderColor: colors.surface,
     },
     form: {
-        gap: 16,
+        gap: spacing.md,
     },
     field: {},
     fieldLabel: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-        marginBottom: 4,
-        paddingHorizontal: 4,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
+        marginBottom: spacing.xs,
+        paddingHorizontal: spacing.xs,
     },
     fieldRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        backgroundColor: SURFACE_LOWEST,
-        paddingHorizontal: 16,
+        backgroundColor: colors.surface,
+        paddingHorizontal: spacing.md,
         paddingVertical: 14,
-        borderRadius: 12,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 20,
-        elevation: 4,
+        borderRadius: radius.md,
+        ...shadows.floating,
     },
     fieldReadonly: {
-        backgroundColor: SURFACE_CONTAINER_LOW,
+        backgroundColor: colors.surfaceContainerLow,
         opacity: 0.8,
     },
     fieldInput: {
         flex: 1,
-        fontSize: 16,
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
         padding: 0,
     },
     toggleSection: {
-        marginTop: 16,
+        marginTop: spacing.md,
     },
     toggleSectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-        marginBottom: 16,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
+        marginBottom: spacing.md,
     },
     toggleCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 16,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.md,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: 8,
+        marginBottom: spacing.sm,
     },
     toggleLeft: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 16,
+        gap: spacing.md,
         flex: 1,
         marginRight: 12,
     },
     toggleIconBg: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: `${PRIMARY}0D`,
+        width: sizes.avatar,
+        height: sizes.avatar,
+        borderRadius: sizes.avatar / 2,
+        backgroundColor: `${colors.primary}0D`,
         justifyContent: "center",
         alignItems: "center",
     },
     toggleTitle: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     toggleDesc: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
     },
     bottomBar: {
-        backgroundColor: `${SURFACE_LOWEST}CC`,
+        backgroundColor: `${colors.surface}CC`,
         borderTopWidth: 1,
-        borderTopColor: SURFACE_VARIANT,
-        paddingHorizontal: 16,
-        paddingTop: 16,
+        borderTopColor: colors.surfaceContainerHighest,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.md,
     },
     saveBtn: {
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
+        gap: spacing.sm,
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: radius.md,
     },
     saveBtnText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#FFF",
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.white,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
 });

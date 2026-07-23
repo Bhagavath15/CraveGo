@@ -14,21 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { getOrderById, Order, OrderItem } from "../api/order";
 import Skeleton from "../components/Skeleton";
-
-const PRIMARY = "#FF6B35";
-const ON_PRIMARY = "#ffffff";
-const PRIMARY_TEXT = "#FF6B35";
-const SECONDARY = "#006D37";
-const BG = "#fcf9f8";
-const ON_SURFACE = "#1b1c1c";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#e1bfb5";
-const SURFACE_LOWEST = "#ffffff";
-const SURFACE_CONTAINER_LOW = "#f6f3f2";
-const SURFACE_CONTAINER_HIGH = "#eae7e7";
-const SURFACE_VARIANT = "#e5e2e1";
-const ERROR = "#ba1a1a";
-const SUCCESS = "#006D37";
+import { colors, spacing, typography, radius } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "Receipt">;
@@ -97,7 +83,7 @@ const ReceiptScreen = () => {
     <View style={[s.wrapper, { paddingTop: insets.top }]}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.headerBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Order Receipt</Text>
         <View style={s.headerBtn} />
@@ -121,7 +107,7 @@ const ReceiptScreen = () => {
           </View>
         ) : !order ? (
           <View style={s.emptyState}>
-            <MaterialCommunityIcons name="receipt" size={64} color={OUTLINE_VARIANT} />
+            <MaterialCommunityIcons name="receipt" size={64} color={colors.outlineVariant} />
             <Text style={s.emptyTitle}>Receipt Not Found</Text>
           </View>
         ) : (
@@ -169,7 +155,7 @@ const ReceiptScreen = () => {
                 items.map((item, idx) => (
                   <View key={item.menuItemId || idx} style={s.tableRow}>
                     <View style={[s.colItem, { flexDirection: "row", alignItems: "center", gap: 6 }]}>
-                      <View style={[s.vegDot, { backgroundColor: isVeg(item) ? SUCCESS : ERROR }]} />
+                      <View style={[s.vegDot, { backgroundColor: isVeg(item) ? colors.veg : colors.error }]} />
                       <Text style={s.itemName} numberOfLines={1}>{item.name}</Text>
                     </View>
                     <Text style={[s.colQty, s.cellVal]}>{item.quantity}</Text>
@@ -225,11 +211,11 @@ const ReceiptScreen = () => {
               </Text>
               <View style={s.footerActions}>
                 <TouchableOpacity style={s.footerBtn}>
-                  <MaterialCommunityIcons name="download" size={14} color={ON_SURFACE_VARIANT} />
+                  <MaterialCommunityIcons name="download" size={14} color={colors.textSecondary} />
                   <Text style={s.footerBtnText}>Download PDF</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.footerBtn}>
-                  <MaterialCommunityIcons name="help-circle-outline" size={14} color={ON_SURFACE_VARIANT} />
+                  <MaterialCommunityIcons name="help-circle-outline" size={14} color={colors.textSecondary} />
                   <Text style={s.footerBtnText}>Need Help?</Text>
                 </TouchableOpacity>
               </View>
@@ -243,31 +229,31 @@ const ReceiptScreen = () => {
 };
 
 const s = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: BG },
+  wrapper: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: spacing.md, paddingVertical: 12,
   },
   headerBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE, lineHeight: 24 },
+  headerTitle: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
   scroll: { flex: 1 },
-  scrollInner: { padding: 16, paddingBottom: 48 },
+  scrollInner: { padding: spacing.md, paddingBottom: 48 },
 
   loadingCard: {
-    backgroundColor: SURFACE_LOWEST,
-    borderRadius: 24,
-    padding: 24,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xxl,
+    padding: spacing.lg,
   },
-  emptyState: { alignItems: "center", paddingVertical: 64, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: ON_SURFACE_VARIANT },
+  emptyState: { alignItems: "center", paddingVertical: spacing.xxxl, gap: 12 },
+  emptyTitle: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.bold, color: colors.textSecondary },
 
   invoiceCard: {
-    backgroundColor: SURFACE_LOWEST,
-    borderRadius: 24,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xxl,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: `${OUTLINE_VARIANT}4D`,
-    shadowColor: "#000",
+    borderColor: colors.outlineVariant + "4D",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -278,100 +264,100 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    padding: 24,
-    paddingBottom: 16,
+    padding: spacing.lg,
+    paddingBottom: spacing.md,
   },
-  invoiceLabel: { fontSize: 12, fontWeight: "700", color: PRIMARY, letterSpacing: 1, textTransform: "uppercase", marginTop: 4 },
+  invoiceLabel: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold, color: colors.primary, letterSpacing: typography.letterSpacing.xl, textTransform: "uppercase", marginTop: spacing.xs },
   orderIdCol: { alignItems: "flex-end" },
-  orderIdLabel: { fontSize: 10, fontWeight: "600", color: ON_SURFACE_VARIANT, letterSpacing: 0.5, textTransform: "uppercase" },
-  orderIdValue: { fontSize: 14, fontWeight: "700", color: ON_SURFACE, marginTop: 2 },
-  orderDate: { fontSize: 11, color: ON_SURFACE_VARIANT, marginTop: 4 },
+  orderIdLabel: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.semibold, color: colors.textSecondary, letterSpacing: typography.letterSpacing.wider, textTransform: "uppercase" },
+  orderIdValue: { fontSize: typography.fontSize.md, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, marginTop: 2 },
+  orderDate: { fontSize: 11, color: colors.textSecondary, marginTop: spacing.xs },
 
   addrRow: {
     flexDirection: "row",
-    marginHorizontal: 24,
-    padding: 16,
-    backgroundColor: SURFACE_CONTAINER_LOW,
-    borderRadius: 16,
-    gap: 16,
+    marginHorizontal: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.lg,
+    gap: spacing.md,
   },
   addrCol: { flex: 1 },
-  addrTitle: { fontSize: 10, fontWeight: "700", color: ON_SURFACE_VARIANT, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 },
-  addrName: { fontSize: 13, fontWeight: "700", color: ON_SURFACE, lineHeight: 18 },
-  addrPhone: { fontSize: 11, color: ON_SURFACE_VARIANT, marginTop: 2 },
-  addrDetail: { fontSize: 10, color: ON_SURFACE_VARIANT, lineHeight: 14, marginTop: 4 },
-  addrDivider: { width: 1, backgroundColor: OUTLINE_VARIANT },
+  addrTitle: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.textSecondary, letterSpacing: typography.letterSpacing.wider, textTransform: "uppercase", marginBottom: spacing.xs },
+  addrName: { fontSize: 13, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: 18 },
+  addrPhone: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  addrDetail: { fontSize: typography.fontSize.xs, color: colors.textSecondary, lineHeight: typography.lineHeight.xs, marginTop: spacing.xs },
+  addrDivider: { width: 1, backgroundColor: colors.outlineVariant },
 
   tableHeader: {
     flexDirection: "row",
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
     paddingTop: 20,
-    paddingBottom: 8,
+    paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: `${SURFACE_VARIANT}66`,
+    borderBottomColor: colors.surfaceContainerHighest + "66",
   },
-  tableHeaderCell: { fontSize: 10, fontWeight: "700", color: ON_SURFACE_VARIANT, letterSpacing: 0.5, textTransform: "uppercase" },
-  tableBody: { paddingHorizontal: 24, paddingVertical: 4 },
-  tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: `${SURFACE_VARIANT}33` },
+  tableHeaderCell: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.textSecondary, letterSpacing: typography.letterSpacing.wider, textTransform: "uppercase" },
+  tableBody: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xs },
+  tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.surfaceContainerHighest + "33" },
   colItem: { flex: 2.5 },
   colQty: { flex: 0.8, textAlign: "center" },
   colPrice: { flex: 1.2, textAlign: "right" },
-  cellVal: { fontSize: 13, color: ON_SURFACE },
-  priceVal: { fontWeight: "700" },
-  itemName: { fontSize: 13, fontWeight: "600", color: ON_SURFACE, flex: 1 },
-  vegDot: { width: 8, height: 8, borderRadius: 4 },
-  emptyItems: { fontSize: 13, color: ON_SURFACE_VARIANT, textAlign: "center", paddingVertical: 16 },
+  cellVal: { fontSize: 13, color: colors.textPrimary },
+  priceVal: { fontWeight: typography.fontWeight.bold },
+  itemName: { fontSize: 13, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary, flex: 1 },
+  vegDot: { width: 8, height: 8, borderRadius: spacing.xs },
+  emptyItems: { fontSize: 13, color: colors.textSecondary, textAlign: "center", paddingVertical: spacing.md },
 
-  divider: { borderTopWidth: 2, borderTopColor: SURFACE_VARIANT, borderStyle: "dashed", marginHorizontal: 24, marginTop: 8 },
+  divider: { borderTopWidth: 2, borderTopColor: colors.surfaceContainerHighest, borderStyle: "dashed", marginHorizontal: spacing.lg, marginTop: spacing.sm },
 
-  breakdown: { paddingHorizontal: 24, paddingTop: 16, gap: 8 },
+  breakdown: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm },
   breakRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  breakLabel: { fontSize: 13, color: ON_SURFACE_VARIANT },
-  breakValue: { fontSize: 13, fontWeight: "600", color: ON_SURFACE },
-  freeText: { color: SECONDARY, fontWeight: "700" },
-  discountRow: { marginTop: 4 },
-  discountLabel: { fontSize: 13, fontStyle: "italic", color: SECONDARY },
-  discountValue: { fontSize: 13, fontWeight: "700", color: SECONDARY },
+  breakLabel: { fontSize: 13, color: colors.textSecondary },
+  breakValue: { fontSize: 13, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary },
+  freeText: { color: colors.secondary, fontWeight: typography.fontWeight.bold },
+  discountRow: { marginTop: spacing.xs },
+  discountLabel: { fontSize: 13, fontStyle: "italic", color: colors.secondary },
+  discountValue: { fontSize: 13, fontWeight: typography.fontWeight.bold, color: colors.secondary },
 
   totalSection: {
-    marginHorizontal: 24,
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: `${PRIMARY}0D`,
-    borderRadius: 16,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.primary + "0D",
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: `${PRIMARY}1A`,
+    borderColor: colors.primary + "1A",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  totalLabel: { fontSize: 10, fontWeight: "700", color: PRIMARY, letterSpacing: 0.5, textTransform: "uppercase" },
-  pmtMethod: { fontSize: 10, color: ON_SURFACE_VARIANT, marginTop: 2 },
-  paymentIdText: { fontSize: 9, color: ON_SURFACE_VARIANT, marginTop: 2, maxWidth: 180 },
-  totalValue: { fontSize: 24, fontWeight: "800", color: PRIMARY },
+  totalLabel: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.primary, letterSpacing: typography.letterSpacing.wider, textTransform: "uppercase" },
+  pmtMethod: { fontSize: typography.fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  paymentIdText: { fontSize: 9, color: colors.textSecondary, marginTop: 2, maxWidth: 180 },
+  totalValue: { fontSize: typography.fontSize.xxxl, fontWeight: typography.fontWeight.extrabold, color: colors.primary },
 
   footer: {
-    marginTop: 24,
-    padding: 24,
-    backgroundColor: SURFACE_CONTAINER_LOW,
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+    backgroundColor: colors.surfaceContainerLow,
     alignItems: "center",
-    gap: 16,
+    gap: spacing.md,
   },
-  disclaimer: { fontSize: 11, color: ON_SURFACE_VARIANT, lineHeight: 16, textAlign: "center" },
+  disclaimer: { fontSize: 11, color: colors.textSecondary, lineHeight: typography.lineHeight.sm, textAlign: "center" },
   footerActions: { flexDirection: "row", gap: 12 },
   footerBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: SURFACE_LOWEST,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: `${SURFACE_VARIANT}`,
+    borderColor: colors.surfaceContainerHighest,
     paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
   },
-  footerBtnText: { fontSize: 10, fontWeight: "700", color: ON_SURFACE_VARIANT },
-  brandFooter: { fontSize: 10, fontWeight: "700", color: `${ON_SURFACE_VARIANT}60`, letterSpacing: 0.5 },
+  footerBtnText: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.textSecondary },
+  brandFooter: { fontSize: typography.fontSize.xs, fontWeight: typography.fontWeight.bold, color: colors.textSecondary + "60", letterSpacing: typography.letterSpacing.wider },
 });
 
 export default ReceiptScreen;

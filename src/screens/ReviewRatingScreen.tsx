@@ -13,20 +13,9 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../types/types";
 import { rateOrder } from "../api/order";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type ScreenRoute = RouteProp<RootStackParamList, "ReviewRating">;
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_CONTAINER = "#FF6B35";
-const ON_PRIMARY_CONTAINER = "#5F1900";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_VARIANT = "#E5E2E1";
-const SURFACE_CONTAINER_HIGHEST = "#E5E2E1";
-const TERTIARY_FIXED_DIM = "#fabd00";
-const STAR_INACTIVE = "#E1BFB5";
 
 const RATING_LABELS: Record<number, string> = {
     1: "Very Poor",
@@ -80,7 +69,7 @@ const ReviewRatingScreen = () => {
                 <MaterialCommunityIcons
                     name={s <= current ? "star" : "star-outline"}
                     size={size}
-                    color={s <= current ? TERTIARY_FIXED_DIM : STAR_INACTIVE}
+                    color={s <= current ? colors.rating : colors.outlineVariant}
                 />
             </TouchableOpacity>
         ));
@@ -97,7 +86,7 @@ const ReviewRatingScreen = () => {
                         <MaterialCommunityIcons
                             name="arrow-left"
                             size={24}
-                            color={PRIMARY}
+                            color={colors.primary}
                         />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Rate Your Order</Text>
@@ -171,7 +160,7 @@ const ReviewRatingScreen = () => {
                     <TextInput
                         style={styles.textArea}
                         placeholder={`Tell us what you loved about ${restaurantName}...`}
-                        placeholderTextColor={`${ON_SURFACE_VARIANT}80`}
+                        placeholderTextColor={`${colors.textSecondary}80`}
                         multiline
                         numberOfLines={5}
                         value={reviewText}
@@ -186,7 +175,7 @@ const ReviewRatingScreen = () => {
                             <MaterialCommunityIcons
                                 name="camera-plus-outline"
                                 size={32}
-                                color={PRIMARY}
+                                color={colors.primary}
                             />
                             <Text style={styles.uploadText}>Upload</Text>
                         </TouchableOpacity>
@@ -209,7 +198,7 @@ const ReviewRatingScreen = () => {
                                     <MaterialCommunityIcons
                                         name="close"
                                         size={14}
-                                        color={ON_SURFACE}
+                                        color={colors.textPrimary}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -220,7 +209,7 @@ const ReviewRatingScreen = () => {
                 <View style={styles.submitSection}>
                     <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
                         <Text style={styles.submitText}>{submitting ? "Submitting..." : "Submit Review"}</Text>
-                        <MaterialCommunityIcons name="send" size={24} color={ON_PRIMARY_CONTAINER} />
+                        <MaterialCommunityIcons name="send" size={24} color={colors.textPrimary} />
                     </TouchableOpacity>
                     <Text style={styles.policyText}>
                         By submitting, you agree to CraveGo's Content Policy.
@@ -236,193 +225,185 @@ export default ReviewRatingScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
     },
     header: {
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: `${OUTLINE_VARIANT}33`,
+        borderBottomColor: `${colors.outlineVariant}33`,
     },
     headerRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
     },
     backBtn: {
-        width: 40,
-        height: 40,
+        width: sizes.avatar,
+        height: sizes.avatar,
         justifyContent: "center",
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: PRIMARY,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
+        lineHeight: typography.lineHeight.xxl,
         flex: 1,
         marginLeft: 4,
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: sizes.avatar,
+        height: sizes.avatar,
+        borderRadius: sizes.avatar / 2,
         overflow: "hidden",
         borderWidth: 1,
-        borderColor: OUTLINE_VARIANT,
+        borderColor: colors.outlineVariant,
     },
     avatarImage: {
         width: "100%",
         height: "100%",
     },
     scrollContent: {
-        padding: 16,
-        paddingBottom: 48,
+        padding: spacing.md,
+        paddingBottom: spacing.xxl,
     },
     restaurantCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.lg,
         flexDirection: "row",
         alignItems: "center",
-        gap: 16,
-        marginBottom: 24,
+        gap: spacing.md,
+        marginBottom: spacing.lg,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}33`,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-        elevation: 1,
+        borderColor: `${colors.outlineVariant}33`,
+        ...shadows.small,
     },
     restaurantImage: {
-        width: 64,
-        height: 64,
-        borderRadius: 8,
+        width: sizes.avatarLg - sizes.iconXxl,
+        height: sizes.avatarLg - sizes.iconXxl,
+        borderRadius: radius.sm,
     },
     restaurantInfo: {
         flex: 1,
     },
     restaurantName: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxxl,
     },
     orderInfo: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     card: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 24,
-        marginBottom: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.lg,
+        marginBottom: spacing.lg,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}33`,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 4,
-        elevation: 1,
+        borderColor: `${colors.outlineVariant}33`,
+        ...shadows.small,
     },
     cardTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
-        marginBottom: 16,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
+        marginBottom: spacing.md,
     },
     bigStarsRow: {
         flexDirection: "row",
         justifyContent: "center",
-        gap: 4,
+        gap: spacing.xs,
     },
     ratingLabel: {
         textAlign: "center",
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
         fontStyle: "italic",
-        marginTop: 8,
+        marginTop: spacing.sm,
         height: 20,
     },
     ratingLabelActive: {
-        color: PRIMARY,
-        fontWeight: "700",
+        color: colors.primary,
+        fontWeight: typography.fontWeight.bold,
         fontStyle: "normal",
     },
     detailHeader: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.5,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.wider,
         textTransform: "uppercase",
-        marginBottom: 16,
+        marginBottom: spacing.md,
     },
     detailRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingVertical: 8,
+        paddingVertical: spacing.sm,
     },
     detailRowBorder: {
         borderTopWidth: 1,
-        borderTopColor: `${SURFACE_VARIANT}80`,
+        borderTopColor: `${colors.surfaceContainerHighest}80`,
     },
     detailLabel: {
-        fontSize: 16,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.xl,
     },
     detailStars: {
         flexDirection: "row",
-        gap: 4,
+        gap: spacing.xs,
     },
     textArea: {
-        backgroundColor: `${PRIMARY}0D`,
+        backgroundColor: `${colors.primary}0D`,
         borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}4D`,
-        borderRadius: 12,
-        padding: 16,
-        fontSize: 16,
-        color: ON_SURFACE,
-        lineHeight: 24,
+        borderColor: `${colors.outlineVariant}4D`,
+        borderRadius: radius.md,
+        padding: spacing.md,
+        fontSize: typography.fontSize.lg,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
         minHeight: 120,
         textAlignVertical: "top",
     },
     photoGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
-        gap: 16,
+        gap: spacing.md,
     },
     uploadBtn: {
         width: 88,
         height: 88,
-        borderRadius: 12,
+        borderRadius: radius.md,
         borderWidth: 2,
-        borderColor: OUTLINE_VARIANT,
+        borderColor: colors.outlineVariant,
         borderStyle: "dashed",
         justifyContent: "center",
         alignItems: "center",
     },
     uploadText: {
         fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        marginTop: 4,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
+        marginTop: spacing.xs,
     },
     photoPreview: {
         width: 88,
         height: 88,
-        borderRadius: 12,
+        borderRadius: radius.md,
         overflow: "hidden",
         position: "relative",
     },
@@ -432,43 +413,39 @@ const styles = StyleSheet.create({
     },
     photoClose: {
         position: "absolute",
-        top: 4,
-        right: 4,
-        backgroundColor: `${SURFACE_CONTAINER_HIGHEST}CC`,
-        borderRadius: 999,
+        top: spacing.xs,
+        right: spacing.xs,
+        backgroundColor: `${colors.surfaceContainerHighest}CC`,
+        borderRadius: radius.full,
         padding: 2,
     },
     submitSection: {
-        marginTop: 8,
+        marginTop: spacing.sm,
     },
     submitBtn: {
-        backgroundColor: PRIMARY_CONTAINER,
+        backgroundColor: colors.primary,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 16,
-        paddingVertical: 24,
-        borderRadius: 12,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        elevation: 6,
+        gap: spacing.md,
+        paddingVertical: spacing.lg,
+        borderRadius: radius.md,
+        ...shadows.button,
     },
     submitText: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: ON_PRIMARY_CONTAINER,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxxl,
     },
     policyText: {
         textAlign: "center",
         fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        marginTop: 8,
-        paddingHorizontal: 24,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
+        marginTop: spacing.sm,
+        paddingHorizontal: spacing.lg,
     },
 });

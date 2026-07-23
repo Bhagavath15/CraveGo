@@ -13,22 +13,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import { getProfile, updateProfile } from "../api/auth";
-import { useToast } from "../components/Toast";
+import Toast from "react-native-toast-message";
 import { getAddresses } from "../api/address";
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_CONTAINER = "#FF6B35";
-const ON_PRIMARY_CONTAINER = "#5F1900";
-const SECONDARY = "#006D37";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_VARIANT = "#E5E2E1";
-const SURFACE_CONTAINER_HIGH = "#EAE7E7";
-const ERROR = "#BA1A1A";
-const ERROR_CONTAINER = "#FFDAD6";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 interface AddressItem {
     _id: string;
@@ -45,7 +32,6 @@ interface AddressItem {
 
 const ProfileScreen = () => {
     const insets = useSafeAreaInsets();
-    const { showToast } = useToast();
     const [profile, setProfile] = useState({ fullName: "", email: "", phone: "" });
     const [addresses, setAddresses] = useState<AddressItem[]>([]);
     const [saving, setSaving] = useState(false);
@@ -94,12 +80,12 @@ const ProfileScreen = () => {
                 sysNotif,
             });
             if (res.success) {
-                showToast({ message: "Profile updated successfully.", type: "success" });
+                Toast.show({ text1: "Profile updated successfully.", type: "success" });
             } else {
-                showToast({ message: res.message || "Failed to update profile", type: "error" });
+                Toast.show({ text1: res.message || "Failed to update profile", type: "error" });
             }
         } catch {
-            showToast({ message: "Network error. Try again.", type: "error" });
+            Toast.show({ text1: "Network error. Try again.", type: "error" });
         } finally {
             setSaving(false);
         }
@@ -116,7 +102,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="arrow-left"
                             size={24}
-                            color={PRIMARY}
+                            color={colors.primary}
                         />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Edit Profile</Text>
@@ -144,7 +130,7 @@ const ProfileScreen = () => {
                             <MaterialCommunityIcons
                                 name="camera"
                                 size={16}
-                                color="#FFF"
+                                color={colors.white}
                             />
                         </TouchableOpacity>
                     </View>
@@ -159,7 +145,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="account"
                             size={20}
-                            color={PRIMARY}
+                            color={colors.primary}
                         />
                         <Text style={styles.sectionTitle}>
                             Personal Information
@@ -180,7 +166,7 @@ const ProfileScreen = () => {
                                 <MaterialCommunityIcons
                                     name="pencil"
                                     size={18}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -202,7 +188,7 @@ const ProfileScreen = () => {
                                 <MaterialCommunityIcons
                                     name="pencil"
                                     size={18}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -224,7 +210,7 @@ const ProfileScreen = () => {
                                 <MaterialCommunityIcons
                                     name="pencil"
                                     size={18}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -236,7 +222,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="map-marker"
                             size={20}
-                            color={PRIMARY}
+                            color={colors.primary}
                         />
                         <Text style={styles.sectionTitle}>
                             Manage Addresses
@@ -259,7 +245,7 @@ const ProfileScreen = () => {
                                 <MaterialCommunityIcons
                                     name={addr.addressType === "Home" ? "home" : addr.addressType === "Work" ? "briefcase" : "map-marker"}
                                     size={20}
-                                    color={addr.isDefault ? PRIMARY : ON_SURFACE_VARIANT}
+                                    color={addr.isDefault ? colors.primary : colors.textSecondary}
                                 />
                             </View>
                             <View style={styles.addressInfo}>
@@ -271,7 +257,7 @@ const ProfileScreen = () => {
                             <MaterialCommunityIcons
                                 name="dots-vertical"
                                 size={20}
-                                color={ON_SURFACE_VARIANT}
+                                color={colors.textSecondary}
                             />
                         </View>
                     ))}
@@ -282,7 +268,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="bell"
                             size={20}
-                            color={PRIMARY}
+                            color={colors.primary}
                         />
                         <Text style={styles.sectionTitle}>Notifications</Text>
                     </View>
@@ -300,11 +286,11 @@ const ProfileScreen = () => {
                                 value={orderUpdates}
                                 onValueChange={setOrderUpdates}
                                 trackColor={{
-                                    false: SURFACE_VARIANT,
-                                    true: "#FFDBD0",
+                                    false: colors.surfaceContainerHighest,
+                                    true: colors.primaryLight,
                                 }}
                                 thumbColor={
-                                    orderUpdates ? PRIMARY : SURFACE_LOWEST
+                                    orderUpdates ? colors.primary : colors.surface
                                 }
                             />
                         </View>
@@ -322,11 +308,11 @@ const ProfileScreen = () => {
                                 value={offersDisc}
                                 onValueChange={setOffersDisc}
                                 trackColor={{
-                                    false: SURFACE_VARIANT,
-                                    true: "#FFDBD0",
+                                    false: colors.surfaceContainerHighest,
+                                    true: colors.primaryLight,
                                 }}
                                 thumbColor={
-                                    offersDisc ? PRIMARY : SURFACE_LOWEST
+                                    offersDisc ? colors.primary : colors.surface
                                 }
                             />
                         </View>
@@ -344,11 +330,11 @@ const ProfileScreen = () => {
                                 value={sysNotif}
                                 onValueChange={setSysNotif}
                                 trackColor={{
-                                    false: SURFACE_VARIANT,
-                                    true: "#FFDBD0",
+                                    false: colors.surfaceContainerHighest,
+                                    true: colors.primaryLight,
                                 }}
                                 thumbColor={
-                                    sysNotif ? PRIMARY : SURFACE_LOWEST
+                                    sysNotif ? colors.primary : colors.surface
                                 }
                             />
                         </View>
@@ -360,7 +346,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="shield-lock"
                             size={20}
-                            color={PRIMARY}
+                            color={colors.primary}
                         />
                         <Text style={styles.sectionTitle}>
                             Account Security
@@ -372,7 +358,7 @@ const ProfileScreen = () => {
                                 <MaterialCommunityIcons
                                     name="lock"
                                     size={20}
-                                    color={ON_SURFACE_VARIANT}
+                                    color={colors.textSecondary}
                                 />
                             </View>
                             <Text style={styles.securityLabel}>
@@ -382,7 +368,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="chevron-right"
                             size={20}
-                            color={ON_SURFACE_VARIANT}
+                            color={colors.textSecondary}
                         />
                     </TouchableOpacity>
                 </View>
@@ -392,7 +378,7 @@ const ProfileScreen = () => {
                         <MaterialCommunityIcons
                             name="delete-forever"
                             size={20}
-                            color={ERROR}
+                            color={colors.error}
                         />
                         <Text style={styles.deleteText}>Delete Account</Text>
                     </TouchableOpacity>
@@ -411,129 +397,117 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     header: {
-        backgroundColor: BG,
+        backgroundColor: colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: `${OUTLINE_VARIANT}4D`,
+        borderBottomColor: `${colors.outlineVariant}4D`,
     },
     headerRow: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
     },
     backBtn: {
-        width: 40,
-        height: 40,
+        width: sizes.avatar,
+        height: sizes.avatar,
         justifyContent: "center",
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: PRIMARY,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
+        lineHeight: typography.lineHeight.xxxl,
         flex: 1,
         marginLeft: 4,
     },
     saveBtn: {
-        backgroundColor: PRIMARY_CONTAINER,
-        paddingHorizontal: 24,
-        paddingVertical: 8,
-        borderRadius: 12,
+        backgroundColor: colors.primary,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.md,
     },
     saveText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#FFF",
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.white,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     scrollContent: {
-        padding: 16,
+        padding: spacing.md,
         paddingBottom: 40,
     },
     avatarSection: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     avatarWrapper: {
         position: "relative",
-        marginBottom: 8,
+        marginBottom: spacing.sm,
     },
     avatarImage: {
         width: 128,
         height: 128,
         borderRadius: 64,
         borderWidth: 4,
-        borderColor: SURFACE_LOWEST,
-        shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 4,
+        borderColor: colors.surface,
+        ...shadows.floating,
     },
     cameraBtn: {
         position: "absolute",
-        bottom: 4,
-        right: 4,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: PRIMARY,
+        bottom: spacing.xs,
+        right: spacing.xs,
+        width: sizes.iconXxl,
+        height: sizes.iconXxl,
+        borderRadius: sizes.iconXxl / 2,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
+        ...shadows.medium,
     },
     avatarName: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
     },
     avatarBadge: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
     },
     section: {
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     sectionHeader: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: spacing.sm,
         marginBottom: 12,
     },
     sectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
         flex: 1,
     },
     addNewText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: PRIMARY,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     card: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 24,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.lg,
+        ...shadows.card,
     },
     fieldRow: {
         flexDirection: "row",
@@ -542,69 +516,65 @@ const styles = StyleSheet.create({
     },
     field: {
         flex: 1,
-        marginRight: 8,
+        marginRight: spacing.sm,
     },
     fieldLabel: {
         fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
     },
     fieldInput: {
-        fontSize: 16,
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
         padding: 0,
     },
     divider: {
         height: 1,
-        backgroundColor: SURFACE_VARIANT,
-        marginVertical: 16,
+        backgroundColor: colors.surfaceContainerHighest,
+        marginVertical: spacing.md,
     },
     addressCard: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.lg,
         flexDirection: "row",
         alignItems: "flex-start",
-        gap: 16,
-        marginBottom: 8,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
+        gap: spacing.md,
+        marginBottom: spacing.sm,
+        ...shadows.card,
     },
     addressCardActive: {
         borderLeftWidth: 4,
-        borderLeftColor: PRIMARY,
+        borderLeftColor: colors.primary,
     },
     addressIconBg: {
-        backgroundColor: `${PRIMARY}1A`,
-        padding: 8,
-        borderRadius: 8,
+        backgroundColor: `${colors.primary}1A`,
+        padding: spacing.sm,
+        borderRadius: radius.sm,
     },
     addressIconBgMuted: {
-        backgroundColor: SURFACE_VARIANT,
-        padding: 8,
-        borderRadius: 8,
+        backgroundColor: colors.surfaceContainerHighest,
+        padding: spacing.sm,
+        borderRadius: radius.sm,
     },
     addressInfo: {
         flex: 1,
     },
     addressLabel: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-        marginBottom: 4,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
+        marginBottom: spacing.xs,
     },
     addressText: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
     },
     toggleRow: {
         flexDirection: "row",
@@ -616,75 +586,71 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     toggleTitle: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     toggleDesc: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
     },
     securityRow: {
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        padding: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        padding: spacing.lg,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
+        ...shadows.card,
     },
     securityLeft: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 16,
+        gap: spacing.md,
     },
     securityIconBg: {
-        backgroundColor: SURFACE_VARIANT,
-        padding: 8,
-        borderRadius: 8,
+        backgroundColor: colors.surfaceContainerHighest,
+        padding: spacing.sm,
+        borderRadius: radius.sm,
     },
     securityLabel: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     deleteSection: {
-        paddingTop: 16,
-        paddingBottom: 16,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.md,
     },
     deleteBtn: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
-        paddingVertical: 16,
-        borderRadius: 12,
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
         borderWidth: 1,
-        borderColor: `${ERROR}33`,
+        borderColor: `${colors.error}33`,
     },
     deleteText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ERROR,
-        lineHeight: 20,
-        letterSpacing: 0.1,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.error,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
     },
     deleteWarning: {
         textAlign: "center",
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
         marginTop: 12,
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
     },
 });
 

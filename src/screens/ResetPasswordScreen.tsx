@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
-    Alert,
+    ImageBackground,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -8,29 +9,17 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { resetPassword } from "../api/auth";
-
-const C = {
-    primary: "#FF6B35",
-    primaryContainer: "#ff6b35",
-    onPrimary: "#ffffff",
-    surface: "#fcf9f8",
-    onSurface: "#1b1c1c",
-    onSurfaceVariant: "#594139",
-    surfaceContainerLowest: "#ffffff",
-    outline: "#8d7168",
-    outlineVariant: "#e1bfb5",
-    surfaceContainerLow: "#f6f3f2",
-    surfaceContainerHighest: "#e5e2e1",
-    tertiary: "#785900",
-};
+import Toast from "react-native-toast-message";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenRoute = RouteProp<RootStackParamList, "ResetPassword">;
@@ -51,29 +40,28 @@ const ResetPasswordScreen = () => {
 
     const handleReset = async () => {
         if (!newPassword || !confirmPassword) {
-            Alert.alert("Error", "All fields are required");
+            Toast.show({ text1: "All fields are required", type: "error" });
             return;
         }
         if (newPassword !== confirmPassword) {
-            Alert.alert("Error", "Passwords do not match");
+            Toast.show({ text1: "Passwords do not match", type: "error" });
             return;
         }
         if (newPassword.length < 6) {
-            Alert.alert("Error", "Password must be at least 6 characters");
+            Toast.show({ text1: "Password must be at least 6 characters", type: "error" });
             return;
         }
         setLoading(true);
         try {
             const data = await resetPassword(resetToken, newPassword);
             if (data.success) {
-                Alert.alert("Success", "Password reset successfully!", [
-                    { text: "OK", onPress: () => navigation.navigate("Login") },
-                ]);
+                Toast.show({ text1: "Password reset successfully!", type: "success" });
+                setTimeout(() => navigation.navigate("Login"), 1000);
             } else {
-                Alert.alert("Error", data.message || "Failed to reset password");
+                Toast.show({ text1: data.message || "Failed to reset password", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Network error");
+            Toast.show({ text1: "Network error", type: "error" });
         } finally {
             setLoading(false);
         }
@@ -81,130 +69,138 @@ const ResetPasswordScreen = () => {
 
     return (
         <View style={styles.root}>
-            {/* Ambient blurs */}
-            <View style={styles.blobTop} />
-            <View style={styles.blobBottom} />
+            <ImageBackground
+                source={require("../assets/images/welcome-screen.png")}
+                style={styles.bgImage}
+                resizeMode="cover"
+            >
+                <View style={styles.bgOverlay} />
+            </ImageBackground>
 
-            <View style={[styles.safeWrap, { paddingTop: insets.top }]}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        style={styles.backBtn}
-                    >
-                        <MaterialCommunityIcons
-                            name="arrow-left"
-                            size={24}
-                            color={C.onSurfaceVariant}
-                        />
-                    </TouchableOpacity>
-                    <Text style={styles.logo}>CraveGo</Text>
-                    <View style={{ width: 40 }} />
-                </View>
-
+            <SafeAreaView style={styles.flex}>
                 <KeyboardAvoidingView
-                    style={{ flex: 1 }}
+                    style={styles.flex}
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
                 >
-                    <ScrollView
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                    >
-                        {/* Title section */}
-                        <View style={styles.titleSection}>
-                            <Text style={styles.title}>Create New Password</Text>
-                            <Text style={styles.subtitle}>
-                                Your new password must be different from previous ones.
-                            </Text>
-                        </View>
-
-                        {/* New Password */}
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.label}>New Password</Text>
-                            <View style={styles.inputWrapper}>
-                                <MaterialCommunityIcons
-                                    name="lock"
-                                    size={20}
-                                    color={C.outline}
-                                />
-                                <TextInput
-                                    ref={(ref) => {
-                                        // first field ref not needed beyond focus
-                                    }}
-                                    style={styles.input}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={C.outline}
-                                    secureTextEntry={!showNew}
-                                    value={newPassword}
-                                    onChangeText={setNewPassword}
-                                    returnKeyType="next"
-                                    onSubmitEditing={() => confirmRef.current?.focus()}
-                                />
-                                <TouchableOpacity onPress={() => setShowNew(!showNew)}>
-                                    <MaterialCommunityIcons
-                                        name={showNew ? "eye-off" : "eye"}
-                                        size={20}
-                                        color={C.outline}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Confirm Password */}
-                        <View style={styles.fieldGroup}>
-                            <Text style={styles.label}>Confirm New Password</Text>
-                            <View style={styles.inputWrapper}>
-                                <MaterialCommunityIcons
-                                    name="lock-reset"
-                                    size={20}
-                                    color={C.outline}
-                                />
-                                <TextInput
-                                    ref={confirmRef}
-                                    style={styles.input}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={C.outline}
-                                    secureTextEntry={!showConfirm}
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    returnKeyType="done"
-                                    onSubmitEditing={handleReset}
-                                />
-                                <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
-                                    <MaterialCommunityIcons
-                                        name={showConfirm ? "eye-off" : "eye"}
-                                        size={20}
-                                        color={C.outline}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Info text */}
-                        <View style={styles.infoSection}>
-                            <Text style={styles.infoText}>
-                                You will be redirected to login after a successful reset.
-                            </Text>
-                        </View>
-
-                        {/* Button */}
-                        <TouchableOpacity
-                            style={[styles.button, loading && { opacity: 0.5 }]}
-                            onPress={handleReset}
-                            disabled={loading}
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={styles.scrollContent}
+                            showsVerticalScrollIndicator={false}
                         >
-                            <Text style={styles.buttonText}>
-                                {loading ? "Resetting..." : "Reset Password"}
-                            </Text>
-                            <MaterialCommunityIcons
-                                name="arrow-right"
-                                size={20}
-                                color={C.onPrimary}
-                            />
-                        </TouchableOpacity>
-                    </ScrollView>
+                            <View style={styles.topSection}>
+                                <TouchableOpacity
+                                    onPress={() => navigation.goBack()}
+                                    style={styles.backBtn}
+                                >
+                                    <MaterialCommunityIcons
+                                        name="arrow-left"
+                                        size={sizes.iconLg}
+                                        color={colors.white}
+                                    />
+                                </TouchableOpacity>
+                                <Text style={styles.heroTitle}>
+                                    Create New{'\n'}Password
+                                </Text>
+                                <Text style={styles.heroSubtitle}>
+                                    Your new password must be different from previous ones.
+                                </Text>
+                            </View>
+
+                            <View style={styles.card}>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>New Password</Text>
+                                    <View style={styles.inputBox}>
+                                        <MaterialCommunityIcons
+                                            name="lock-outline"
+                                            size={sizes.icon}
+                                            color={colors.outline}
+                                        />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Enter new password"
+                                            placeholderTextColor={colors.outline}
+                                            secureTextEntry={!showNew}
+                                            value={newPassword}
+                                            onChangeText={setNewPassword}
+                                            returnKeyType="next"
+                                            onSubmitEditing={() => confirmRef.current?.focus()}
+                                        />
+                                        <TouchableOpacity
+                                            onPress={() => setShowNew(!showNew)}
+                                            style={styles.eyeBtn}
+                                        >
+                                            <MaterialCommunityIcons
+                                                name={showNew ? "eye-off-outline" : "eye-outline"}
+                                                size={22}
+                                                color={colors.textSecondary}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>Confirm New Password</Text>
+                                    <View style={styles.inputBox}>
+                                        <MaterialCommunityIcons
+                                            name="lock-outline"
+                                            size={sizes.icon}
+                                            color={colors.outline}
+                                        />
+                                        <TextInput
+                                            ref={confirmRef}
+                                            style={styles.input}
+                                            placeholder="Re-enter new password"
+                                            placeholderTextColor={colors.outline}
+                                            secureTextEntry={!showConfirm}
+                                            value={confirmPassword}
+                                            onChangeText={setConfirmPassword}
+                                            returnKeyType="done"
+                                            onSubmitEditing={handleReset}
+                                        />
+                                        <TouchableOpacity
+                                            onPress={() => setShowConfirm(!showConfirm)}
+                                            style={styles.eyeBtn}
+                                        >
+                                            <MaterialCommunityIcons
+                                                name={showConfirm ? "eye-off-outline" : "eye-outline"}
+                                                size={22}
+                                                color={colors.textSecondary}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View style={styles.infoSection}>
+                                    <MaterialCommunityIcons
+                                        name="information-outline"
+                                        size={sizes.iconSm}
+                                        color={colors.textSecondary}
+                                    />
+                                    <Text style={styles.infoText}>
+                                        You will be redirected to login after a successful reset.
+                                    </Text>
+                                </View>
+
+                                <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    disabled={loading}
+                                    onPress={handleReset}
+                                    style={[
+                                        styles.button,
+                                        loading && styles.buttonDisabled,
+                                    ]}
+                                >
+                                    <Text style={styles.buttonText}>
+                                        {loading ? "Resetting..." : "Reset Password"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{ height: insets.bottom, backgroundColor: colors.surface }} />
+                        </ScrollView>
+                    </TouchableWithoutFeedback>
                 </KeyboardAvoidingView>
-            </View>
+            </SafeAreaView>
         </View>
     );
 };
@@ -214,145 +210,119 @@ export default ResetPasswordScreen;
 const styles = StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: C.surface,
+        backgroundColor: colors.surface,
     },
-    blobTop: {
+    bgImage: {
         position: "absolute",
-        top: -80,
-        left: -80,
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        backgroundColor: C.primary,
-        opacity: 0.08,
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "80%",
     },
-    blobBottom: {
-        position: "absolute",
-        bottom: -60,
-        right: -60,
-        width: 250,
-        height: 250,
-        borderRadius: 125,
-        backgroundColor: C.tertiary,
-        opacity: 0.06,
-    },
-    safeWrap: {
+    bgOverlay: {
         flex: 1,
+        backgroundColor: colors.overlay,
     },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        height: 64,
-        borderBottomWidth: 1,
-        borderBottomColor: C.surfaceContainerHighest,
-    },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 999,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    logo: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 22,
-        lineHeight: 28,
-        fontWeight: "800",
-        letterSpacing: -0.5,
-        color: C.primary,
+    flex: {
+        flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 16,
-        paddingBottom: 32,
+        justifyContent: "flex-end",
     },
-    titleSection: {
+    topSection: {
+        paddingHorizontal: 28,
+        paddingBottom: 12,
+    },
+    backBtn: {
+        width: sizes.avatar,
+        height: sizes.avatar,
+        borderRadius: radius.xl,
+        backgroundColor: "rgba(255,255,255,0.2)",
+        justifyContent: "center",
         alignItems: "center",
-        marginBottom: 24,
-        marginTop: 16,
+        marginBottom: spacing.md,
     },
-    title: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 24,
-        lineHeight: 32,
-        fontWeight: "700",
-        color: C.onSurface,
-        marginBottom: 4,
+    heroTitle: {
+        fontSize: typography.fontSize.hero,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.white,
+        lineHeight: typography.lineHeight.hero,
+        marginBottom: spacing.sm,
     },
-    subtitle: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
-        fontWeight: "400",
-        color: C.onSurfaceVariant,
-        textAlign: "center",
-        maxWidth: 280,
+    heroSubtitle: {
+        fontSize: typography.fontSize.lg,
+        color: "rgba(255,255,255,0.8)",
+        lineHeight: typography.lineHeight.xl,
+    },
+    card: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 28,
+        paddingTop: 20,
+        paddingBottom: spacing.lg,
     },
     fieldGroup: {
-        marginBottom: 16,
+        marginBottom: 20,
     },
-    label: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-        fontWeight: "600",
-        color: C.onSurfaceVariant,
-        marginLeft: 4,
-        marginBottom: 4,
+    fieldLabel: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        letterSpacing: typography.letterSpacing.wide,
+        marginBottom: 6,
     },
-    inputWrapper: {
+    inputBox: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: C.surfaceContainerLowest,
+        backgroundColor: colors.inputBackground,
         borderWidth: 1,
-        borderColor: C.outlineVariant,
-        borderRadius: 12,
-        height: 52,
-        paddingHorizontal: 16,
-        gap: 10,
+        borderColor: colors.transparent,
+        borderRadius: radius.lg,
+        height: sizes.inputHeightLg,
+        paddingHorizontal: spacing.md,
+        gap: 12,
     },
     input: {
         flex: 1,
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 16,
-        lineHeight: 24,
-        fontWeight: "400",
-        color: C.onSurface,
+        fontSize: 15,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textPrimary,
+        padding: 0,
+    },
+    eyeBtn: {
+        padding: spacing.xs,
     },
     infoSection: {
+        flexDirection: "row",
         alignItems: "center",
-        marginVertical: 24,
+        gap: spacing.sm,
+        marginTop: spacing.xs,
+        marginBottom: spacing.sm,
     },
     infoText: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
-        fontWeight: "400",
-        color: C.onSurfaceVariant,
-        textAlign: "center",
+        fontSize: 13,
+        color: colors.textSecondary,
+        flex: 1,
+        lineHeight: 18,
     },
     button: {
-        flexDirection: "row",
-        height: 56,
-        borderRadius: 12,
-        backgroundColor: C.primaryContainer,
+        height: sizes.inputHeightLg,
+        borderRadius: radius.lg,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
-        gap: 8,
-        shadowColor: C.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.25,
-        shadowRadius: 24,
-        elevation: 8,
+        marginTop: spacing.sm,
+        ...shadows.button,
+    },
+    buttonDisabled: {
+        opacity: 0.5,
     },
     buttonText: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 20,
-        lineHeight: 28,
-        fontWeight: "600",
-        color: C.onPrimary,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.white,
+        letterSpacing: typography.letterSpacing.wide,
     },
 });

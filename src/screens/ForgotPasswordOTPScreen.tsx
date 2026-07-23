@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -16,20 +15,8 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { verifyForgotPasswordOtp, resendOtp } from "../api/auth";
-
-const C = {
-    primary: "#FF6B35",
-    primaryContainer: "#ff6b35",
-    surface: "#fcf9f8",
-    onSurface: "#1b1c1c",
-    onSurfaceVariant: "#594139",
-    surfaceContainerLowest: "#ffffff",
-    outlineVariant: "#e1bfb5",
-    primaryFixed: "#ffdbd0",
-    onPrimary: "#ffffff",
-    outline: "#8d7168",
-    surfaceContainerHighest: "#e5e2e1",
-};
+import Toast from "react-native-toast-message";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type ScreenRoute = RouteProp<RootStackParamList, "ForgotPasswordOTP">;
@@ -82,10 +69,10 @@ const ForgotPasswordOTPScreen = () => {
             if (data.success) {
                 navigation.navigate("ResetPassword", { resetToken: data.resetToken });
             } else {
-                Alert.alert("Error", data.message || "Invalid OTP");
+                Toast.show({ text1: data.message || "Invalid OTP", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Something went wrong. Try again.");
+            Toast.show({ text1: "Something went wrong. Try again.", type: "error" });
         } finally {
             setLoading(false);
         }
@@ -97,10 +84,10 @@ const ForgotPasswordOTPScreen = () => {
         try {
             const data = await resendOtp(email, "forgot_password");
             if (!data.success) {
-                Alert.alert("Error", data.message || "Failed to resend OTP");
+                Toast.show({ text1: data.message || "Failed to resend OTP", type: "error" });
             }
         } catch {
-            Alert.alert("Error", "Network error");
+            Toast.show({ text1: "Network error", type: "error" });
         }
     };
 
@@ -119,17 +106,17 @@ const ForgotPasswordOTPScreen = () => {
                     >
                         <MaterialCommunityIcons
                             name="arrow-left"
-                            size={24}
-                            color={C.onSurfaceVariant}
+                            size={sizes.iconLg}
+                            color={colors.textSecondary}
                         />
                     </TouchableOpacity>
                     <Text style={styles.logo}>CraveGo</Text>
-                    <View style={{ width: 40 }} />
+                    <View style={{ width: sizes.avatar }} />
                 </View>
             </View>
 
             <KeyboardAvoidingView
-                style={{ flex: 1 }}
+                style={styles.flex}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
             >
                 <ScrollView
@@ -142,14 +129,14 @@ const ForgotPasswordOTPScreen = () => {
                             <MaterialCommunityIcons
                                 name="lock-reset"
                                 size={64}
-                                color={C.primary}
+                                color={colors.primary}
                             />
                         </View>
                         <View style={styles.badge}>
                             <MaterialCommunityIcons
                                 name="check-decagram"
-                                size={28}
-                                color={C.onPrimary}
+                                size={sizes.iconXl}
+                                color={colors.white}
                             />
                         </View>
                     </View>
@@ -223,7 +210,7 @@ const ForgotPasswordOTPScreen = () => {
                             <MaterialCommunityIcons
                                 name="arrow-right"
                                 size={22}
-                                color={C.onPrimary}
+                                color={colors.white}
                             />
                         </TouchableOpacity>
                     </View>
@@ -232,8 +219,8 @@ const ForgotPasswordOTPScreen = () => {
                         <TouchableOpacity style={styles.footerBtn}>
                             <MaterialCommunityIcons
                                 name="help-circle-outline"
-                                size={16}
-                                color={C.onSurfaceVariant}
+                                size={sizes.iconSm}
+                                color={colors.textSecondary}
                             />
                             <Text style={styles.footerText}>Contact Support</Text>
                         </TouchableOpacity>
@@ -249,7 +236,7 @@ export default ForgotPasswordOTPScreen;
 const styles = StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: C.surface,
+        backgroundColor: colors.background,
     },
     blobContainer: {
         position: "absolute",
@@ -264,7 +251,7 @@ const styles = StyleSheet.create({
         right: -100,
         width: 400,
         height: 400,
-        backgroundColor: C.primary,
+        backgroundColor: colors.primary,
         borderRadius: 200,
         opacity: 0.04,
         transform: [{ scale: 1.1 }],
@@ -275,7 +262,7 @@ const styles = StyleSheet.create({
         left: -80,
         width: 300,
         height: 300,
-        backgroundColor: C.primaryContainer,
+        backgroundColor: colors.primary,
         borderRadius: 150,
         opacity: 0.06,
     },
@@ -286,29 +273,32 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
-        height: 64,
+        paddingHorizontal: spacing.md,
+        height: sizes.headerHeight,
         borderBottomWidth: 1,
-        borderBottomColor: C.surfaceContainerHighest,
+        borderBottomColor: colors.surfaceContainerHighest,
     },
     headerBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 999,
+        width: sizes.avatar,
+        height: sizes.avatar,
+        borderRadius: radius.full,
         justifyContent: "center",
         alignItems: "center",
     },
     logo: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 22,
-        fontWeight: "800",
-        letterSpacing: -0.5,
-        color: C.primary,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.extrabold,
+        letterSpacing: typography.letterSpacing.tight,
+        color: colors.primary,
+    },
+    flex: {
+        flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 16,
-        paddingBottom: 48,
+        paddingHorizontal: spacing.md,
+        paddingBottom: spacing.xxl,
         alignItems: "center",
     },
     cardStack: {
@@ -316,30 +306,26 @@ const styles = StyleSheet.create({
         height: 224,
         justifyContent: "center",
         alignItems: "center",
-        marginTop: 32,
-        marginBottom: 24,
+        marginTop: spacing.xl,
+        marginBottom: spacing.lg,
     },
     cardBack: {
         position: "absolute",
         width: 176,
         height: 176,
-        backgroundColor: "#fff",
-        borderRadius: 24,
+        backgroundColor: colors.surface,
+        borderRadius: radius.xxl,
         transform: [{ rotate: "6deg" }, { scale: 0.95 }],
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.1,
-        shadowRadius: 50,
-        elevation: 8,
         borderWidth: 1,
-        borderColor: C.surfaceContainerHighest,
+        borderColor: colors.surfaceContainerHighest,
+        ...shadows.modal,
     },
     cardFront: {
         position: "absolute",
         width: 176,
         height: 176,
-        backgroundColor: C.primaryFixed,
-        borderRadius: 24,
+        backgroundColor: colors.primaryLight,
+        borderRadius: radius.xxl,
         transform: [{ rotate: "-3deg" }],
         justifyContent: "center",
         alignItems: "center",
@@ -351,128 +337,120 @@ const styles = StyleSheet.create({
         right: -4,
         width: 56,
         height: 56,
-        borderRadius: 16,
-        backgroundColor: C.primary,
+        borderRadius: radius.lg,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 4,
-        borderColor: "#fff",
+        borderColor: colors.surface,
         transform: [{ rotate: "6deg" }],
-        shadowColor: C.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 8,
+        ...shadows.floating,
     },
     headingSection: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     headingTitle: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 32,
-        lineHeight: 36,
-        fontWeight: "700",
-        color: C.onSurface,
-        marginBottom: 8,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.display,
+        lineHeight: typography.lineHeight.display,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        marginBottom: spacing.sm,
     },
     headingSubtitle: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 16,
-        lineHeight: 24,
-        color: C.onSurfaceVariant,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.lg,
+        lineHeight: typography.lineHeight.xl,
+        color: colors.textSecondary,
         textAlign: "center",
-        paddingHorizontal: 24,
+        paddingHorizontal: spacing.lg,
     },
     headingEmail: {
-        fontWeight: "700",
-        color: C.primary,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
     },
     otpRow: {
         flexDirection: "row",
         gap: 12,
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     otpInput: {
-        width: 52,
+        width: sizes.buttonHeight,
         height: 72,
-        borderRadius: 16,
-        backgroundColor: "#ffffff",
+        borderRadius: radius.lg,
+        backgroundColor: colors.surface,
         borderWidth: 2,
         borderColor: "rgba(255,107,53,0.1)",
         textAlign: "center",
-        fontFamily: "Plus Jakarta Sans",
+        fontFamily: typography.fontFamily,
         fontSize: 28,
-        lineHeight: 36,
-        fontWeight: "700",
-        color: C.onSurface,
-        shadowColor: "#000",
+        lineHeight: typography.lineHeight.display,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.04,
         shadowRadius: 20,
         elevation: 2,
     },
     otpInputFilled: {
-        borderColor: C.primary,
-        shadowColor: C.primary,
+        borderColor: colors.primary,
+        shadowColor: colors.primary,
         shadowOpacity: 0.15,
         shadowRadius: 30,
         elevation: 6,
     },
     resendSection: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     resendTimer: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-        fontWeight: "600",
-        color: C.primary,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.md,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
     },
     resendTimerUrgent: {
-        color: "#D32F2F",
+        color: colors.error,
     },
     resendActive: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 14,
-        lineHeight: 20,
-        letterSpacing: 0.1,
-        fontWeight: "600",
-        color: C.primary,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.md,
+        lineHeight: typography.lineHeight.md,
+        letterSpacing: typography.letterSpacing.normal,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.primary,
     },
     buttonWrap: {
         width: "100%",
-        paddingHorizontal: 8,
+        paddingHorizontal: spacing.sm,
     },
     button: {
         flexDirection: "row",
         width: "100%",
-        height: 56,
-        borderRadius: 24,
-        backgroundColor: C.primary,
+        height: sizes.buttonHeightLg,
+        borderRadius: radius.xxl,
+        backgroundColor: colors.primary,
         justifyContent: "center",
         alignItems: "center",
         gap: 12,
-        shadowColor: C.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.3,
-        shadowRadius: 24,
-        elevation: 8,
+        ...shadows.button,
     },
     buttonDisabled: {
         opacity: 0.5,
     },
     buttonText: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 16,
-        lineHeight: 24,
-        fontWeight: "600",
-        color: C.onPrimary,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.lg,
+        lineHeight: typography.lineHeight.xl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.white,
     },
     footer: {
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     footerBtn: {
         flexDirection: "row",
@@ -481,11 +459,11 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     footerText: {
-        fontFamily: "Plus Jakarta Sans",
-        fontSize: 11,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        fontWeight: "500",
-        color: C.onSurfaceVariant,
+        fontFamily: typography.fontFamily,
+        fontSize: typography.fontSize.xs,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textSecondary,
     },
 });

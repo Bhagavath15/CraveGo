@@ -2,23 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { getAddresses, deleteAddress, setDefaultAddress, Address } from "../api/address";
 import Skeleton from "../components/Skeleton";
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_SOFT = "#FFDBD0";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER = "#F0EDED";
-const OUTLINE_VARIANT = "#E1BFB5";
-const OUTLINE = "#8D7168";
-const SECONDARY = "#2ECC71";
-const SECONDARY_SOFT = "#2ECC7120";
+import { colors, spacing, typography, radius, shadows } from "../theme";
 
 const ICON_MAP: Record<string, string> = {
   Home: "home",
@@ -27,15 +16,15 @@ const ICON_MAP: Record<string, string> = {
 };
 
 const ICON_BG: Record<string, string> = {
-  Home: PRIMARY_SOFT,
-  Work: "#E1EFFF",
-  Other: "#FFF3E0",
+  Home: colors.primaryLight,
+  Work: colors.addressTag.workBg,
+  Other: colors.tertiaryLight,
 };
 
 const ICON_COLOR: Record<string, string> = {
-  Home: PRIMARY,
-  Work: "#1E6FFF",
-  Other: "#F5A623",
+  Home: colors.primary,
+  Work: colors.addressTag.work,
+  Other: colors.warning,
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -61,7 +50,7 @@ const AddressBookScreen = () => {
         setAddresses(res.addresses || []);
       }
     } catch (err) {
-    } finally {
+      console.warn("Failed to load addresses", err);} finally {
       setLoading(false);
     }
   }, []);
@@ -70,12 +59,11 @@ const AddressBookScreen = () => {
     loadAddresses();
   }, [loadAddresses]);
 
-  useEffect(() => {
-    const unsub = navigation.addListener("focus", () => {
+  useFocusEffect(
+    useCallback(() => {
       loadAddresses();
-    });
-    return unsub;
-  }, [navigation, loadAddresses]);
+    }, [loadAddresses])
+  );
 
   const handleDelete = (id: string) => {
     Alert.alert("Delete Address", "Are you sure you want to delete this address?", [
@@ -115,11 +103,11 @@ const AddressBookScreen = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Address Book</Text>
         <TouchableOpacity onPress={() => navigation.navigate("AddAddress")} style={styles.headerBtn}>
-          <MaterialCommunityIcons name="map-marker-plus" size={24} color={PRIMARY} />
+          <MaterialCommunityIcons name="map-marker-plus" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -128,7 +116,7 @@ const AddressBookScreen = () => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="map-marker-plus" size={20} color={PRIMARY} />
+          <MaterialCommunityIcons name="map-marker-plus" size={20} color={colors.primary} />
           <Text style={styles.infoText}>
             Manage your delivery locations for a faster checkout experience.
           </Text>
@@ -153,14 +141,14 @@ const AddressBookScreen = () => {
           ))
         ) : addresses.length === 0 ? (
           <View style={styles.centerState}>
-            <MaterialCommunityIcons name="map-marker-off" size={48} color={OUTLINE_VARIANT} />
+            <MaterialCommunityIcons name="map-marker-off" size={48} color={colors.outlineVariant} />
             <Text style={styles.emptyTitle}>No addresses yet</Text>
             <Text style={styles.emptySubtitle}>Tap below to add your first delivery location</Text>
             <TouchableOpacity
               style={styles.emptyAddBtn}
               onPress={() => navigation.navigate("AddAddress")}
             >
-              <MaterialCommunityIcons name="map-marker-plus" size={20} color="#fff" />
+              <MaterialCommunityIcons name="map-marker-plus" size={20} color={colors.white} />
               <Text style={styles.emptyAddBtnText}>Add New Address</Text>
             </TouchableOpacity>
           </View>
@@ -170,33 +158,35 @@ const AddressBookScreen = () => {
             const type = addr.addressType;
             return (
               <View key={addr._id} style={[styles.card, isDefault && styles.cardDefault]}>
-                {isDefault && (
-                  <View style={styles.defaultPill}>
-                    <MaterialCommunityIcons name="check-circle" size={12} color={SECONDARY} />
-                    <Text style={styles.defaultPillText}>Default</Text>
-                  </View>
-                )}
+                {isDefault && <View style={styles.defaultAccent} />}
 
-                <View style={styles.cardTop}>
-                  <View style={[styles.typeCircle, { backgroundColor: ICON_BG[type] || PRIMARY_SOFT }]}>
-                    <MaterialCommunityIcons
-                      name={ICON_MAP[type] || "pin"}
-                      size={22}
-                      color={ICON_COLOR[type] || PRIMARY}
-                    />
-                  </View>
-
-                  <View style={styles.cardInfo}>
-                    <View style={styles.typeLabelRow}>
-                      <Text style={styles.typeLabel}>{type}</Text>
-                      <MaterialCommunityIcons name="map-marker" size={14} color={OUTLINE} />
+                <View style={styles.cardBody}>
+                  <View style={styles.cardTop}>
+                    <View style={[styles.typeCircle, { backgroundColor: ICON_BG[type] || colors.primaryLight }]}>
+                      <MaterialCommunityIcons
+                        name={ICON_MAP[type] || "pin"}
+                        size={20}
+                        color={ICON_COLOR[type] || colors.primary}
+                      />
                     </View>
-                    <Text style={styles.cardTitle} numberOfLines={1}>
-                      {getDisplayName(addr)}
-                    </Text>
-                    <Text style={styles.cardAddress} numberOfLines={2}>
-                      {formatFullAddress(addr)}
-                    </Text>
+
+                    <View style={styles.cardInfo}>
+                      <View style={styles.typeLabelRow}>
+                        <Text style={styles.typeLabel}>{type}</Text>
+                        {isDefault && (
+                          <View style={styles.defaultChip}>
+                            <MaterialCommunityIcons name="check-circle" size={10} color={colors.success} />
+                            <Text style={styles.defaultChipText}>Default</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.cardTitle} numberOfLines={1}>
+                        {getDisplayName(addr)}
+                      </Text>
+                      <Text style={styles.cardAddress} numberOfLines={2}>
+                        {formatFullAddress(addr)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -205,7 +195,7 @@ const AddressBookScreen = () => {
                     style={styles.actionBtn}
                     onPress={() => navigation.navigate("AddAddress", { addressId: addr._id })}
                   >
-                    <MaterialCommunityIcons name="pencil" size={16} color={PRIMARY} />
+                    <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.primary} />
                     <Text style={styles.actionText}>Edit</Text>
                   </TouchableOpacity>
 
@@ -214,17 +204,17 @@ const AddressBookScreen = () => {
                       style={styles.actionBtn}
                       onPress={() => handleSetDefault(addr._id)}
                     >
-                      <MaterialCommunityIcons name="check-circle-outline" size={16} color={SECONDARY} />
-                      <Text style={styles.actionTextSecondary}>Set Default</Text>
+                      <MaterialCommunityIcons name="check-circle-outline" size={16} color={colors.secondary} />
+                      <Text style={[styles.actionText, { color: colors.secondary }]}>Set Default</Text>
                     </TouchableOpacity>
                   )}
 
                   <TouchableOpacity
-                    style={styles.actionBtn}
+                    style={[styles.actionBtn, styles.deleteBtn]}
                     onPress={() => handleDelete(addr._id)}
                   >
-                    <MaterialCommunityIcons name="delete" size={16} color="#BA1A1A" />
-                    <Text style={styles.actionTextDanger}>Delete</Text>
+                    <MaterialCommunityIcons name="delete-outline" size={16} color={colors.error} />
+                    <Text style={[styles.actionText, { color: colors.error }]}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -242,26 +232,26 @@ export default AddressBookScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: colors.background,
   },
   headerBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 10,
-    backgroundColor: BG,
+    backgroundColor: colors.background,
   },
   headerBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: ON_SURFACE,
-    lineHeight: 24,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+    lineHeight: typography.lineHeight.xl,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
 
   infoRow: {
@@ -269,20 +259,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
     marginBottom: 20,
-    backgroundColor: PRIMARY_SOFT,
+    backgroundColor: colors.primaryLight,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
-    color: ON_SURFACE,
-    lineHeight: 20,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    lineHeight: typography.lineHeight.md,
   },
 
   centerState: {
     alignItems: "center",
-    paddingVertical: 64,
+    paddingVertical: spacing.xxxl,
     gap: 10,
   },
   emptyAddBtn: {
@@ -290,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: PRIMARY,
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 14,
@@ -298,73 +288,77 @@ const styles = StyleSheet.create({
   },
   emptyAddBtnText: {
     fontSize: 15,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.white,
     lineHeight: 22,
   },
   loaderText: {
-    fontSize: 14,
-    color: ON_SURFACE_VARIANT,
-    lineHeight: 20,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: typography.lineHeight.md,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: ON_SURFACE,
-    lineHeight: 24,
-    marginTop: 4,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
+    lineHeight: typography.lineHeight.xl,
+    marginTop: spacing.xs,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: ON_SURFACE_VARIANT,
-    lineHeight: 20,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: typography.lineHeight.md,
     textAlign: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.xl,
   },
 
   card: {
-    backgroundColor: SURFACE_LOWEST,
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
     marginBottom: 14,
-    borderWidth: 1,
-    borderColor: SURFACE_CONTAINER,
+    ...shadows.card,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    position: "relative",
   },
-  cardDefault: {
-    borderColor: SECONDARY,
+  cardDefault: {},
+  defaultAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.success,
+    borderTopLeftRadius: radius.lg,
+    borderBottomLeftRadius: radius.lg,
   },
 
-  defaultPill: {
+  defaultChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: SECONDARY_SOFT,
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderBottomRightRadius: 12,
+    gap: 3,
+    backgroundColor: `${colors.success}15`,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
   },
-  defaultPillText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: SECONDARY,
-    lineHeight: 16,
+  defaultChipText: {
+    fontSize: 10,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.success,
+    lineHeight: typography.lineHeight.sm,
   },
 
+  cardBody: {
+    padding: spacing.md,
+  },
   cardTop: {
     flexDirection: "row",
-    padding: 16,
     gap: 14,
   },
   typeCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -374,61 +368,54 @@ const styles = StyleSheet.create({
   typeLabelRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: spacing.sm,
     marginBottom: 2,
   },
   typeLabel: {
     fontSize: 11,
-    fontWeight: "600",
-    color: ON_SURFACE_VARIANT,
-    lineHeight: 16,
-    letterSpacing: 0.5,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
+    lineHeight: typography.lineHeight.sm,
+    letterSpacing: typography.letterSpacing.wider,
+    textTransform: "uppercase",
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: ON_SURFACE,
-    lineHeight: 24,
-    marginBottom: 4,
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    lineHeight: typography.lineHeight.xl,
+    marginBottom: spacing.xs,
   },
   cardAddress: {
-    fontSize: 14,
-    color: ON_SURFACE_VARIANT,
-    lineHeight: 20,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: typography.lineHeight.md,
   },
 
   cardActions: {
     flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: SURFACE_CONTAINER,
-    paddingHorizontal: 16,
+    borderTopColor: colors.surfaceContainerHighest,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    gap: 24,
+    gap: 4,
   },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+  },
+  deleteBtn: {
+    marginLeft: "auto",
   },
   actionText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: PRIMARY,
-    lineHeight: 18,
-  },
-  actionTextSecondary: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: SECONDARY,
-    lineHeight: 18,
-  },
-  actionTextDanger: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#BA1A1A",
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.primary,
     lineHeight: 18,
   },
 

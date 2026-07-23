@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { colors, spacing } from "../theme";
 
 export default function OfflineBanner() {
   const [isOffline, setIsOffline] = useState(false);
@@ -17,7 +18,7 @@ export default function OfflineBanner() {
 
   return (
     <View style={styles.banner}>
-      <MaterialCommunityIcons name="wifi-off" size={16} color="#fff" />
+      <MaterialCommunityIcons name="wifi-off" size={16} color={colors.white} />
       <Text style={styles.text}>No internet connection</Text>
     </View>
   );
@@ -28,13 +29,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#ba1a1a",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    backgroundColor: colors.error,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   text: {
-    color: "#fff",
+    color: colors.white,
     fontSize: 13,
     fontWeight: "600",
     lineHeight: 18,

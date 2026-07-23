@@ -18,18 +18,7 @@ import { RootStackParamList } from "../types/types";
 import { getOrderById, advanceOrderStatus, cancelOrder } from "../api/order";
 import { connectSocket, getSocket } from "../api/socket";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const PRIMARY = "#ff6b35";
-const ON_PRIMARY = "#ffffff";
-const ON_SURFACE = "#1b1c1c";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#e1bfb5";
-const SURFACE_LOWEST = "#ffffff";
-const ERROR = "#ba1a1a";
-const GREEN = "#006D37";
-const SURFACE_CONTAINER = "#f0eded";
-const SURFACE_CONTAINER_HIGH = "#eae7e7";
-const GREY = "#9E9E9E";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 const PATH: { label: string; pct: { x: number; y: number }; icon: string; completedIcon: string; serverKey: number }[] = [
   { label: "Placed", pct: { x: 10, y: 6 }, icon: "clipboard-list-outline", completedIcon: "check", serverKey: 0 },
@@ -155,7 +144,7 @@ export default function TrackMyOrderScreen() {
   const deliveredRef = useRef(false);
 
   const orderStatus = liveOrder?.orderStatus ?? 0;
-  const riderName_ = liveOrder?.riderName ?? "";
+  const riderName_ = liveOrder?.riderName ?? "Rahul";
   const riderRating_ = liveOrder?.riderRating ?? 0;
   const estimatedTime = liveOrder?.estimatedTime;
   const activeIdx = stitchStep(isCancelled ? (cancelledFromStatus ?? orderStatus) : orderStatus);
@@ -198,7 +187,7 @@ export default function TrackMyOrderScreen() {
   }, [orderId, cancelling, liveOrder]);
 
   const statusDesc = isCancelled ? "Order has been cancelled" : STATUS_DESC[orderStatus] || STATUS_DESC[0];
-  const accentColor = isCancelled ? ERROR : orderStatus >= 7 ? GREEN : PRIMARY;
+  const accentColor = isCancelled ? colors.error : orderStatus >= 7 ? colors.secondary : colors.primary;
 
   const [layout, setLayout] = useState({ w: 360, h: 400 });
 
@@ -253,16 +242,16 @@ export default function TrackMyOrderScreen() {
         <BottomSheetView style={s.sheetContent}>
           <View style={s.headerSection}>
             <View style={s.headerLeft}>
-              <Text style={[s.headerTitle, { color: isCancelled ? ERROR : accentColor }]}>
+              <Text style={[s.headerTitle, { color: isCancelled ? colors.error : accentColor }]}>
                 {isCancelled ? "Order Cancelled" : "On its way!"}
               </Text>
               <Text style={s.headerSub}>Order #{orderNumber} • {statusDesc}</Text>
             </View>
-            <View style={[s.headerIconBox, { backgroundColor: PRIMARY }]}>              
+            <View style={[s.headerIconBox, { backgroundColor: colors.primary }]}>              
               <MaterialCommunityIcons
                 name={isCancelled ? "cancel" : "motorbike"}
                 size={32}
-                color={ON_PRIMARY}
+                color={colors.white}
               />
             </View>
           </View>
@@ -277,7 +266,7 @@ export default function TrackMyOrderScreen() {
                     <Path
                       key={`seg-${i}`}
                       d={d}
-                      stroke={i < activeIdx ? PRIMARY : SURFACE_CONTAINER_HIGH}
+                      stroke={i < activeIdx ? colors.primary : colors.surfaceContainerHigh}
                       strokeWidth={7}
                       fill="none"
                       strokeLinecap="round"
@@ -316,17 +305,17 @@ export default function TrackMyOrderScreen() {
                         width: dotSize,
                         height: dotSize,
                         borderRadius: dotSize / 2,
-                        backgroundColor: isCompleted ? PRIMARY : SURFACE_CONTAINER_HIGH,
-                        borderColor: isCompleted ? PRIMARY : SURFACE_CONTAINER_HIGH,
+                        backgroundColor: isCompleted ? colors.primary : colors.surfaceContainerHigh,
+                        borderColor: isCompleted ? colors.primary : colors.surfaceContainerHigh,
                         borderWidth: 0,
                       },
                     ]}
                   >
                     {isCompleted && (
-                      <MaterialCommunityIcons name={icon as any} size={22} color={ON_PRIMARY} />
+                      <MaterialCommunityIcons name={icon as any} size={22} color={colors.white} />
                     )}
                     {isFuture && (
-                      <MaterialCommunityIcons name={icon as any} size={22} color={GREY} />
+                      <MaterialCommunityIcons name={icon as any} size={22} color={colors.inactive} />
                     )}
                   </View>
                   <View
@@ -336,7 +325,7 @@ export default function TrackMyOrderScreen() {
                       !isLeftSide && { alignItems: "flex-end" },
                     ]}
                   >
-                    <Text style={[s.stepLabel, { color: isCompleted ? ON_SURFACE : GREY }]} numberOfLines={1}>
+                    <Text style={[s.stepLabel, { color: isCompleted ? colors.textPrimary : colors.inactive }]} numberOfLines={1}>
                       {p.label}
                     </Text>
                   </View>
@@ -348,10 +337,10 @@ export default function TrackMyOrderScreen() {
               <View style={s.riderCard}>
                 <View style={s.riderAvatarWrap}>
                   <View style={s.riderAvatarSmall}>
-                    <MaterialCommunityIcons name="account-circle" size={24} color={PRIMARY} />
+                    <MaterialCommunityIcons name="account-circle" size={24} color={colors.primary} />
                   </View>
                   <View style={s.riderRatingBadge}>
-                    <MaterialCommunityIcons name="star" size={7} color="#FFD700" />
+                    <MaterialCommunityIcons name="star" size={7} color={colors.rating} />
                     <Text style={s.riderRatingMini}>{riderRating_}</Text>
                   </View>
                 </View>
@@ -359,10 +348,10 @@ export default function TrackMyOrderScreen() {
                   <Text style={s.riderNameSmall}>{riderName_}</Text>
                   <View style={s.riderActionRow}>
                     <TouchableOpacity style={s.chatMini}>
-                      <MaterialCommunityIcons name="message-text" size={12} color={PRIMARY} />
+                      <MaterialCommunityIcons name="message-text" size={12} color={colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity style={s.callMini}>
-                      <MaterialCommunityIcons name="phone" size={12} color={ON_PRIMARY} />
+                      <MaterialCommunityIcons name="phone" size={12} color={colors.white} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -373,25 +362,25 @@ export default function TrackMyOrderScreen() {
           <View style={s.actionRow}>
             {!isCancelled && (
               <TouchableOpacity style={s.helpBtn}>
-                <MaterialCommunityIcons name="help-circle-outline" size={22} color={ON_SURFACE_VARIANT} />
+                <MaterialCommunityIcons name="help-circle-outline" size={22} color={colors.textSecondary} />
                 <Text style={s.helpBtnText}>Get Help</Text>
               </TouchableOpacity>
             )}
             {isCancelled ? (
               <>
                 <TouchableOpacity style={s.postCancelBtn} onPress={() => navigation.navigate("Home")}>
-                  <MaterialCommunityIcons name="home-outline" size={22} color={PRIMARY} />
-                  <Text style={[s.postCancelBtnText, { color: PRIMARY }]}>Home</Text>
+                  <MaterialCommunityIcons name="home-outline" size={22} color={colors.primary} />
+                  <Text style={[s.postCancelBtnText, { color: colors.primary }]}>Home</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.postCancelBtn} onPress={() => navigation.navigate("Home", { screen: "OrdersTab" })}>
-                  <MaterialCommunityIcons name="clipboard-list-outline" size={22} color={PRIMARY} />
-                  <Text style={[s.postCancelBtnText, { color: PRIMARY }]}>Order History</Text>
+                  <MaterialCommunityIcons name="clipboard-list-outline" size={22} color={colors.primary} />
+                  <Text style={[s.postCancelBtnText, { color: colors.primary }]}>Order History</Text>
                 </TouchableOpacity>
               </>
             ) : (
               orderStatus < 4 && (
                 <TouchableOpacity style={s.cancelBtn} onPress={handleCancel} disabled={cancelling}>
-                  <MaterialCommunityIcons name="close" size={22} color={ERROR} />
+                  <MaterialCommunityIcons name="close" size={22} color={colors.error} />
                   <Text style={s.cancelBtnText}>{cancelling ? "Cancelling..." : "Cancel"}</Text>
                 </TouchableOpacity>
               )
@@ -405,20 +394,20 @@ export default function TrackMyOrderScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  handleIndicator: { width: 48, height: 6, backgroundColor: "#e5e2e1", borderRadius: 3, opacity: 0.5 },
-  sheetBackground: { backgroundColor: "#fcf9f8", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  sheetContent: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 48 },
-  scrollInner: { paddingBottom: 24 },
+  handleIndicator: { width: spacing.xxl, height: 6, backgroundColor: colors.surfaceContainerHighest, borderRadius: 3, opacity: 0.5 },
+  sheetBackground: { backgroundColor: colors.background, borderTopLeftRadius: radius.xxl, borderTopRightRadius: radius.xxl },
+  sheetContent: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
+  scrollInner: { paddingBottom: spacing.lg },
 
   headerSection: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginBottom: 12,
   },
   headerLeft: { flex: 1, marginRight: 12 },
-  headerTitle: { fontSize: 26, fontWeight: "800", lineHeight: 32, letterSpacing: -0.3 },
-  headerSub: { fontSize: 13, color: ON_SURFACE_VARIANT, lineHeight: 18, marginTop: 2 },
+  headerTitle: { fontSize: 26, fontWeight: typography.fontWeight.extrabold, lineHeight: typography.lineHeight.xxxl, letterSpacing: typography.letterSpacing.snug },
+  headerSub: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginTop: 2 },
   headerIconBox: {
-    width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center",
+    width: sizes.buttonHeightLg, height: sizes.buttonHeightLg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center",
   },
 
   pathContainer: {
@@ -437,58 +426,57 @@ const s = StyleSheet.create({
   },
 
   stepLabelWrap: { position: "absolute", width: 100, zIndex: 5 },
-  stepLabel: { fontSize: 11, fontWeight: "600", lineHeight: 15 },
+  stepLabel: { fontSize: 11, fontWeight: typography.fontWeight.semibold, lineHeight: 15 },
 
   riderCard: {
-    position: "absolute", left: 16, bottom: 16,
+    position: "absolute", left: spacing.md, bottom: spacing.md,
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: SURFACE_LOWEST,
+    backgroundColor: colors.surface,
     borderRadius: 14,
     paddingHorizontal: 12, paddingVertical: 10,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 8, elevation: 4,
+    ...shadows.medium,
     zIndex: 7,
   },
   riderAvatarWrap: { position: "relative" },
   riderAvatarSmall: {
     width: 36, height: 36, borderRadius: 12,
-    backgroundColor: `${PRIMARY}15`, alignItems: "center", justifyContent: "center",
+    backgroundColor: `${colors.primary}15`, alignItems: "center", justifyContent: "center",
   },
   riderRatingBadge: {
     position: "absolute", bottom: -3, right: -3,
-    backgroundColor: SURFACE_LOWEST, borderRadius: 6,
+    backgroundColor: colors.surface, borderRadius: 6,
     flexDirection: "row", alignItems: "center", gap: 1,
-    paddingHorizontal: 4, paddingVertical: 1,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
+    paddingHorizontal: spacing.xs, paddingVertical: 1,
+    shadowColor: colors.shadow, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2,
   },
-  riderRatingMini: { fontSize: 8, fontWeight: "800", color: ON_SURFACE, lineHeight: 10 },
-  riderInfoCol: { gap: 4 },
-  riderNameSmall: { fontSize: 12, fontWeight: "700", color: ON_SURFACE, lineHeight: 16 },
+  riderRatingMini: { fontSize: 8, fontWeight: typography.fontWeight.extrabold, color: colors.textPrimary, lineHeight: 10 },
+  riderInfoCol: { gap: spacing.xs },
+  riderNameSmall: { fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold, color: colors.textPrimary, lineHeight: typography.lineHeight.sm },
   riderActionRow: { flexDirection: "row", gap: 6 },
-  chatMini: { width: 26, height: 26, borderRadius: 8, backgroundColor: PRIMARY + "12", alignItems: "center", justifyContent: "center" },
-  callMini: { width: 26, height: 26, borderRadius: 8, backgroundColor: PRIMARY, alignItems: "center", justifyContent: "center" },
+  chatMini: { width: 26, height: 26, borderRadius: radius.sm, backgroundColor: colors.primary + "12", alignItems: "center", justifyContent: "center" },
+  callMini: { width: 26, height: 26, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
 
-  actionRow: { flexDirection: "row", gap: 12, marginTop: 8 },
+  actionRow: { flexDirection: "row", gap: 12 },
   helpBtn: {
-    flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: `${OUTLINE_VARIANT}80`,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: SURFACE_LOWEST,
+    flex: 1, height: sizes.inputHeightLg, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.outlineVariant}80`,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, backgroundColor: colors.surface,
   },
-  helpBtnText: { fontSize: 15, fontWeight: "700", color: ON_SURFACE_VARIANT, lineHeight: 22 },
+  helpBtnText: { fontSize: 15, fontWeight: typography.fontWeight.bold, color: colors.textSecondary, lineHeight: 22 },
   cancelBtn: {
-    flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: `${ERROR}33`,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: SURFACE_LOWEST,
+    flex: 1, height: sizes.inputHeightLg, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.error}33`,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, backgroundColor: colors.surface,
   },
-  cancelBtnText: { fontSize: 15, fontWeight: "700", color: ERROR, lineHeight: 22 },
+  cancelBtnText: { fontSize: 15, fontWeight: typography.fontWeight.bold, color: colors.error, lineHeight: 22 },
 
-  finalIcon: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 20 },
-  finalTitle: { fontSize: 24, fontWeight: "800", lineHeight: 32, marginBottom: 8, textAlign: "center" },
-  finalSubtext: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20, textAlign: "center", marginBottom: 24 },
+  finalIcon: { width: 80, height: 80, borderRadius: sizes.avatar, alignItems: "center", justifyContent: "center", marginBottom: 20 },
+  finalTitle: { fontSize: typography.fontSize.xxxl, fontWeight: typography.fontWeight.extrabold, lineHeight: typography.lineHeight.xxxl, marginBottom: spacing.sm, textAlign: "center" },
+  finalSubtext: { fontSize: typography.fontSize.md, color: colors.textSecondary, lineHeight: typography.lineHeight.md, textAlign: "center", marginBottom: spacing.lg },
 
-  cancelledContainer: { flex: 1, justifyContent: "flex-end", paddingHorizontal: 24 },
-  postCancelRow: { flexDirection: "row", gap: 12, paddingBottom: 24 },
+  cancelledContainer: { flex: 1, justifyContent: "flex-end", paddingHorizontal: spacing.lg },
+  postCancelRow: { flexDirection: "row", gap: 12, paddingBottom: spacing.lg },
   postCancelBtn: {
-    flex: 1, height: 54, borderRadius: 16, borderWidth: 1, borderColor: `${OUTLINE_VARIANT}80`,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: SURFACE_LOWEST,
+    flex: 1, height: sizes.inputHeightLg, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.outlineVariant}80`,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.sm, backgroundColor: colors.surface,
   },
-  postCancelBtnText: { fontSize: 15, fontWeight: "700", color: PRIMARY, lineHeight: 22 },
+  postCancelBtnText: { fontSize: 15, fontWeight: typography.fontWeight.bold, color: colors.primary, lineHeight: 22 },
 });

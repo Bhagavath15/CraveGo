@@ -17,16 +17,8 @@ import Skeleton from "../components/Skeleton";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { addAddress, updateAddress, getAddressById } from "../api/address";
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_SOFT = "#FFDBD0";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER_LOW = "#F6F3F2";
-const SURFACE_CONTAINER = "#F0EDED";
-const OUTLINE_VARIANT = "#E1BFB5";
+import Toast from "react-native-toast-message";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 const LABELS = [
   { key: "Home", icon: "home" },
@@ -77,7 +69,7 @@ export default function AddAddressScreen() {
           setAddressType(a.addressType || "Home");
         }
       } catch {
-        Alert.alert("Error", "Failed to load address");
+        Toast.show({ type: "error", text1: "Failed to load address" });
       } finally {
         setLoading(false);
       }
@@ -108,14 +100,19 @@ export default function AddAddressScreen() {
         pincode: pincode.trim(),
         addressType,
       };
+      let res;
       if (isEditing) {
-        await updateAddress(addressId, data);
+        res = await updateAddress(addressId, data);
       } else {
-        await addAddress(data);
+        res = await addAddress(data);
+      }
+      if (!res.success) {
+        Toast.show({ type: "error", text1: res.message || "Failed to save address" });
+        return;
       }
       navigation.goBack();
-    } catch {
-      Alert.alert("Error", "Failed to save address");
+    } catch (err: any) {
+      Toast.show({ type: "error", text1: "Something went wrong. Please try again." });
     } finally {
       setSaving(false);
     }
@@ -126,7 +123,7 @@ export default function AddAddressScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <View style={styles.headerBtnInner}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={ON_SURFACE} />
+            <MaterialCommunityIcons name="arrow-left" size={22} color={colors.textPrimary} />
           </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditing ? "Edit Address" : "Add Address"}</Text>
@@ -142,32 +139,32 @@ export default function AddAddressScreen() {
           </View>
           <View style={styles.card}>
             <Skeleton width="40%" height={18} />
-            <View style={{ gap: 12, marginTop: 16 }}>
-              <Skeleton width="100%" height={48} borderRadius={12} />
-              <Skeleton width="100%" height={48} borderRadius={12} />
+            <View style={{ gap: 12, marginTop: spacing.md }}>
+              <Skeleton width="100%" height={sizes.inputHeight} borderRadius={radius.md} />
+              <Skeleton width="100%" height={sizes.inputHeight} borderRadius={radius.md} />
             </View>
           </View>
           <View style={styles.card}>
             <Skeleton width="40%" height={18} />
-            <View style={{ gap: 12, marginTop: 16 }}>
-              <Skeleton width="100%" height={48} borderRadius={12} />
-              <Skeleton width="100%" height={48} borderRadius={12} />
-              <Skeleton width="100%" height={48} borderRadius={12} />
-              <Skeleton width="100%" height={48} borderRadius={12} />
+            <View style={{ gap: 12, marginTop: spacing.md }}>
+              <Skeleton width="100%" height={sizes.inputHeight} borderRadius={radius.md} />
+              <Skeleton width="100%" height={sizes.inputHeight} borderRadius={radius.md} />
+              <Skeleton width="100%" height={sizes.inputHeight} borderRadius={radius.md} />
+              <Skeleton width="100%" height={sizes.inputHeight} borderRadius={radius.md} />
               <View style={{ flexDirection: "row", gap: 12 }}>
-                <Skeleton width="48%" height={48} borderRadius={12} />
-                <Skeleton width="48%" height={48} borderRadius={12} />
+                <Skeleton width="48%" height={sizes.inputHeight} borderRadius={radius.md} />
+                <Skeleton width="48%" height={sizes.inputHeight} borderRadius={radius.md} />
               </View>
             </View>
           </View>
-          <Skeleton width="100%" height={52} borderRadius={14} style={{ marginTop: 24 }} />
+          <Skeleton width="100%" height={sizes.buttonHeightLg} borderRadius={14} style={{ marginTop: spacing.lg }} />
         </ScrollView>
       ) : (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
             <View style={styles.heroSection}>
               <View style={styles.heroIcon}>
-                <MaterialCommunityIcons name="map-marker-plus" size={28} color={PRIMARY} />
+                <MaterialCommunityIcons name="map-marker-plus" size={28} color={colors.primary} />
               </View>
               <Text style={styles.heroTitle}>Delivery Address</Text>
               <Text style={styles.heroSubtitle}>
@@ -177,30 +174,30 @@ export default function AddAddressScreen() {
 
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <MaterialCommunityIcons name="account-outline" size={18} color={PRIMARY} />
+                <MaterialCommunityIcons name="account-outline" size={18} color={colors.primary} />
                 <Text style={styles.cardTitle}>Contact Details</Text>
               </View>
 
               <View style={styles.fieldGroup}>
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="account" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="account" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={fullName}
                     onChangeText={setFullName}
                     placeholder="Full Name"
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
 
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="phone" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="phone" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={mobileNumber}
                     onChangeText={setMobileNumber}
                     placeholder="Mobile Number"
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                     keyboardType="phone-pad"
                     maxLength={10}
                   />
@@ -210,86 +207,86 @@ export default function AddAddressScreen() {
 
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <MaterialCommunityIcons name="home-outline" size={18} color={PRIMARY} />
+                <MaterialCommunityIcons name="home-outline" size={18} color={colors.primary} />
                 <Text style={styles.cardTitle}>Address Details</Text>
               </View>
 
               <View style={styles.fieldGroup}>
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="home" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="home" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={houseNumber}
                     onChangeText={setHouseNumber}
                     placeholder="House / Flat No."
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
 
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="office-building" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="office-building" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={apartment}
                     onChangeText={setApartment}
                     placeholder="Apartment / Building (Optional)"
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
 
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="sign-direction" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="sign-direction" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={landmark}
                     onChangeText={setLandmark}
                     placeholder="Landmark (Optional)"
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
 
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="map" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="map" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={area}
                     onChangeText={setArea}
                     placeholder="Area / Locality"
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                   />
                 </View>
 
                 <View style={styles.row}>
                   <View style={[styles.inputWrapper, styles.halfField]}>
-                    <MaterialCommunityIcons name="city" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                    <MaterialCommunityIcons name="city" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={city}
                       onChangeText={setCity}
                       placeholder="City"
-                      placeholderTextColor={ON_SURFACE_VARIANT}
+                      placeholderTextColor={colors.textSecondary}
                     />
                   </View>
                   <View style={[styles.inputWrapper, styles.halfField]}>
-                    <MaterialCommunityIcons name="flag" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                    <MaterialCommunityIcons name="flag" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={state}
                       onChangeText={setState}
                       placeholder="State"
-                      placeholderTextColor={ON_SURFACE_VARIANT}
+                      placeholderTextColor={colors.textSecondary}
                     />
                   </View>
                 </View>
 
                 <View style={styles.inputWrapper}>
-                  <MaterialCommunityIcons name="mailbox" size={18} color={ON_SURFACE_VARIANT} style={styles.inputIcon} />
+                  <MaterialCommunityIcons name="mailbox" size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={pincode}
                     onChangeText={setPincode}
                     placeholder="Pincode"
-                    placeholderTextColor={ON_SURFACE_VARIANT}
+                    placeholderTextColor={colors.textSecondary}
                     keyboardType="number-pad"
                     maxLength={6}
                   />
@@ -299,7 +296,7 @@ export default function AddAddressScreen() {
 
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <MaterialCommunityIcons name="label-outline" size={18} color={PRIMARY} />
+                <MaterialCommunityIcons name="label-outline" size={18} color={colors.primary} />
                 <Text style={styles.cardTitle}>Address Label</Text>
               </View>
 
@@ -316,7 +313,7 @@ export default function AddAddressScreen() {
                         <MaterialCommunityIcons
                           name={l.icon}
                           size={22}
-                          color={active ? "#fff" : PRIMARY}
+                          color={active ? colors.white : colors.primary}
                         />
                       </View>
                       <Text style={[styles.labelCardText, active && styles.labelCardTextActive]}>
@@ -336,7 +333,7 @@ export default function AddAddressScreen() {
               disabled={saving || loading}
               activeOpacity={0.85}
             >
-              <MaterialCommunityIcons name="check-circle-outline" size={22} color="#fff" />
+              <MaterialCommunityIcons name="check-circle-outline" size={22} color={colors.white} />
               <Text style={styles.saveBtnText}>
                 {saving ? "Saving..." : isEditing ? "Update Address" : "Save Address"}
               </Text>
@@ -349,86 +346,82 @@ export default function AddAddressScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
+  container: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    backgroundColor: BG,
+    backgroundColor: colors.background,
   },
   headerBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
   headerBtnInner: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: SURFACE_CONTAINER_LOW,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceContainerLow,
     justifyContent: "center",
     alignItems: "center",
   },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: ON_SURFACE, lineHeight: 24 },
+  headerTitle: { fontSize: typography.fontSize.xl, fontWeight: typography.fontWeight.semibold, color: colors.textPrimary, lineHeight: typography.lineHeight.xl },
 
   loader: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loaderText: { fontSize: 14, color: ON_SURFACE_VARIANT, lineHeight: 20 },
+  loaderText: { fontSize: typography.fontSize.md, color: colors.textSecondary, lineHeight: typography.lineHeight.md },
 
-  scrollContent: { padding: 16, paddingBottom: 16 },
+  scrollContent: { padding: spacing.md, paddingBottom: spacing.md },
 
   heroSection: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: spacing.lg,
   },
   heroIcon: {
-    width: 56,
-    height: 56,
+    width: sizes.buttonHeightLg,
+    height: sizes.buttonHeightLg,
     borderRadius: 28,
-    backgroundColor: PRIMARY_SOFT,
+    backgroundColor: colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   heroTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: ON_SURFACE,
-    lineHeight: 28,
+    fontSize: typography.fontSize.xxl,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textPrimary,
+    lineHeight: typography.lineHeight.xxl,
   },
   heroSubtitle: {
-    fontSize: 14,
-    color: ON_SURFACE_VARIANT,
-    lineHeight: 20,
-    marginTop: 4,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: typography.lineHeight.md,
+    marginTop: spacing.xs,
     textAlign: "center",
   },
 
   card: {
-    backgroundColor: SURFACE_LOWEST,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: SURFACE_CONTAINER,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: colors.surfaceContainer,
+    ...shadows.card,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: SURFACE_CONTAINER,
+    borderBottomColor: colors.surfaceContainer,
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: ON_SURFACE,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textPrimary,
     lineHeight: 22,
   },
 
@@ -439,11 +432,11 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: SURFACE_CONTAINER_LOW,
-    borderRadius: 12,
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: colors.transparent,
   },
   inputIcon: {
     marginRight: 10,
@@ -451,9 +444,9 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingVertical: 14,
-    fontSize: 14,
-    color: ON_SURFACE,
-    lineHeight: 20,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    lineHeight: typography.lineHeight.md,
   },
 
   row: { flexDirection: "row", gap: 12 },
@@ -466,60 +459,56 @@ const styles = StyleSheet.create({
   labelCard: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: SURFACE_CONTAINER,
-    backgroundColor: SURFACE_LOWEST,
-    gap: 8,
+    borderColor: colors.surfaceContainer,
+    backgroundColor: colors.surface,
+    gap: spacing.sm,
   },
   labelCardActive: {
-    borderColor: PRIMARY,
-    backgroundColor: `${PRIMARY}08`,
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + "08",
   },
   labelIconWrap: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: PRIMARY_SOFT,
+    backgroundColor: colors.primaryLight,
     justifyContent: "center",
     alignItems: "center",
   },
   labelIconWrapActive: {
-    backgroundColor: PRIMARY,
+    backgroundColor: colors.primary,
   },
   labelCardText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: ON_SURFACE_VARIANT,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   labelCardTextActive: {
-    color: PRIMARY,
+    color: colors.primary,
   },
 
   footer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     paddingVertical: 12,
-    paddingBottom: 24,
-    backgroundColor: BG,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: SURFACE_CONTAINER,
+    borderTopColor: colors.surfaceContainer,
   },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: PRIMARY,
-    paddingVertical: 16,
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
     borderRadius: 14,
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    ...shadows.button,
   },
   saveBtnDisabled: { opacity: 0.7 },
-  saveBtnText: { fontSize: 16, fontWeight: "600", color: "#fff", lineHeight: 22 },
+  saveBtnText: { fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: colors.white, lineHeight: typography.lineHeight.lg },
 });

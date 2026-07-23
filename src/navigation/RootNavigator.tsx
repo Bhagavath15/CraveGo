@@ -31,6 +31,7 @@ import ReceiptScreen from "../screens/ReceiptScreen";
 import { getToken, onTokenChange } from "../utils/authStore";
 import { setOnUnauthorized, clearAuthToken } from "../api/client";
 import { pushService } from "../services/pushService";
+import { colors } from "../theme";
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
     },
     logo: {
         width: "60%",

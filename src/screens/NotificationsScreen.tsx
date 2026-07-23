@@ -21,15 +21,7 @@ import {
     deleteNotification,
 } from "../api/notification";
 import Skeleton from "../components/Skeleton";
-
-const PRIMARY = "#FF6B35";
-const SECONDARY = "#006D37";
-const BG = "#FCF9F8";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER_HIGH = "#EAE7E7";
-const OUTLINE_VARIANT = "#E1BFB5";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
+import { colors, spacing, typography, radius, shadows } from "../theme";
 
 const TYPE_ICONS: Record<string, string> = {
     ORDER: "clipboard-list-outline",
@@ -40,11 +32,11 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-    ORDER: PRIMARY,
-    PAYMENT: "#1976D2",
-    COUPON: SECONDARY,
-    PROMOTION: "#E91E63",
-    SYSTEM: ON_SURFACE_VARIANT,
+    ORDER: colors.primary,
+    PAYMENT: colors.notification.payment,
+    COUPON: colors.secondary,
+    PROMOTION: colors.notification.promotion,
+    SYSTEM: colors.textSecondary,
 };
 
 const timeAgo = (dateStr: string) => {
@@ -156,51 +148,50 @@ const NotificationsScreen = () => {
 
     const renderItem = useCallback(({ item }: { item: NotificationItem }) => {
         const icon = TYPE_ICONS[item.type] || "bell-outline";
-        const color = TYPE_COLORS[item.type] || ON_SURFACE_VARIANT;
+        const color = TYPE_COLORS[item.type] || colors.textSecondary;
+        const isUnread = !item.isRead;
         return (
             <TouchableOpacity
-                style={[styles.notifCard, !item.isRead && styles.notifCardUnread]}
+                style={styles.notifCard}
                 onPress={() => handlePress(item)}
                 onLongPress={() => handleDelete(item._id)}
                 activeOpacity={0.7}
             >
-                <View style={[styles.iconCircle, { backgroundColor: `${color}15` }]}>
-                    <MaterialCommunityIcons name={icon} size={22} color={color} />
-                </View>
-                <View style={styles.notifContent}>
-                    <View style={styles.notifHeader}>
-                        <Text
-                            style={[styles.notifTitle, !item.isRead && styles.notifTitleUnread]}
-                            numberOfLines={1}
-                        >
-                            {item.title}
-                        </Text>
-                        <Text style={styles.notifTime}>{timeAgo(item.createdAt)}</Text>
+                {isUnread && <View style={styles.unreadAccent} />}
+                <View style={styles.cardInner}>
+                    <View style={[styles.iconCircle, { backgroundColor: `${color}15` }]}>
+                        <MaterialCommunityIcons name={icon} size={20} color={color} />
                     </View>
-                    <Text style={styles.notifMessage} numberOfLines={2}>
-                        {item.message}
-                    </Text>
+                    <View style={styles.notifContent}>
+                        <View style={styles.notifHeader}>
+                            <Text
+                                style={[styles.notifTitle, isUnread && styles.notifTitleUnread]}
+                                numberOfLines={1}
+                            >
+                                {item.title}
+                            </Text>
+                            <Text style={styles.notifTime}>{timeAgo(item.createdAt)}</Text>
+                        </View>
+                        <Text style={styles.notifMessage} numberOfLines={2}>
+                            {item.message}
+                        </Text>
+                    </View>
+                    {isUnread && <View style={styles.unreadDot} />}
                 </View>
-                {!item.isRead && <View style={styles.unreadDot} />}
             </TouchableOpacity>
         );
     }, [handlePress, handleDelete]);
 
     const renderHeader = () => {
         if (notifications.length === 0) return null;
-        return (
-            <TouchableOpacity style={styles.markAllRow} onPress={handleMarkAllRead}>
-                <MaterialCommunityIcons name="check-all" size={18} color={PRIMARY} />
-                <Text style={styles.markAllText}>Mark all as read</Text>
-            </TouchableOpacity>
-        );
+        return null;
     };
 
     const renderFooter = () => {
         if (!loadingMore) return null;
         return (
             <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color={PRIMARY} />
+                <ActivityIndicator size="small" color={colors.primary} />
             </View>
         );
     };
@@ -209,7 +200,7 @@ const NotificationsScreen = () => {
         if (loading) return null;
         return (
             <View style={styles.emptyState}>
-                <MaterialCommunityIcons name="bell-off-outline" size={64} color={OUTLINE_VARIANT} />
+                <MaterialCommunityIcons name="bell-off-outline" size={64} color={colors.outlineVariant} />
                 <Text style={styles.emptyTitle}>No notifications</Text>
                 <Text style={styles.emptySubtitle}>
                     You're all caught up! We'll notify you when something happens.
@@ -222,10 +213,12 @@ const NotificationsScreen = () => {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.headerBar}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Notifications</Text>
-                <View style={styles.headerBtn} />
+                <TouchableOpacity style={styles.headerBtn} onPress={handleMarkAllRead}>
+                    <MaterialCommunityIcons name="check-all" size={22} color={colors.primary} />
+                </TouchableOpacity>
             </View>
 
             {loading ? (
@@ -233,7 +226,7 @@ const NotificationsScreen = () => {
                     {Array.from({ length: 5 }).map((_, i) => (
                         <View key={i} style={styles.skeletonRow}>
                             <Skeleton width={40} height={40} borderRadius={20} />
-                            <View style={{ flex: 1, gap: 4 }}>
+                            <View style={{ flex: 1, gap: spacing.xs }}>
                                 <Skeleton width="70%" height={14} />
                                 <Skeleton width="40%" height={12} />
                             </View>
@@ -253,8 +246,8 @@ const NotificationsScreen = () => {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={[PRIMARY]}
-                            tintColor={PRIMARY}
+                            colors={[colors.primary]}
+                            tintColor={colors.primary}
                         />
                     }
                     onEndReached={onEndReached}
@@ -271,17 +264,15 @@ export default NotificationsScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     headerBar: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
-        backgroundColor: BG,
-        borderBottomWidth: 1,
-        borderBottomColor: `${OUTLINE_VARIANT}33`,
+        backgroundColor: colors.background,
     },
     headerBtn: {
         width: 40,
@@ -290,58 +281,55 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
     },
     loadingContainer: {
         flex: 1,
-        padding: 16,
-        gap: 16,
+        padding: spacing.md,
+        gap: spacing.md,
     },
     skeletonRow: {
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        paddingVertical: 4,
+        paddingVertical: spacing.xs,
     },
     listContent: {
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: 24,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.lg,
         flexGrow: 1,
     },
-    markAllRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        paddingVertical: 10,
-        marginBottom: 4,
-    },
-    markAllText: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: PRIMARY,
-    },
     notifCard: {
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        marginBottom: 10,
+        overflow: "hidden",
+        ...shadows.card,
+        position: "relative",
+    },
+    unreadAccent: {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 3,
+        backgroundColor: colors.primary,
+        borderTopLeftRadius: radius.md,
+        borderBottomLeftRadius: radius.md,
+    },
+    cardInner: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
         padding: 14,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: `${OUTLINE_VARIANT}33`,
-    },
-    notifCardUnread: {
-        backgroundColor: `${PRIMARY}08`,
-        borderColor: `${PRIMARY}33`,
+        paddingLeft: 12,
     },
     iconCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         justifyContent: "center",
         alignItems: "center",
         marginRight: 12,
@@ -355,52 +343,52 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     notifTitle: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
         flex: 1,
         marginRight: 8,
     },
     notifTitleUnread: {
-        fontWeight: "700",
-        color: ON_SURFACE,
+        fontWeight: typography.fontWeight.bold,
     },
     notifTime: {
         fontSize: 11,
-        color: ON_SURFACE_VARIANT,
+        color: colors.textTertiary,
+        fontWeight: typography.fontWeight.medium,
     },
     notifMessage: {
         fontSize: 13,
-        color: ON_SURFACE_VARIANT,
-        marginTop: 4,
+        color: colors.textSecondary,
+        marginTop: spacing.xs,
         lineHeight: 18,
     },
     unreadDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
         marginLeft: 8,
     },
     footerLoader: {
-        paddingVertical: 16,
+        paddingVertical: spacing.md,
     },
     emptyState: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        paddingHorizontal: 32,
+        paddingHorizontal: spacing.xl,
         gap: 12,
     },
     emptyTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
     },
     emptySubtitle: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
         textAlign: "center",
     },
 });

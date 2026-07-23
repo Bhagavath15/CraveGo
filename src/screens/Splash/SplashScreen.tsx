@@ -1,4 +1,5 @@
 import { Dimensions, Image, StyleSheet, View } from "react-native";
+import { colors } from "../../theme";
 
 const { width } = Dimensions.get("window");
 
@@ -19,7 +20,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#FFF",
+        backgroundColor: colors.surface,
     },
     logo: {
         aspectRatio: 487 / 1105,

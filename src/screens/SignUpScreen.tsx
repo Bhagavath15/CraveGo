@@ -1,37 +1,31 @@
 import { useState } from "react";
 import {
+    ImageBackground,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
 import { register } from "../api/auth";
-import { useToast } from "../components/Toast";
-
-const C = {
-    primary: "#FF6B35",
-    primaryContainer: "#ff6b35",
-    onPrimary: "#ffffff",
-    surface: "#fcf9f8",
-    onSurface: "#1b1c1c",
-    onSurfaceVariant: "#594139",
-    surfaceContainerLowest: "#ffffff",
-    outlineVariant: "#e1bfb5",
-    outline: "#8d7168",
-};
+import Toast from "react-native-toast-message";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const SignUpScreen = () => {
     const navigation = useNavigation<Nav>();
-    const { showToast } = useToast();
+    const insets = useSafeAreaInsets();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -40,7 +34,7 @@ const SignUpScreen = () => {
 
     const handleSignUp = async () => {
         if (!name.trim() || !email.trim() || !password) {
-            showToast({ message: "All fields are required", type: "error" });
+            Toast.show({ text1: "All fields are required", type: "error" });
             return;
         }
         setLoading(true);
@@ -49,444 +43,305 @@ const SignUpScreen = () => {
             if (data.success) {
                 navigation.navigate("EmailOTPVerification", { email: email.trim() });
             } else {
-                showToast({ message: data.message || "Registration failed", type: "error" });
+                Toast.show({ text1: data.message || "Registration failed", type: "error" });
             }
         } catch (e: any) {
-            showToast({ message: e?.message || "Network error", type: "error" });
+            Toast.show({ text1: e?.message || "Network error", type: "error" });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: C.surface }}>
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : undefined}
+        <View style={styles.root}>
+            <ImageBackground
+                source={require("../assets/images/welcome-screen.png")}
+                style={styles.bgImage}
+                resizeMode="cover"
             >
-                <ScrollView
-                    contentContainerStyle={{
-                        flexGrow: 1,
-                        justifyContent: "center",
-                        paddingHorizontal: 24,
-                        paddingVertical: 32,
-                    }}
-                    keyboardShouldPersistTaps="handled"
+                <View style={styles.bgOverlay} />
+            </ImageBackground>
+
+            <SafeAreaView style={styles.flex}>
+                <KeyboardAvoidingView
+                    style={styles.flex}
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
                 >
-                    {/* Brand Mark */}
-                    <View style={{ alignItems: "center", marginBottom: 24 }}>
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 40,
-                                lineHeight: 48,
-                                letterSpacing: -0.02,
-                                fontWeight: "800",
-                                color: C.primary,
-                            }}
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={styles.scrollContent}
+                            showsVerticalScrollIndicator={false}
                         >
-                            CraveGo
-                        </Text>
-                        <View
-                            style={{
-                                width: 48,
-                                height: 4,
-                                backgroundColor: C.primary,
-                                borderRadius: 999,
-                                marginTop: 4,
-                            }}
-                        />
-                    </View>
+                            <View style={styles.topSection}>
+                                <Text style={styles.heroTitle}>
+                                    Join the{'\n'}Family
+                                </Text>
+                                <Text style={styles.heroSubtitle}>
+                                    Premium dining experiences curated just for you.
+                                </Text>
+                            </View>
 
-                    {/* Header */}
-                    <View style={{ alignItems: "center", marginBottom: 24 }}>
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 24,
-                                lineHeight: 32,
-                                fontWeight: "700",
-                                color: C.onSurface,
-                                letterSpacing: -0.3,
-                            }}
-                        >
-                            Join the Family
-                        </Text>
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 14,
-                                lineHeight: 20,
-                                color: C.onSurfaceVariant,
-                                textAlign: "center",
-                                maxWidth: 280,
-                                marginTop: 4,
-                            }}
-                        >
-                            Premium dining experiences curated just for you.
-                        </Text>
-                    </View>
+                            <View style={styles.card}>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>Full Name</Text>
+                                    <View style={styles.inputBox}>
+                                        <MaterialCommunityIcons
+                                            name="account-outline"
+                                            size={sizes.icon}
+                                            color={colors.outline}
+                                        />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Arjun Sharma"
+                                            placeholderTextColor={colors.outline}
+                                            value={name}
+                                            onChangeText={setName}
+                                        />
+                                    </View>
+                                </View>
 
-                    {/* Full Name */}
-                    <View style={{ marginBottom: 16 }}>
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 14,
-                                lineHeight: 20,
-                                letterSpacing: 0.1,
-                                fontWeight: "600",
-                                color: C.onSurfaceVariant,
-                                marginLeft: 4,
-                                marginBottom: 4,
-                            }}
-                        >
-                            Full Name
-                        </Text>
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                backgroundColor: "rgba(255,255,255,0.9)",
-                                borderWidth: 1,
-                                borderColor: "rgba(225,191,181,0.4)",
-                                borderRadius: 12,
-                                height: 52,
-                                paddingLeft: 12,
-                                paddingRight: 16,
-                            }}
-                        >
-                            <MaterialCommunityIcons
-                                name="account-outline"
-                                size={20}
-                                color={C.outline + "99"}
-                            />
-                            <TextInput
-                                style={{
-                                    flex: 1,
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 14,
-                                    lineHeight: 20,
-                                    color: C.onSurface,
-                                    marginLeft: 8,
-                                    padding: 0,
-                                }}
-                                placeholder="Arjun Sharma"
-                                placeholderTextColor={C.outline + "66"}
-                                value={name}
-                                onChangeText={setName}
-                            />
-                        </View>
-                    </View>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>Email Address</Text>
+                                    <View style={styles.inputBox}>
+                                        <MaterialCommunityIcons
+                                            name="email-outline"
+                                            size={sizes.icon}
+                                            color={colors.outline}
+                                        />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="arjun@example.com"
+                                            placeholderTextColor={colors.outline}
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                        />
+                                    </View>
+                                </View>
 
-                    {/* Email */}
-                    <View style={{ marginBottom: 16 }}>
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 14,
-                                lineHeight: 20,
-                                letterSpacing: 0.1,
-                                fontWeight: "600",
-                                color: C.onSurfaceVariant,
-                                marginLeft: 4,
-                                marginBottom: 4,
-                            }}
-                        >
-                            Email Address
-                        </Text>
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                backgroundColor: "rgba(255,255,255,0.9)",
-                                borderWidth: 1,
-                                borderColor: "rgba(225,191,181,0.4)",
-                                borderRadius: 12,
-                                height: 52,
-                                paddingLeft: 12,
-                                paddingRight: 16,
-                            }}
-                        >
-                            <MaterialCommunityIcons
-                                name="email"
-                                size={20}
-                                color={C.outline + "99"}
-                            />
-                            <TextInput
-                                style={{
-                                    flex: 1,
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 14,
-                                    lineHeight: 20,
-                                    color: C.onSurface,
-                                    marginLeft: 12,
-                                    padding: 0,
-                                }}
-                                placeholder="arjun@example.com"
-                                placeholderTextColor={C.outline + "66"}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                value={email}
-                                onChangeText={setEmail}
-                            />
-                        </View>
-                    </View>
+                                <View style={styles.fieldGroup}>
+                                    <Text style={styles.fieldLabel}>Password</Text>
+                                    <View style={styles.inputBox}>
+                                        <MaterialCommunityIcons
+                                            name="lock-outline"
+                                            size={sizes.icon}
+                                            color={colors.outline}
+                                        />
+                                        <TextInput
+                                            style={styles.input}
+                                            placeholder="Create a password"
+                                            placeholderTextColor={colors.outline}
+                                            secureTextEntry={!showPassword}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                        />
+                                        <TouchableOpacity
+                                            onPress={() => setShowPassword(!showPassword)}
+                                            style={styles.eyeBtn}
+                                        >
+                                            <MaterialCommunityIcons
+                                                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                                                size={22}
+                                                color={colors.textSecondary}
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                    {/* Password */}
-                    <View style={{ marginBottom: 16 }}>
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 14,
-                                lineHeight: 20,
-                                letterSpacing: 0.1,
-                                fontWeight: "600",
-                                color: C.onSurfaceVariant,
-                                marginLeft: 4,
-                                marginBottom: 4,
-                            }}
-                        >
-                            Password
-                        </Text>
-                        <View
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                backgroundColor: "rgba(255,255,255,0.9)",
-                                borderWidth: 1,
-                                borderColor: "rgba(225,191,181,0.4)",
-                                borderRadius: 12,
-                                height: 52,
-                                paddingLeft: 12,
-                                paddingRight: 12,
-                            }}
-                        >
-                            <MaterialCommunityIcons
-                                name="lock"
-                                size={20}
-                                color={C.outline + "99"}
-                            />
-                            <TextInput
-                                style={{
-                                    flex: 1,
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 14,
-                                    lineHeight: 20,
-                                    color: C.onSurface,
-                                    marginLeft: 12,
-                                    padding: 0,
-                                }}
-                                placeholder="••••••••"
-                                placeholderTextColor={C.outline + "66"}
-                                secureTextEntry={!showPassword}
-                                value={password}
-                                onChangeText={setPassword}
-                            />
-                            <TouchableOpacity
-                                onPress={() => setShowPassword(!showPassword)}
-                            >
-                                <MaterialCommunityIcons
-                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color={C.outline + "99"}
-                                />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                                <TouchableOpacity
+                                    activeOpacity={0.8}
+                                    disabled={loading}
+                                    onPress={handleSignUp}
+                                    style={[
+                                        styles.signUpBtn,
+                                        loading && styles.signUpBtnDisabled,
+                                    ]}
+                                >
+                                    <Text style={styles.signUpBtnText}>
+                                        {loading ? "Creating account..." : "Sign Up"}
+                                    </Text>
+                                </TouchableOpacity>
 
-                    {/* Sign Up Button */}
-                    <View style={{ paddingTop: 4 }}>
-                        <TouchableOpacity
-                            activeOpacity={0.98}
-                            disabled={loading}
-                            onPress={handleSignUp}
-                            style={[
-                                {
-                                    flexDirection: "row",
-                                    height: 52,
-                                    borderRadius: 12,
-                                    backgroundColor: C.primaryContainer,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    gap: 8,
-                                    shadowColor: C.primaryContainer,
-                                    shadowOffset: { width: 0, height: 12 },
-                                    shadowOpacity: 0.25,
-                                    shadowRadius: 24,
-                                    elevation: 8,
-                                },
-                                loading && { opacity: 0.5 },
-                            ]}
-                        >
-                            <Text
-                                style={{
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 20,
-                                    lineHeight: 28,
-                                    fontWeight: "600",
-                                    color: C.onPrimary,
-                                }}
-                            >
-                                {loading ? "Creating account..." : "Sign Up"}
-                            </Text>
-                            <MaterialCommunityIcons
-                                name="arrow-right"
-                                size={20}
-                                color={C.onPrimary}
-                            />
-                        </TouchableOpacity>
-                    </View>
+                                <View style={styles.divider}>
+                                    <View style={styles.dividerLine} />
+                                    <Text style={styles.dividerText}>or</Text>
+                                    <View style={styles.dividerLine} />
+                                </View>
 
-                    {/* Divider */}
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            paddingVertical: 32,
-                        }}
-                    >
-                        <View
-                            style={{
-                                flex: 1,
-                                borderTopWidth: 1,
-                                borderColor: C.outlineVariant,
-                                opacity: 0.3,
-                            }}
-                        />
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 11,
-                                lineHeight: 16,
-                                letterSpacing: 1.7,
-                                fontWeight: "600",
-                                color: C.outline,
-                                textTransform: "uppercase",
-                                marginHorizontal: 16,
-                                opacity: 0.6,
-                            }}
-                        >
-                            Or continue with
-                        </Text>
-                        <View
-                            style={{
-                                flex: 1,
-                                borderTopWidth: 1,
-                                borderColor: C.outlineVariant,
-                                opacity: 0.3,
-                            }}
-                        />
-                    </View>
+                                <TouchableOpacity style={styles.googleBtn}>
+                                    <MaterialCommunityIcons
+                                        name="google"
+                                        size={sizes.icon}
+                                        color={colors.textPrimary}
+                                    />
+                                    <Text style={styles.googleBtnText}>Continue with Google</Text>
+                                </TouchableOpacity>
 
-                    {/* Social Buttons */}
-                    <View style={{ flexDirection: "row", gap: 16 }}>
-                        <TouchableOpacity
-                            style={{
-                                flex: 1,
-                                flexDirection: "row",
-                                height: 52,
-                                borderWidth: 1,
-                                borderColor: C.outlineVariant,
-                                opacity: 0.3,
-                                borderRadius: 12,
-                                backgroundColor: "rgba(255,255,255,0.5)",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 8,
-                            }}
-                        >
-                            <MaterialCommunityIcons
-                                name="google"
-                                size={20}
-                                color={C.onSurface}
-                            />
-                            <Text
-                                style={{
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 14,
-                                    lineHeight: 20,
-                                    letterSpacing: 0.1,
-                                    fontWeight: "600",
-                                    color: C.onSurface,
-                                }}
-                            >
-                                Google
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={{
-                                flex: 1,
-                                flexDirection: "row",
-                                height: 52,
-                                borderWidth: 1,
-                                borderColor: C.outlineVariant,
-                                opacity: 0.3,
-                                borderRadius: 12,
-                                backgroundColor: "rgba(255,255,255,0.5)",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: 8,
-                            }}
-                        >
-                            <MaterialCommunityIcons
-                                name="facebook"
-                                size={20}
-                                color="#1877F2"
-                            />
-                            <Text
-                                style={{
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 14,
-                                    lineHeight: 20,
-                                    letterSpacing: 0.1,
-                                    fontWeight: "600",
-                                    color: C.onSurface,
-                                }}
-                            >
-                                Facebook
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Footer */}
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            justifyContent: "center",
-                            marginTop: 24,
-                        }}
-                    >
-                        <Text
-                            style={{
-                                fontFamily: "Plus Jakarta Sans",
-                                fontSize: 14,
-                                lineHeight: 20,
-                                color: C.onSurfaceVariant,
-                            }}
-                        >
-                            Already have an account?{" "}
-                        </Text>
-                        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-                            <Text
-                                style={{
-                                    fontFamily: "Plus Jakarta Sans",
-                                    fontSize: 14,
-                                    lineHeight: 20,
-                                    fontWeight: "700",
-                                    color: C.primaryContainer,
-                                    textDecorationLine: "underline",
-                                    textDecorationColor: C.primaryContainer + "4D",
-                                }}
-                            >
-                                Login
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                                <View style={styles.loginRow}>
+                                    <Text style={styles.loginPrefix}>
+                                        Already have an account?{" "}
+                                    </Text>
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate("Login")}
+                                    >
+                                        <Text style={styles.loginLink}>Login</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <View style={{ height: insets.bottom, backgroundColor: colors.surface }} />
+                        </ScrollView>
+                    </TouchableWithoutFeedback>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
         </View>
     );
 };
 
 export default SignUpScreen;
+
+const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: colors.surface,
+    },
+    bgImage: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "80%",
+    },
+    bgOverlay: {
+        flex: 1,
+        backgroundColor: colors.overlay,
+    },
+    flex: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: "flex-end",
+    },
+    topSection: {
+        paddingHorizontal: 28,
+        paddingBottom: 12,
+    },
+    heroTitle: {
+        fontSize: typography.fontSize.hero,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.white,
+        lineHeight: typography.lineHeight.hero,
+        marginBottom: spacing.sm,
+    },
+    heroSubtitle: {
+        fontSize: typography.fontSize.lg,
+        color: "rgba(255,255,255,0.8)",
+        lineHeight: typography.lineHeight.xl,
+    },
+    card: {
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+        paddingHorizontal: 28,
+        paddingTop: 20,
+        paddingBottom: spacing.lg,
+    },
+    fieldGroup: {
+        marginBottom: 20,
+    },
+    fieldLabel: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        letterSpacing: typography.letterSpacing.wide,
+        marginBottom: 6,
+    },
+    inputBox: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: colors.inputBackground,
+        borderWidth: 1,
+        borderColor: colors.transparent,
+        borderRadius: radius.lg,
+        height: sizes.inputHeightLg,
+        paddingHorizontal: spacing.md,
+        gap: 12,
+    },
+    input: {
+        flex: 1,
+        fontSize: 15,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textPrimary,
+        padding: 0,
+    },
+    eyeBtn: {
+        padding: spacing.xs,
+    },
+    signUpBtn: {
+        height: sizes.inputHeightLg,
+        borderRadius: radius.lg,
+        backgroundColor: colors.primary,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: spacing.sm,
+        ...shadows.button,
+    },
+    signUpBtnDisabled: {
+        opacity: 0.5,
+    },
+    signUpBtnText: {
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.white,
+        letterSpacing: typography.letterSpacing.wide,
+    },
+    divider: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: spacing.lg,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.divider,
+    },
+    dividerText: {
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        textTransform: "uppercase",
+        letterSpacing: typography.letterSpacing.xl,
+        marginHorizontal: spacing.md,
+    },
+    googleBtn: {
+        flexDirection: "row",
+        height: 50,
+        backgroundColor: colors.inputBackground,
+        borderRadius: radius.lg,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 10,
+        marginTop: 20,
+    },
+    googleBtnText: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+    },
+    loginRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        marginTop: 28,
+    },
+    loginPrefix: {
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+    },
+    loginLink: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.primary,
+    },
+});

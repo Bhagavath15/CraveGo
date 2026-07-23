@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { colors } from "../../theme";
 
 interface FloatingCartProps {
     itemCount: number;
@@ -8,7 +9,6 @@ interface FloatingCartProps {
     onViewCart?: () => void;
 }
 
-const PRIMARY = "#FF6B35";
 
 const FloatingCart = ({
     itemCount,
@@ -36,7 +36,7 @@ const FloatingCart = ({
                         <MaterialCommunityIcons
                             name="basket"
                             size={24}
-                            color="#FFF"
+                            color={colors.white}
                         />
                     </View>
 
@@ -56,7 +56,7 @@ const FloatingCart = ({
                     <MaterialCommunityIcons
                         name="arrow-right"
                         size={20}
-                        color="#FFF"
+                        color={colors.white}
                     />
                 </View>
             </TouchableOpacity>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
         paddingTop: 12,
     },
     button: {
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
         borderRadius: 24,
         paddingVertical: 14,
         paddingHorizontal: 16,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         elevation: 12,
-        shadowColor: PRIMARY,
+        shadowColor: colors.primary,
         shadowOpacity: 0.35,
         shadowRadius: 20,
         shadowOffset: { width: 0, height: 8 },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     countText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#FFF",
+        color: colors.white,
         letterSpacing: 0.1,
     },
     restaurantText: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     ctaText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#FFF",
+        color: colors.white,
         letterSpacing: 0.1,
         textTransform: "uppercase",
     },

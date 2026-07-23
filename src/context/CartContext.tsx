@@ -153,16 +153,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             if (data.success && data.cart) {
                 const mapped = fromApi(data.cart, restName);
                 setCartWithLog(mapped);
-            } else if (data.message?.includes?.("another restaurant")) {
-                setCartWithLog(emptyCart);
-                try {
-                    await clearCart();
-                } catch (e) {
-                }
-                const retry = await addToCartApi(restId, item.id, 1, customization, item.name);
-                if (retry.success && retry.cart) {
-                    setCartWithLog(fromApi(retry.cart, restName));
-                }
             }
         } catch (e) {
         } finally {

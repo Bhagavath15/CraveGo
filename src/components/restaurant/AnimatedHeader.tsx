@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { colors } from "../../theme";
 
 interface AnimatedHeaderProps {
     restaurantName: string;
@@ -65,7 +66,7 @@ const AnimatedHeader = ({
                 <MaterialCommunityIcons
                     name="arrow-left"
                     size={22}
-                    color="#1B1C1C"
+                    color={colors.textPrimary}
                 />
             </TouchableOpacity>
 
@@ -85,7 +86,7 @@ const AnimatedHeader = ({
                     <MaterialCommunityIcons
                         name={isFavourite ? "heart" : "heart-outline"}
                         size={22}
-                        color={isFavourite ? "#FF6B35" : "#1B1C1C"}
+                        color={isFavourite ? colors.primary : colors.textPrimary}
                     />
                 </TouchableOpacity>
             )}
@@ -105,17 +106,17 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingHorizontal: 12,
         paddingBottom: 10,
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
     },
     btn: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         justifyContent: "center",
         alignItems: "center",
         elevation: 2,
-        shadowColor: "#000",
+        shadowColor: colors.shadow,
         shadowOpacity: 0.08,
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 2 },
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
         flex: 1,
         textAlign: "center",
         marginHorizontal: 8,

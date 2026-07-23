@@ -4,18 +4,9 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/types";
+import { colors, spacing, typography, radius, shadows } from "../theme";
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_CONTAINER = "#FF6B35";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER = "#F0EDED";
-const OUTLINE_VARIANT = "#E1BFB5";
-const OUTLINE = "#8D7168";
 
 interface Category {
     icon: string;
@@ -49,7 +40,7 @@ const HelpSupportScreen = () => {
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.headerBar}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={ON_SURFACE} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Help Center</Text>
                 <View style={styles.backBtn} />
@@ -63,11 +54,11 @@ const HelpSupportScreen = () => {
                 <Text style={styles.heroSubtitle}>Browse topics below or visit Orders for order-specific help.</Text>
 
                 <View style={styles.searchBar}>
-                    <MaterialCommunityIcons name="magnify" size={20} color={OUTLINE} />
+                    <MaterialCommunityIcons name="magnify" size={20} color={colors.outline} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search help articles..."
-                        placeholderTextColor={OUTLINE}
+                        placeholderTextColor={colors.outline}
                         editable={false}
                     />
                 </View>
@@ -77,13 +68,13 @@ const HelpSupportScreen = () => {
                     {CATEGORIES.map((cat, i) => (
                         <TouchableOpacity key={i} onPress={handleComingSoon} style={styles.categoryCard}>
                             <View style={styles.categoryIconBg}>
-                                <MaterialCommunityIcons name={cat.icon} size={24} color={PRIMARY} />
+                                <MaterialCommunityIcons name={cat.icon} size={24} color={colors.primary} />
                             </View>
                             <View style={styles.categoryInfo}>
                                 <Text style={styles.categoryTitle}>{cat.title}</Text>
                                 <Text style={styles.categoryDesc}>{cat.description}</Text>
                             </View>
-                            <MaterialCommunityIcons name="chevron-right" size={20} color={OUTLINE_VARIANT} />
+                            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.outlineVariant} />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -93,14 +84,14 @@ const HelpSupportScreen = () => {
                     {FAQ_ITEMS.map((faq, i) => (
                         <TouchableOpacity key={i} onPress={handleComingSoon} style={styles.faqItem}>
                             <Text style={styles.faqQuestion}>{faq.question}</Text>
-                            <MaterialCommunityIcons name="chevron-right" size={20} color={OUTLINE_VARIANT} />
+                            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.outlineVariant} />
                         </TouchableOpacity>
                     ))}
                 </View>
             </ScrollView>
 
             <TouchableOpacity onPress={handleComingSoon} style={styles.liveChatFab}>
-                <MaterialCommunityIcons name="chat" size={22} color={SURFACE_LOWEST} />
+                <MaterialCommunityIcons name="chat" size={22} color={colors.surface} />
                 <Text style={styles.liveChatText}>Live Chat</Text>
             </TouchableOpacity>
         </View>
@@ -112,15 +103,15 @@ export default HelpSupportScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     headerBar: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     backBtn: {
         width: 40,
@@ -129,71 +120,71 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
     },
     scrollContent: {
-        paddingHorizontal: 16,
+        paddingHorizontal: spacing.md,
         paddingBottom: 100,
     },
     heroTitle: {
-        fontSize: 28,
-        fontWeight: "700",
-        color: ON_SURFACE,
-        lineHeight: 36,
-        marginTop: 8,
+        fontSize: typography.fontSize.display,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.display,
+        marginTop: spacing.sm,
     },
     heroSubtitle: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
-        marginTop: 4,
-        marginBottom: 16,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
+        marginTop: spacing.xs,
+        marginBottom: spacing.md,
     },
     searchBar: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: SURFACE_LOWEST,
-        borderRadius: 12,
-        paddingHorizontal: 16,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        paddingHorizontal: spacing.md,
         paddingVertical: 12,
         gap: 12,
-        marginBottom: 24,
+        marginBottom: spacing.lg,
         opacity: 0.6,
     },
     searchInput: {
         flex: 1,
-        fontSize: 16,
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
         padding: 0,
     },
     sectionTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
         marginBottom: 12,
     },
     categoriesSection: {
         gap: 8,
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     categoryCard: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: SURFACE_LOWEST,
-        padding: 16,
-        borderRadius: 12,
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+        borderRadius: radius.md,
         gap: 12,
     },
     categoryIconBg: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: "#FFDBD033",
+        backgroundColor: colors.primaryLight + "33",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -201,58 +192,54 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     categoryTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
     },
     categoryDesc: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
         marginTop: 1,
     },
     faqSection: {
-        marginBottom: 24,
+        marginBottom: spacing.lg,
     },
     faqItem: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: SURFACE_LOWEST,
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 8,
+        backgroundColor: colors.surface,
+        padding: spacing.md,
+        borderRadius: radius.md,
+        marginBottom: spacing.sm,
     },
     faqQuestion: {
-        fontSize: 16,
-        fontWeight: "400",
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.regular,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xl,
         flex: 1,
         marginRight: 8,
     },
     liveChatFab: {
         position: "absolute",
-        bottom: 24,
-        right: 16,
+        bottom: spacing.lg,
+        right: spacing.md,
         flexDirection: "row",
         alignItems: "center",
         gap: 8,
-        backgroundColor: PRIMARY_CONTAINER,
+        backgroundColor: colors.primary,
         paddingHorizontal: 20,
         paddingVertical: 14,
-        borderRadius: 999,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 6,
+        borderRadius: radius.full,
+        ...shadows.floating,
     },
     liveChatText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: SURFACE_LOWEST,
-        lineHeight: 24,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.surface,
+        lineHeight: typography.lineHeight.xl,
     },
 });

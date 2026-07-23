@@ -4,6 +4,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../types/types";
+import { colors } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,7 +29,7 @@ const Header = ({ back, navigation: backNav }: Props) => {
                             <MaterialCommunityIcons
                                 name="arrow-left"
                                 size={24}
-                                color="#de782a"
+                                color={colors.primary}
                             />
                         </TouchableOpacity>
                     )}
@@ -36,7 +37,7 @@ const Header = ({ back, navigation: backNav }: Props) => {
                         <MaterialCommunityIcons
                             name="map-marker"
                             size={20}
-                            color="#de782a"
+                            color={colors.primary}
                         />
                         <Text>Location</Text>
                     </View>
@@ -46,7 +47,7 @@ const Header = ({ back, navigation: backNav }: Props) => {
                     <MaterialCommunityIcons
                         name="bell-outline"
                         size={26}
-                        color="#de782a"
+                        color={colors.primary}
                     />
                 </TouchableOpacity>
             </View>
@@ -58,9 +59,9 @@ export default Header;
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         borderBottomWidth: 1,
-        borderBottomColor: "#E5E5E5",
+        borderBottomColor: colors.border,
     },
     content: {
         flexDirection: "row",

@@ -2,6 +2,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { MenuItem } from "../../types/types";
 import { imageSource } from "../../utils/imageUtils";
+import { colors, shadows } from "../../theme";
 
 interface MenuItemCardProps {
     item: MenuItem;
@@ -11,8 +12,6 @@ interface MenuItemCardProps {
     onDecrement: (item: MenuItem) => void;
 }
 
-const PRIMARY = "#FF6B35";
-const SECONDARY = "#006D37";
 
 const MenuItemCard = ({ item, quantity, onAdd, onIncrement, onDecrement }: MenuItemCardProps) => {
     return (
@@ -24,7 +23,7 @@ const MenuItemCard = ({ item, quantity, onAdd, onIncrement, onDecrement }: MenuI
                             <MaterialCommunityIcons
                                 name="leaf"
                                 size={14}
-                                color={SECONDARY}
+                                color={colors.secondary}
                             />
                             <Text style={styles.bestsellerText}>
                                 BESTSELLER
@@ -63,7 +62,7 @@ const MenuItemCard = ({ item, quantity, onAdd, onIncrement, onDecrement }: MenuI
                                 <MaterialCommunityIcons
                                     name="minus"
                                     size={14}
-                                    color="#FFF"
+                                    color={colors.white}
                                 />
                             </TouchableOpacity>
                             <Text style={styles.stepperQty}>{quantity}</Text>
@@ -75,7 +74,7 @@ const MenuItemCard = ({ item, quantity, onAdd, onIncrement, onDecrement }: MenuI
                                 <MaterialCommunityIcons
                                     name="plus"
                                     size={14}
-                                    color="#FFF"
+                                    color={colors.white}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -96,16 +95,12 @@ const MenuItemCard = ({ item, quantity, onAdd, onIncrement, onDecrement }: MenuI
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         borderRadius: 24,
         padding: 16,
         borderWidth: 1,
         borderColor: "rgba(225,191,181,0.12)",
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 },
+        ...shadows.card,
     },
     content: {
         flexDirection: "row",
@@ -120,32 +115,32 @@ const styles = StyleSheet.create({
     bestsellerText: {
         fontSize: 11,
         fontWeight: "700",
-        color: SECONDARY,
+        color: colors.secondary,
         letterSpacing: 0.5,
     },
     name: {
         fontSize: 18,
         fontWeight: "600",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
         lineHeight: 26,
     },
     description: {
         fontSize: 14,
         fontWeight: "400",
-        color: "#594139",
+        color: colors.textSecondary,
         marginTop: 4,
         lineHeight: 20,
     },
     price: {
         fontSize: 18,
         fontWeight: "600",
-        color: "#1B1C1C",
+        color: colors.textPrimary,
         marginTop: 8,
     },
     customizableText: {
         fontSize: 11,
         fontWeight: "500",
-        color: PRIMARY,
+        color: colors.primary,
         marginTop: 4,
         letterSpacing: 0.5,
     },
@@ -164,22 +159,18 @@ const styles = StyleSheet.create({
         bottom: -8,
         left: "50%",
         transform: [{ translateX: -32 }],
-        backgroundColor: "#FFF",
+        backgroundColor: colors.white,
         paddingHorizontal: 20,
         paddingVertical: 8,
         borderRadius: 8,
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 },
+        ...shadows.card,
         borderWidth: 1,
         borderColor: "rgba(225,191,181,0.2)",
     },
     addButtonText: {
         fontSize: 11,
         fontWeight: "700",
-        color: PRIMARY,
+        color: colors.primary,
         letterSpacing: 0.5,
         textTransform: "uppercase",
     },
@@ -190,13 +181,9 @@ const styles = StyleSheet.create({
         transform: [{ translateX: -44 }],
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: PRIMARY,
+        backgroundColor: colors.primary,
         borderRadius: 8,
-        elevation: 4,
-        shadowColor: "#000",
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 2 },
+        ...shadows.card,
     },
     stepperBtn: {
         width: 36,
@@ -207,7 +194,7 @@ const styles = StyleSheet.create({
     stepperQty: {
         fontSize: 14,
         fontWeight: "700",
-        color: "#FFF",
+        color: colors.white,
         minWidth: 24,
         textAlign: "center",
     },

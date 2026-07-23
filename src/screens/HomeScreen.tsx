@@ -20,6 +20,7 @@ import { toImageUri } from "../utils/imageUtils";
 import { Restaurant } from "../types/types";
 import { useCart } from "../context/CartContext";
 import Skeleton from "../components/Skeleton";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_HEIGHT = 250;
@@ -96,7 +97,7 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (!scrollRef.current || banners.length <= 1) return;
-    const offset = activeBannerIndex * (SCREEN_WIDTH - 32);
+    const offset = activeBannerIndex * (SCREEN_WIDTH - spacing.xl);
     scrollRef.current.scrollTo({ x: offset, animated: true });
   }, [activeBannerIndex, banners.length]);
 
@@ -121,7 +122,7 @@ const HomeScreen = () => {
           <MaterialCommunityIcons
             name="map-marker"
             size={20}
-            color="#de782a"
+            color={colors.primary}
           />
           <Text>Location</Text>
         </View>
@@ -133,7 +134,7 @@ const HomeScreen = () => {
           <MaterialCommunityIcons
             name="cart-outline"
             size={26}
-            color={!cart.restaurantId || cart.itemCount === 0 ? "#ccc" : "#de782a"}
+            color={!cart.restaurantId || cart.itemCount === 0 ? colors.inactive : colors.primary}
           />
           {cart.itemCount > 0 && (
             <View style={styles.cartBadge}>
@@ -151,20 +152,20 @@ const HomeScreen = () => {
           <MaterialCommunityIcons
             name="magnify"
             size={22}
-            color="#E6732F"
+            color={colors.primary}
           />
           <Text style={styles.input}>Restaurants, dishes or cuisines</Text>
           <TouchableOpacity>
             <MaterialCommunityIcons
               name="microphone-outline"
               size={22}
-              color="#E6732F"
+              color={colors.primary}
             />
           </TouchableOpacity>
         </TouchableOpacity>
 
         {loading ? (
-          <View style={[styles.bannerSkeleton, { width: SCREEN_WIDTH - 32 }]}>
+          <View style={[styles.bannerSkeleton, { width: SCREEN_WIDTH - spacing.xl }]}>
             <Skeleton width="100%" height={BANNER_HEIGHT} borderRadius={18} />
           </View>
         ) : banners.length > 0 ? (
@@ -175,7 +176,7 @@ const HomeScreen = () => {
               pagingEnabled
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={(e) => {
-                const idx = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32));
+                const idx = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - spacing.xl));
                 setActiveBannerIndex(idx);
               }}
             >
@@ -187,7 +188,7 @@ const HomeScreen = () => {
                       ? { uri: banner.image }
                       : require("../assets/images/chickenBriyani.jpg")
                   }
-                  style={[styles.banner, { width: SCREEN_WIDTH - 32 }]}
+                  style={[styles.banner, { width: SCREEN_WIDTH - spacing.xl }]}
                   imageStyle={styles.bannerImage}
                 >
                   <View style={styles.bannerOverlay}>
@@ -235,16 +236,16 @@ const HomeScreen = () => {
         ) : null}
 
         {error ? (
-          <View style={{ marginTop: 40, alignItems: "center" }}>
-            <MaterialCommunityIcons name="cloud-off-outline" size={60} color="#CCC" />
-            <Text style={{ marginTop: 12, fontSize: 16, color: "#888", fontWeight: "600" }}>
+          <View style={{ marginTop: spacing.xl + spacing.sm, alignItems: "center" }}>
+            <MaterialCommunityIcons name="cloud-off-outline" size={60} color={colors.inactive} />
+            <Text style={{ marginTop: spacing.sm + spacing.xs, fontSize: typography.fontSize.lg, color: colors.textLight, fontWeight: typography.fontWeight.semibold }}>
               {error}
             </Text>
             <TouchableOpacity
-              style={{ marginTop: 16, backgroundColor: "#FF6B35", paddingHorizontal: 24, paddingVertical: 10, borderRadius: 100 }}
+              style={{ marginTop: spacing.md, backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: 10, borderRadius: radius.full }}
               onPress={() => { setLoading(true); setError(""); fetchData(); }}
             >
-              <Text style={{ color: "#FFF", fontWeight: "600", fontSize: 14 }}>Retry</Text>
+              <Text style={{ color: colors.white, fontWeight: typography.fontWeight.semibold, fontSize: typography.fontSize.md }}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -260,17 +261,17 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.surface,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: "#FFF",
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm + spacing.xs,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
+    borderBottomColor: colors.border,
   },
   locationContent: {
     flexDirection: "row",
@@ -279,23 +280,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   contentPadding: {
-    padding: 16,
+    padding: spacing.md,
   },
 
   searchContainer: {
     height: 55,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
-    elevation: 4,
+    ...shadows.medium,
   },
 
   input: {
     flex: 1,
     marginHorizontal: 10,
-    color: "#222",
+    color: colors.textPrimary,
   },
 
   banner: {
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
   bannerOverlay: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: colors.overlay,
     borderRadius: 18,
     padding: 18,
     margin: -18,
@@ -325,78 +326,78 @@ const styles = StyleSheet.create({
 
   offerBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#48C774",
-    borderRadius: 8,
+    backgroundColor: colors.success,
+    borderRadius: radius.sm,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     marginBottom: 10,
   },
 
   offerText: {
-    color: "#FFF",
-    fontWeight: "700",
-    fontSize: 10,
+    color: colors.white,
+    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSize.xs,
   },
 
   bannerTitle: {
-    color: "#FFF",
-    fontWeight: "800",
+    color: colors.white,
+    fontWeight: typography.fontWeight.extrabold,
     fontSize: 28,
     lineHeight: 34,
   },
 
   button: {
     alignSelf: "flex-start",
-    backgroundColor: "#FF6B35",
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
     paddingHorizontal: 20,
     paddingVertical: 10,
     marginTop: 15,
   },
 
   buttonText: {
-    color: "#FFF",
-    fontWeight: "700",
+    color: colors.white,
+    fontWeight: typography.fontWeight.bold,
   },
 
   dotsRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 8,
-    marginTop: 12,
+    gap: spacing.sm,
+    marginTop: spacing.sm + spacing.xs,
   },
 
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: "#DDD",
+    borderRadius: radius.xs,
+    backgroundColor: colors.inactive,
   },
 
   dotActive: {
-    backgroundColor: "#FF6B35",
-    width: 24,
-    borderRadius: 4,
+    backgroundColor: colors.primary,
+    width: spacing.lg,
+    borderRadius: radius.xs,
   },
   cartBtn: {
     position: "relative",
-    padding: 4,
+    padding: spacing.xs,
   },
   cartBadge: {
     position: "absolute",
     top: -2,
     right: -4,
-    backgroundColor: "#FF6B35",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
   cartBadgeText: {
-    color: "#FFF",
-    fontSize: 10,
-    fontWeight: "700",
+    color: colors.white,
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.bold,
   },
 });

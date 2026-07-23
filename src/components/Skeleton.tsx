@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View, Animated, StyleSheet } from "react-native";
+import { colors, radius } from "../theme";
 
 interface SkeletonProps {
   width?: number | string;
@@ -61,11 +62,11 @@ export function SkeletonCard({ style }: { style?: any }) {
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: "#e5e2e1",
+    backgroundColor: colors.surfaceContainerHighest,
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
     overflow: "hidden",
   },
   cardBody: {

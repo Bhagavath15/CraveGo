@@ -1,33 +1,19 @@
 import { useCallback, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation, CommonActions, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import LinearGradient from "react-native-linear-gradient";
 import { RootStackParamList } from "../types/types";
 import { clearToken } from "../utils/authStore";
 import { clearAuthToken } from "../api/client";
 import { disconnectSocket } from "../api/socket";
+import Toast from "react-native-toast-message";
 import { getProfile } from "../api/auth";
 import { getOrders } from "../api/order";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const PRIMARY = "#FF6B35";
-const PRIMARY_CONTAINER = "#FF6B35";
-const SECONDARY = "#006D37";
-const SECONDARY_CONTAINER = "#6BFE9C";
-const ON_SECONDARY_CONTAINER = "#00743A";
-const BG = "#FCF9F8";
-const ON_SURFACE = "#1B1C1C";
-const ON_SURFACE_VARIANT = "#594139";
-const OUTLINE_VARIANT = "#E1BFB5";
-const SURFACE_LOWEST = "#FFFFFF";
-const SURFACE_CONTAINER_HIGH = "#EAE7E7";
-const ERROR = "#BA1A1A";
-const ERROR_CONTAINER = "#FFDAD6";
-const OUTLINE = "#8D7168";
 
 interface MenuItem {
     icon: string;
@@ -88,78 +74,87 @@ const ProfileScreen = () => {
                     disconnectSocket();
                     clearAuthToken();
                     await clearToken();
-                    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "OnBoarding" }] }));
+                    Toast.show({ type: "success", text1: "Logged out successfully" });
+                    setTimeout(() => {
+                        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "OnBoarding" }] }));
+                    }, 500);
                 },
             },
         ]);
     };
+
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             <View style={styles.headerBar}>
                 <Text style={styles.headerTitle}>Profile</Text>
                 <TouchableOpacity style={styles.settingsBtn} onPress={() => navigation.navigate("EditProfile")}>
-                    <MaterialCommunityIcons name="square-edit-outline" size={24} color={SURFACE_LOWEST} />
+                    <MaterialCommunityIcons name="cog-outline" size={22} color={colors.textPrimary} />
                 </TouchableOpacity>
             </View>
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
             >
-                <LinearGradient
-                    colors={[PRIMARY_CONTAINER, PRIMARY]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.profileHeader}
-                >
-                    <TouchableOpacity
-                        style={styles.avatarSection}
-                        onPress={() => navigation.navigate("EditProfile")}
-                    >
+                <View style={styles.profileCard}>
+                    <TouchableOpacity onPress={() => navigation.navigate("EditProfile")}>
                         <View style={styles.avatarWrapper}>
                             <Image
                                 source={require("../assets/images/rider-arjun.png")}
                                 style={styles.avatarImage}
                             />
+                            <View style={styles.cameraBadge}>
+                                <MaterialCommunityIcons name="camera" size={12} color={colors.surface} />
+                            </View>
                         </View>
                     </TouchableOpacity>
                     <Text style={styles.profileName}>{userName || "User"}</Text>
                     <Text style={styles.profileEmail}>{userEmail}</Text>
                     <View style={styles.goldBadge}>
-                        <MaterialCommunityIcons
-                            name="star"
-                            size={14}
-                            color={ON_SECONDARY_CONTAINER}
-                        />
+                        <MaterialCommunityIcons name="star" size={12} color={colors.tertiary} />
                         <Text style={styles.goldText}>Gold Member</Text>
                     </View>
-                </LinearGradient>
+                </View>
 
                 <View style={styles.statsRow}>
                     <View style={styles.statItem}>
+                        <View style={styles.statIconBg}>
+                            <MaterialCommunityIcons name="receipt" size={18} color={colors.primary} />
+                        </View>
                         <Text style={styles.statValue}>{orderCount}</Text>
                         <Text style={styles.statLabel}>Orders</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
+                        <View style={[styles.statIconBg, { backgroundColor: `${colors.secondary}15` }]}>
+                            <MaterialCommunityIcons name="ticket-percent-outline" size={18} color={colors.secondary} />
+                        </View>
                         <Text style={styles.statValue}>5</Text>
                         <Text style={styles.statLabel}>Coupons</Text>
                     </View>
                 </View>
 
+                <Text style={styles.sectionTitle}>Account Settings</Text>
+
                 <View style={styles.menuSection}>
                     {MENU_ITEMS.map((item, i) => (
                         <TouchableOpacity
                             key={i}
-                            style={styles.menuRow}
+                            style={[styles.menuRow, i < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
                             onPress={() => handleMenuPress(item)}
                         >
-                            <View style={styles.menuIconBg}>
+                            <View style={[styles.menuIconBg, i === 0 && { backgroundColor: `${colors.primary}15` },
+                                i === 1 && { backgroundColor: `${colors.secondary}15` },
+                                i === 2 && { backgroundColor: `${colors.errorLight}66` },
+                                i === 3 && { backgroundColor: `${colors.tertiary}33` },
+                                i === 4 && { backgroundColor: `${colors.surfaceContainerHigh}` },
+                            ]}>
                                 <MaterialCommunityIcons
                                     name={item.icon}
-                                    size={22}
-                                    color={PRIMARY}
+                                    size={20}
+                                    color={i === 0 ? colors.primary : i === 1 ? colors.secondary : i === 2 ? colors.error : i === 3 ? colors.tertiary : colors.textSecondary}
                                 />
                             </View>
                             <View style={styles.menuContent}>
@@ -168,8 +163,8 @@ const ProfileScreen = () => {
                             </View>
                             <MaterialCommunityIcons
                                 name="chevron-right"
-                                size={20}
-                                color={OUTLINE_VARIANT}
+                                size={18}
+                                color={colors.outlineVariant}
                             />
                         </TouchableOpacity>
                     ))}
@@ -177,14 +172,15 @@ const ProfileScreen = () => {
 
                 <View style={styles.logoutSection}>
                     <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-                        <MaterialCommunityIcons name="logout" size={20} color={ERROR} />
+                        <MaterialCommunityIcons name="logout" size={18} color={colors.error} />
                         <Text style={styles.logoutText}>Logout</Text>
                     </TouchableOpacity>
                     <Text style={styles.versionText}>
-                        Version 2.4.1 (Premium Experience)
+                        Version 2.4.1
                     </Text>
                 </View>
             </ScrollView>
+
         </View>
     );
 };
@@ -194,135 +190,167 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BG,
+        backgroundColor: colors.background,
     },
     headerBar: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: PRIMARY_CONTAINER,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        backgroundColor: colors.background,
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: SURFACE_LOWEST,
-        lineHeight: 28,
+        fontSize: typography.fontSize.xxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxl,
     },
     settingsBtn: {
-        width: 40,
-        height: 40,
+        width: sizes.avatar,
+        height: sizes.avatar,
         justifyContent: "center",
         alignItems: "center",
     },
     scrollContent: {
-        paddingBottom: 32,
+        paddingBottom: spacing.xl,
     },
-    profileHeader: {
+    profileCard: {
         alignItems: "center",
-        paddingTop: 48,
-        paddingBottom: 24,
-        paddingHorizontal: 16,
-    },
-    avatarSection: {
-        marginBottom: 16,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.lg,
+        marginHorizontal: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        ...shadows.card,
     },
     avatarWrapper: {
         position: "relative",
+        marginBottom: spacing.md,
     },
     avatarImage: {
-        width: 96,
-        height: 96,
+        width: sizes.avatarLg,
+        height: sizes.avatarLg,
         borderRadius: 48,
         borderWidth: 3,
-        borderColor: SURFACE_LOWEST,
+        borderColor: colors.surfaceContainer,
+    },
+    cameraBadge: {
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: colors.textPrimary,
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 2,
+        borderColor: colors.surface,
     },
     profileName: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: SURFACE_LOWEST,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxxl,
     },
     profileEmail: {
-        fontSize: 14,
-        color: "rgba(255,255,255,0.8)",
-        lineHeight: 20,
+        fontSize: typography.fontSize.md,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.md,
         marginTop: 2,
     },
     goldBadge: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
-        backgroundColor: SECONDARY_CONTAINER,
+        gap: spacing.xs,
+        backgroundColor: `${colors.tertiary}18`,
         paddingHorizontal: 12,
         paddingVertical: 4,
-        borderRadius: 999,
+        borderRadius: radius.full,
         marginTop: 12,
     },
     goldText: {
         fontSize: 11,
-        fontWeight: "500",
-        color: ON_SECONDARY_CONTAINER,
-        lineHeight: 16,
-        letterSpacing: 0.5,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.tertiary,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
     },
     statsRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: SURFACE_LOWEST,
-        marginHorizontal: 16,
-        marginTop: -20,
-        borderRadius: 12,
-        paddingVertical: 16,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 3,
+        backgroundColor: colors.surface,
+        marginHorizontal: spacing.md,
+        marginTop: spacing.md,
+        borderRadius: radius.md,
+        paddingVertical: spacing.md,
+        ...shadows.card,
     },
     statItem: {
         flex: 1,
         alignItems: "center",
+        gap: 4,
+    },
+    statIconBg: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: `${colors.primary}15`,
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 4,
     },
     statValue: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: PRIMARY,
-        lineHeight: 32,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxxl,
     },
     statLabel: {
         fontSize: 11,
-        fontWeight: "500",
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        marginTop: 2,
+        fontWeight: typography.fontWeight.medium,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
     },
     statDivider: {
         width: 1,
-        height: 32,
-        backgroundColor: OUTLINE_VARIANT,
+        height: spacing.xl,
+        backgroundColor: colors.outlineVariant,
+    },
+    sectionTitle: {
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
+        textTransform: "uppercase",
+        marginTop: spacing.lg,
+        marginBottom: spacing.sm,
+        marginHorizontal: spacing.md,
     },
     menuSection: {
-        marginTop: 24,
-        marginHorizontal: 16,
-        gap: 4,
+        marginHorizontal: spacing.md,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        ...shadows.card,
     },
     menuRow: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: SURFACE_LOWEST,
-        padding: 16,
-        borderRadius: 12,
-        gap: 16,
+        padding: spacing.md,
+        gap: spacing.md,
+    },
+    menuRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: colors.surfaceContainerHighest,
     },
     menuIconBg: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "#FFDBD033",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -330,44 +358,45 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     menuLabel: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: ON_SURFACE,
-        lineHeight: 24,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.md,
     },
     menuDesc: {
-        fontSize: 14,
-        color: ON_SURFACE_VARIANT,
-        lineHeight: 20,
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+        lineHeight: typography.lineHeight.sm,
         marginTop: 1,
     },
     logoutSection: {
-        marginTop: 24,
-        marginHorizontal: 16,
+        marginTop: spacing.lg,
+        marginHorizontal: spacing.md,
     },
     logoutBtn: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 16,
-        paddingVertical: 16,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: `${ERROR_CONTAINER}33`,
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        borderRadius: radius.md,
+        borderWidth: 1.5,
+        borderColor: `${colors.errorLight}99`,
+        backgroundColor: colors.surface,
     },
     logoutText: {
-        fontSize: 20,
-        fontWeight: "600",
-        color: ERROR,
-        lineHeight: 28,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        color: colors.error,
+        lineHeight: typography.lineHeight.xl,
     },
     versionText: {
         textAlign: "center",
         fontSize: 11,
-        fontWeight: "500",
-        color: `${OUTLINE}99`,
-        lineHeight: 16,
-        letterSpacing: 0.5,
-        marginTop: 16,
+        fontWeight: typography.fontWeight.medium,
+        color: `${colors.outline}99`,
+        lineHeight: typography.lineHeight.sm,
+        letterSpacing: typography.letterSpacing.wider,
+        marginTop: spacing.md,
     },
 });

@@ -36,6 +36,7 @@ import {
 } from "../components/restaurant";
 import FoodCustomizationModal from "../components/restaurant/FoodCustomizationModal";
 import Skeleton from "../components/Skeleton";
+import { colors, spacing, typography, radius, shadows, sizes } from "../theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const HERO_HEIGHT = 280;
@@ -182,20 +183,34 @@ const RestaurantDetailScreen = () => {
         fetchData();
     }, [restaurantId]);
 
-    useEffect(() => {
-        if (!isFocused) return;
-        const shouldShow = cart.items.length > 0 && cart.restaurantId && cart.restaurantId !== restaurantId;
-        if (shouldShow) {
-            Alert.alert(
-                "Clear Cart?",
-                `Your cart has items from another restaurant. Start fresh with ${restaurant?.name || "this restaurant"}?`,
-                [
-                    { text: "Keep Cart", style: "cancel" },
-                    { text: "Clear Cart", onPress: () => { cart.clearCart(); } },
-                ]
-            );
-        }
-    }, [restaurantId, cart.restaurantId, cart.items.length, isFocused]);
+    const showRestaurantMismatchAlert = useCallback((onClear: () => void) => {
+        console.log("[RestaurantDetail] Showing restaurant mismatch alert.", {
+            cartRestaurantId: cart.restaurantId,
+            currentRestaurantId: restaurantId,
+            currentRestaurantName: restaurant?.name,
+            cartItemCount: cart.items.length,
+        });
+        Alert.alert(
+            "Clear Cart?",
+            `Your cart has items from another restaurant. Start fresh with ${restaurant?.name || "this restaurant"}?`,
+            [
+                {
+                    text: "Keep Cart",
+                    style: "cancel",
+                    onPress: () => console.log("[RestaurantDetail] User action: Keep Cart — cart NOT cleared, item NOT added."),
+                },
+                {
+                    text: "Clear Cart",
+                    onPress: () => {
+                        console.log("[RestaurantDetail] User action: Clear Cart — proceeding to clear and add.");
+                        onClear();
+                    },
+                },
+            ]
+        );
+    }, [restaurant, cart.restaurantId, cart.items.length, restaurantId]);
+
+    const isCartFromDifferentRestaurant = cart.restaurantId && cart.restaurantId !== restaurantId && cart.items.length > 0;
 
     useEffect(() => {
         if (selectedItem?.customizable) {
@@ -227,6 +242,15 @@ const RestaurantDetailScreen = () => {
     }, [loading, editItemId, menuY]);
 
     const handleAdd = (item: MenuItem) => {
+        console.log("[RestaurantDetail] handleAdd called", { itemId: item.id, itemName: item.name, isCartFromDifferentRestaurant });
+        if (isCartFromDifferentRestaurant) {
+            console.log("[RestaurantDetail] Blocked by restaurant mismatch — showing alert.");
+            showRestaurantMismatchAlert(() => {
+                cart.clearCart();
+                if (restaurant) cart.addToCart(item, restaurantId, restaurant.name);
+            });
+            return;
+        }
         if (item.customizable) {
             setSelectedItem(item);
             setIsSheetOpen(true);
@@ -236,6 +260,15 @@ const RestaurantDetailScreen = () => {
     };
 
     const handleIncrement = (item: MenuItem) => {
+        console.log("[RestaurantDetail] handleIncrement called", { itemId: item.id, itemName: item.name, isCartFromDifferentRestaurant });
+        if (isCartFromDifferentRestaurant) {
+            console.log("[RestaurantDetail] Blocked by restaurant mismatch — showing alert.");
+            showRestaurantMismatchAlert(() => {
+                cart.clearCart();
+                if (restaurant) cart.addToCart(item, restaurantId, restaurant.name);
+            });
+            return;
+        }
         if (item.customizable) {
             setSelectedItem(item);
             setIsSheetOpen(true);
@@ -253,20 +286,33 @@ const RestaurantDetailScreen = () => {
         selections: Record<string, string[]>,
         totalPrice: number
     ) => {
-        const customization = customizationGroups
-            .flatMap((g) => (selections[g.id] || []).map((oid) => {
-                const opt = g.options.find((o) => o.id === oid);
-                return opt ? { name: opt.name, price: opt.price } : null;
-            }))
-            .filter(Boolean) as { name: string; price: number }[];
-        const customizedItem: MenuItem = {
-            ...item,
-            price: totalPrice,
+        console.log("[RestaurantDetail] handleAddToCart called (customization modal)", { itemId: item.id, isCartFromDifferentRestaurant });
+        const doAdd = () => {
+            const customization = customizationGroups
+                .flatMap((g) => (selections[g.id] || []).map((oid) => {
+                    const opt = g.options.find((o) => o.id === oid);
+                    return opt ? { name: opt.name, price: opt.price } : null;
+                }))
+                .filter(Boolean) as { name: string; price: number }[];
+            const customizedItem: MenuItem = {
+                ...item,
+                price: totalPrice,
+            };
+            cart.addToCart(customizedItem, restaurantId, restaurant!.name, customization);
+            setSelectedItem(null);
+            setCustomizationGroups([]);
+            setIsSheetOpen(false);
         };
-        cart.addToCart(customizedItem, restaurantId, restaurant!.name, customization);
-        setSelectedItem(null);
-        setCustomizationGroups([]);
-        setIsSheetOpen(false);
+
+        if (isCartFromDifferentRestaurant) {
+            console.log("[RestaurantDetail] Blocked by restaurant mismatch (customization flow) — showing alert.");
+            showRestaurantMismatchAlert(() => {
+                cart.clearCart();
+                doAdd();
+            });
+            return;
+        }
+        doAdd();
     };
 
     const handleSheetClose = useCallback(() => {
@@ -279,28 +325,28 @@ const RestaurantDetailScreen = () => {
         return (
             <View style={styles.container}>
                 <Skeleton width="100%" height={HERO_HEIGHT} borderRadius={0} />
-                <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+                <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.md }}>
                     <Skeleton width="60%" height={24} />
-                    <Skeleton width="80%" height={16} style={{ marginTop: 8 }} />
-                    <View style={{ flexDirection: "row", gap: 16, marginTop: 12 }}>
+                    <Skeleton width="80%" height={16} style={{ marginTop: spacing.sm }} />
+                    <View style={{ flexDirection: "row", gap: spacing.md, marginTop: spacing.sm + spacing.xs }}>
                         <Skeleton width={80} height={14} />
                         <Skeleton width={60} height={14} />
                         <Skeleton width={70} height={14} />
                     </View>
                 </View>
-                <View style={{ flexDirection: "row", paddingHorizontal: 16, marginTop: 24, gap: 12 }}>
+                <View style={{ flexDirection: "row", paddingHorizontal: spacing.md, marginTop: spacing.lg, gap: spacing.sm + spacing.xs }}>
                     {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} width={90} height={32} borderRadius={16} />
+                        <Skeleton key={i} width={90} height={32} borderRadius={radius.lg} />
                     ))}
                 </View>
-                <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+                <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.lg }}>
                     <Skeleton width="40%" height={24} />
-                    <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+                    <View style={{ flexDirection: "row", gap: spacing.md, marginTop: spacing.md }}>
                         {Array.from({ length: 2 }).map((_, i) => (
                             <View key={i} style={{ flex: 1 }}>
-                                <Skeleton width="100%" height={120} borderRadius={12} />
-                                <Skeleton width="70%" height={16} style={{ marginTop: 8 }} />
-                                <Skeleton width="50%" height={14} style={{ marginTop: 4 }} />
+                                <Skeleton width="100%" height={120} borderRadius={radius.md} />
+                                <Skeleton width="70%" height={16} style={{ marginTop: spacing.sm }} />
+                                <Skeleton width="50%" height={14} style={{ marginTop: spacing.xs }} />
                             </View>
                         ))}
                     </View>
@@ -353,7 +399,7 @@ const RestaurantDetailScreen = () => {
                 )}
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: cart.itemCount ? 120 : 50 }}
+                contentContainerStyle={{ paddingBottom: (!cart.restaurantId || cart.restaurantId === restaurantId) && cart.itemCount ? 120 : 50 }}
             >
                 <View style={styles.heroContainer}>
                     <Image
@@ -436,7 +482,7 @@ export default RestaurantDetailScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FCF9F8",
+        backgroundColor: colors.background,
     },
     center: {
         flex: 1,
@@ -444,19 +490,19 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     errorTitle: {
-        fontSize: 16,
-        fontWeight: "600",
-        marginBottom: 8,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.semibold,
+        marginBottom: spacing.sm,
     },
     errorDesc: {
-        color: "#888",
+        color: colors.textLight,
         textAlign: "center",
         paddingHorizontal: 40,
     },
     errorId: {
-        color: "#aaa",
-        marginTop: 16,
-        fontSize: 12,
+        color: colors.textLight,
+        marginTop: spacing.md,
+        fontSize: typography.fontSize.sm,
     },
     heroContainer: {
         height: HERO_HEIGHT,
@@ -465,16 +511,16 @@ const styles = StyleSheet.create({
     },
     heroOverlay: {
         position: "absolute",
-        top: 12,
-        left: 12,
-        right: 12,
+        top: spacing.sm + spacing.xs,
+        left: spacing.sm + spacing.xs,
+        right: spacing.sm + spacing.xs,
         flexDirection: "row",
         justifyContent: "space-between",
     },
     heroIconBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: sizes.avatar,
+        height: sizes.avatar,
+        borderRadius: radius.xl,
         backgroundColor: "rgba(0,0,0,0.3)",
         justifyContent: "center",
         alignItems: "center",
@@ -491,17 +537,19 @@ const styles = StyleSheet.create({
         height: 120,
     },
     menuContainer: {
-        paddingHorizontal: 16,
-        paddingTop: 24,
+        paddingHorizontal: spacing.md,
+        paddingTop: spacing.lg,
     },
     sectionTitle: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: "#1B1C1C",
-        lineHeight: 32,
-        marginBottom: 16,
+        fontSize: typography.fontSize.xxxl,
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        lineHeight: typography.lineHeight.xxxl,
+        marginBottom: spacing.md,
     },
     gridContainer: {
-        gap: 16,
+        gap: spacing.md,
     },
 });
+
+
